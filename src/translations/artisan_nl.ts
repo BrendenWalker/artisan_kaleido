@@ -7093,13 +7093,13 @@ CTRL+F [Win]</source>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>Open het gebraad in artisan.plus</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>Open het gebraad in Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>Vereist een artisan.plus-account</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>Vereist een Artisan Scope-account</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7185,8 +7185,8 @@ Dubbelklik nogmaals om weer in te zoomen naar de oorspronkelijke weergave.</tran
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>Synchroniseer het gebraad met artisan.plus</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>Synchroniseer het gebraad met Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16066,8 +16066,8 @@ LET OP: Opgeslagen gegevens worden zonder bevestiging gewist.</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus moet weten welke bonen je roostert.</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope moet weten welke bonen je roostert.</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16475,10 +16475,10 @@ LET OP: Opgeslagen gegevens worden zonder bevestiging gewist.</translation>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Artisan is gratis te gebruiken!
 
-Om het gratis en actueel te houden, steun ons met uw donatie en abonneer u op artisan.plus om deze dialoog te onderdrukken!</translation>
+Om het gratis en actueel te houden, steun ons met uw donatie en abonneer u op Artisan Scope om deze dialoog te onderdrukken!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18155,8 +18155,8 @@ Doorgaan?</translation>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>Bijgewerkte gegevens ontvangen van artisan.plus</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Bijgewerkte gegevens ontvangen van Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18175,15 +18175,15 @@ Doorgaan?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>Verbonden met artisan.plus</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Verbonden met Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus uitgeschakeld</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope uitgeschakeld</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18192,28 +18192,28 @@ Doorgaan?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>Kan geen verbinding maken met artisan.plus</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>Kan geen verbinding maken met Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>Verbinding met artisan.plus verbreken?</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>Verbinding met Artisan Scope verbreken?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
         <translation>Artisan.plus-verbinding verbroken. Automatisch opnieuw verbinding maken...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus verbroken</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope verbroken</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus opnieuw verbonden</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope opnieuw verbonden</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21428,24 +21428,24 @@ Niet aangevinkt: Past een vloeiende spline toe om de vorm van de curve te behoud
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>Synchroniseren met artisan.plus</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>Synchroniseren met Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>Ontkoppel artisan.plus</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>Ontkoppel Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>Uploaden naar artisan.plus</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>Uploaden naar Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>Sluit artisan.plus aan</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>Sluit Artisan Scope aan</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

@@ -47,8 +47,6 @@ if TYPE_CHECKING:
     from artisanlib.comm import serialport # pylint: disable=unused-import
     from artisanlib.atypes import ProfileData, BTU # pylint: disable=unused-import
     from artisanlib.main import ApplicationWindow # pylint: disable=unused-import
-    from plus.stock import Blend # pylint: disable=unused-import
-    from plus.blend import CustomBlend # pylint: disable=unused-import
     from matplotlib.collections import PolyCollection # type:ignore[untyped-import,unused-ignore] # pylint: disable=unused-import
     from matplotlib.axes import Axes # type:ignore[untyped-import,unused-ignore] # pylint: disable=unused-import
     from matplotlib.axes._base import _AxesBase # type:ignore[untyped-import,unused-ignore] # pyright:ignore[reportPrivateImportUsage] # pylint: disable=unused-import
@@ -70,11 +68,6 @@ from artisanlib.time import ArtisanTime
 #from artisanlib.filters import LiveMedian
 from artisanlib.dialogs import ArtisanMessageBox
 from artisanlib.atypes import SerialSettings, BTBreakParams, BbpCache, AlarmSet, EnergyMetrics
-
-# import artisan.plus modules
-from plus.util import roastLink
-from plus.queue import addRoast, sendLockSchedule
-from plus.sync import clearSyncRecordHash
 
 from PyQt6.QtWidgets import (QApplication, QWidget, QMessageBox,
                          QGraphicsEffect,
@@ -296,7 +289,7 @@ class tgraphcanvas(QObject):
         'organization_setup', 'operator_setup', 'roastertype_setup', 'roastersize_setup', 'roastersize_setup_default', 'roasterheating_setup', 'roasterheating_setup_default', 'drumspeed_setup', 'last_batchsize', 'machinesetup_energy_ratings',
         'machinesetup', 'roastingnotes', 'cuppingnotes', 'roastdate', 'roastepoch', 'roastepoch_timeout', 'lastroastepoch', 'batchcounter', 'batchsequence', 'batchprefix', 'neverUpdateBatchCounter',
         'roastbatchnr', 'roastbatchprefix', 'roastbatchpos', 'roasttzoffset', 'roastUUID', 'scheduleID', 'scheduleDate', 'plus_default_store', 'plus_store', 'plus_store_label', 'plus_coffee',
-        'plus_coffee_label', 'plus_blend_spec', 'plus_blend_spec_labels', 'plus_blend_label', 'plus_custom_blend', 'plus_sync_record_hash', 'plus_file_last_modified', 'beans', 'ETprojectFlag', 'BTprojectFlag', 'curveVisibilityCache', 'ETcurve', 'BTcurve',
+        'plus_coffee_label', 'plus_blend_spec', 'plus_blend_spec_labels', 'plus_blend_label', 'plus_custom_blend', 'plus_sync_record_hash', 'plus_file_last_modified', 'beans', 'coffee_label_normal_order', 'ETprojectFlag', 'BTprojectFlag', 'curveVisibilityCache', 'ETcurve', 'BTcurve',
         'ETlcd', 'BTlcd', 'swaplcds', 'LCDdecimalplaces', 'foregroundShowFullflag', 'interpolateDropsflag', 'DeltaETflag', 'DeltaBTflag', 'DeltaETlcdflag', 'DeltaBTlcdflag',
         'swapdeltalcds', 'PIDbuttonflag', 'Controlbuttonflag', 'deltaETfilter', 'deltaBTfilter', 'curvefilter', 'deltaETspan', 'deltaBTspan',
         'deltaETsamples', 'deltaBTsamples', 'profile_sampling_interval', 'background_profile_sampling_interval', 'profile_meter', 'optimalSmoothing', 'polyfitRoRcalc',
@@ -1357,7 +1350,7 @@ class tgraphcanvas(QObject):
         self.roastpropertiesAutoOpenFlag:int = 0  #open roast properties dialog on CHARGE if not zero
         self.roastpropertiesAutoOpenDropFlag:int = 0  #open roast properties dialog on DROP if not zero
 
-        # if True and plus is connected reminds user to set beans and open Roast Properties dialog if not yet set (once)
+        # if True, reminds user to set beans and open Roast Properties once when beans are empty
         # this flag is reset after the warning dialog popped up once and is set to True again on OFF and
         self.plus_beans_reminder_on_start:bool = True
 
@@ -1629,30 +1622,26 @@ class tgraphcanvas(QObject):
         # profile UUID
         self.roastUUID:str|None = None
         self.scheduleID:str|None = None
-        self.scheduleDate:str|None = None # not stored on server and thus might be None while scheduleID is not None (in case scheduleID got set on server side)
+        self.scheduleDate:str|None = None
 
-#PLUS
-        # the default store selected by the user (save in the  app settings)
         self.plus_default_store:str|None = None
-        # the current profiles coffee or blend and associated store ids (saved in the *.alog profile)
-        self.plus_store:str|None = None # holds the plus hr_id of the selected store of the current profile or None
-        self.plus_store_label:str|None = None # holds the plus label of the selected store of the current profile or None
-        self.plus_coffee:str|None = None # holds the plus hr_id of the selected coffee of the current profile or None
-        self.plus_coffee_label:str|None = None # holds the plus label of the selected coffee of the current profile or None
-        self.plus_blend_spec:Blend|None = None # the plus blend structure [<blend_label>,[[<coffee_label>,<hr_id>,<ratio>],...,[<coffee_label>,<hr_id>,<ratio>]]] # label + ingredients
+        self.plus_store:str|None = None # legacy profile field: store id
+        self.plus_store_label:str|None = None
+        self.plus_coffee:str|None = None # legacy profile field: coffee id
+        self.plus_coffee_label:str|None = None
+        self.plus_blend_spec:object|None = None # legacy blend metadata from profile files
         self.plus_blend_spec_labels:list[str]|None = None # a list of labels as long as the list of ingredients in self.plus_blend_spec or None
-        self.plus_blend_label:str|None = None # holds the plus selected label of the selected blend of the current profile or None
-        self.plus_custom_blend:CustomBlend|None = None # holds the one custom blend, an instance of plus.blend.Blend, or None
+        self.plus_blend_label:str|None = None # legacy profile field
+        self.plus_custom_blend = None  # legacy field; cloud blends removed
         self.plus_sync_record_hash:str|None = None
         self.plus_file_last_modified:float|None = None # holds the last_modified timestamp of the loaded profile as EPOCH (float incl. milliseconds as returned by time.time())
-        # plus_file_last_modified is set on load, reset on RESET, and updated on save. It is also update, if not None and new data is received from the server (sync:applyServerUpdates)
-        # this timestamp is used in sync:fetchServerUpdate to ask server for updated data
+        # plus_file_last_modified is set on load, reset on RESET, and updated on save
 
-        # remember the lockSchedule date/account sent to the server to prevent re-sending
         self.plus_lockSchedule_sent_account:str|None = None
         self.plus_lockSchedule_sent_date:str|None = None
 
         self.beans:str = ''
+        self.coffee_label_normal_order:bool = True
 
         self.curveVisibilityCache:tuple[bool,bool,bool,bool,list[bool],list[bool]]|None = None # caches the users curve visibility settings to be reset after recording
 
@@ -2036,7 +2025,7 @@ class tgraphcanvas(QObject):
 
         self.autosaveimage:bool = False # if true save an image along alog files
 
-        self.autoasaveimageformat_types:list[str] = ['PDF', 'PDF Report', 'SVG', 'PNG', 'JPEG', 'CSV', 'JSON', 'Excel', 'Orbiter']
+        self.autoasaveimageformat_types:list[str] = ['PDF', 'PDF Report', 'SVG', 'PNG', 'JPEG', 'CSV', 'JSON', 'Excel']
         self.autosaveimageformat:str = 'PDF' # one of the supported image file formats PDF, PDF Report, SVG, PNG, JPEG, CSV, JSON
 
         #used to place correct height of text to avoid placing text over text (annotations)
@@ -2533,7 +2522,7 @@ class tgraphcanvas(QObject):
         self.backgroundeventmessage = ''
         self.eventmessagetimer:QTimer|None = None
 
-        # used to differentiate between a double click that opens the roastUUID on plus and a single click which opens the Roast Properties dialog
+        # used to differentiate double-click vs single-click on the title area
         self.single_click_mpl_upperleft_corner_timer = QTimer()
         self.single_click_mpl_upperleft_corner_timer.setSingleShot(True)
         self.single_click_mpl_upperleft_corner_timer.timeout.connect(self.aw.open_roast_properties_dialog)
@@ -4110,7 +4099,6 @@ class tgraphcanvas(QObject):
                         event.x < event.y:
                     if event.dblclick and self.roastUUID is not None:
                         self.single_click_mpl_upperleft_corner_timer.stop()
-                        QDesktopServices.openUrl(QUrl(roastLink(self.roastUUID), QUrl.ParsingMode.TolerantMode))
                         return
                     # title not set => open Roast Properties dialog
                     self.single_click_mpl_upperleft_corner_timer.start(self.single_click_mpl_upperleft_corner_TIMEOUT)
@@ -4293,21 +4281,6 @@ class tgraphcanvas(QObject):
                     self.updateAmbientPressure()
                 except Exception: # pylint: disable=broad-except
                     pass
-#PLUS
-                # only on first setting the DROP event (not set yet and no previous DROP undone), we upload to PLUS
-                if firstDROP and self.autoDROPenabled and self.aw.plus_account is not None:
-                    # NOTE: scheduler is only active if connected to artisan.plus
-                    if self.aw.schedule_window is not None:
-                        self.aw.schedule_window.register_completed_roast.emit()
-                    try:
-                        self.aw.updatePlusStatus()
-                    except Exception: # pylint: disable=broad-except
-                        pass
-                        # add to out-queue
-                    try:
-                        addRoast()
-                    except Exception: # pylint: disable=broad-except
-                        pass
                 if not self.flagstart:
                     self.aw.autoAdjustAxis(deltas=False)
 
@@ -8005,11 +7978,10 @@ class tgraphcanvas(QObject):
             self.aw.block_quantification_sampling_ticks = [0,0,0,0]
             #self.aw.extraeventsactionslastvalue = [None,None,None,None] # used by +-% event buttons in ON mode when no event was registered yet
 
-            # reset plus sync
+            # reset legacy sync metadata
             self.plus_sync_record_hash = None
             self.plus_file_last_modified = None
             # clear also the cached sync record and sync record hash used to detect changes in the loaded profile
-            clearSyncRecordHash()
 
             # initialize recording version to be stored to new profiles recorded
             self.aw.recording_version = str(__version__)
@@ -8035,7 +8007,7 @@ class tgraphcanvas(QObject):
                 self.restoreEnergyProtocolDefaults()
                 #
                 if (self.backgroundprofile is not None and 'weight' in self.backgroundprofile and
-                    self.setBatchSizeFromBackground and self.aw.schedule_window is None):
+                    self.setBatchSizeFromBackground):
                     self.weight = (float(self.backgroundprofile['weight'][0]),0,str(self.backgroundprofile['weight'][2]))
                 else:
                     max_batch_kg = (self.roastersize_setup if self.roastersize_setup>0 else 500)
@@ -13365,13 +13337,6 @@ class tgraphcanvas(QObject):
             if not res: # reset canceled
                 return
 
-#SCHEDULER:
-            # set properties from selected Schedule
-            if self.aw.schedule_window is not None and self.aw.plus_account is not None:
-                # NOTE: scheduler is only active if connected to artisan.plus
-                self.aw.schedule_window.set_selected_remaining_item_roast_properties()
-                self.aw.schedule_window.load_selected_remaining_item_template()
-
             if self.aw.simulator is None:
                 self.startPhidgetManager()
                 # collect ambient data if any
@@ -13766,7 +13731,6 @@ class tgraphcanvas(QObject):
             if respectAlwaysON and self.flagKeepON and len(self.timex) > 10:
                 QTimer.singleShot(300, self.onMonitorSignal.emit)
 
-            self.aw.updatePlusStatusSignal.emit() # update plus icon (roast might not have been uploaded yet)
             self.monitorClosedDown.emit()
 
         except Exception as ex: # pylint: disable=broad-except
@@ -13780,7 +13744,7 @@ class tgraphcanvas(QObject):
         if self.flagon:
             try:
                 # reset
-                self.plus_beans_reminder_on_start = True # ensure that for the next recording the corresponding warning is shown if beans are not specified for plus
+                self.plus_beans_reminder_on_start = True
 
                 # activate "Stopping Mode" to ensure that sample() is not resetting the timer now (independent of the flagstart state)
 
@@ -14272,13 +14236,10 @@ class tgraphcanvas(QObject):
         self.markChargeSignal.emit(False) # this queues an event which forces a realignment/redraw by resetting the cache ax_background and fires the CHARGE action
 
     def registerLockScheduleSent(self) -> None:
-        self.plus_lockSchedule_sent_account = self.aw.plus_account
-        self.plus_lockSchedule_sent_date = str(datetime.datetime.now().astimezone().date())
+        pass
 
-    # returns True if the lockSchedule was already sent for today and the current account
     def lockScheduleSent(self) -> bool:
-        return (self.plus_lockSchedule_sent_account is not None and self.plus_lockSchedule_sent_account == self.aw.plus_account and
-            self.plus_lockSchedule_sent_date is not None and self.plus_lockSchedule_sent_date == str(datetime.datetime.now().astimezone().date()))
+        return True
 
     def OnRecorder(self) -> None:
         try:
@@ -14372,13 +14333,6 @@ class tgraphcanvas(QObject):
 
             self.aw.update_minieventline_visibility()
 
-            # lock todays schedule
-            if self.aw.plus_account is not None and self.aw.schedule_window is not None and len(self.aw.schedule_window.scheduled_items)>0 and not self.lockScheduleSent():
-                try:
-                    sendLockSchedule()
-                except Exception: # pylint: disable=broad-except
-                    pass
-
             # set CHARGEtimer
             if self.chargeTimerFlag:
                 if self.chargeTimerPeriod > 0:
@@ -14469,14 +14423,10 @@ class tgraphcanvas(QObject):
             if not self.checkSaved():
                 return
 
-            # ensure that beans are specified if plus is connected
-            if (self.aw.plus_account is not None and              # plus connected
-                    not self.roastpropertiesAutoOpenFlag and      # no "Open on CHARGE"
-                    not self.roastpropertiesAutoOpenDropFlag and  # no "Open on DROP"
-                    self.plus_beans_reminder_on_start and         # warning was not yet shown for this recording
-                    (self.plus_coffee is None and self.plus_blend_spec is None and self.beans == '') and # beans are not set
-                    (self.aw.schedule_window is None or self.aw.schedule_window.selected_remaining_item is None) # scheduler is off or no schedule item selected
-                    ):
+            if (not self.roastpropertiesAutoOpenFlag and
+                    not self.roastpropertiesAutoOpenDropFlag and
+                    self.plus_beans_reminder_on_start and
+                    (self.plus_coffee is None and self.plus_blend_spec is None and self.beans == '')):
                 self.aw.open_roast_properties_dialog(start_recording_on_exit=True)
                 return
 
@@ -15293,7 +15243,7 @@ class tgraphcanvas(QObject):
                     else:
                         start = 0
                     # we check if this is the first DROP mark on this roast
-                    firstDROP = self.timeindex[6] == 0 # on UNDO DROP we do not send the record to plus
+                    firstDROP = self.timeindex[6] == 0 # on UNDO DROP
                     if self.aw.buttonDROP.isFlat() and self.timeindex[6] > 0:
                         self.autoDropIdx = -1 # disable autoDROP to allow manual re-DROP
                         # undo wrongly set FCs
@@ -15389,21 +15339,6 @@ class tgraphcanvas(QObject):
                             self.updateAmbientPressure()
                         except Exception as e: # pylint: disable=broad-except
                             _log.exception(e)
-    #PLUS
-                        # only on first setting the DROP event (not set yet and no previous DROP undone) and (not anymore: if not in simulator modus, we upload to PLUS)
-                        if firstDROP and self.autoDROPenabled and self.aw.plus_account is not None:  # and not bool(self.aw.simulator): # we also upload simulated roasts to PLUS
-                            # NOTE: scheduler is only active if connected to artisan.plus
-                            if self.aw.schedule_window is not None:
-                                self.aw.schedule_window.register_completed_roast.emit()
-                            try:
-                                self.aw.updatePlusStatus()
-                            except Exception as e: # pylint: disable=broad-except
-                                _log.exception(e)
-                                # add to out-queue
-                            try:
-                                addRoast()
-                            except Exception as e: # pylint: disable=broad-except
-                                _log.exception(e)
                 else:
                     message = QApplication.translate('Message','DROP: Scope is not recording')
                     self.aw.sendmessage(message)

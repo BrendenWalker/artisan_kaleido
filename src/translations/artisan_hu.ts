@@ -7092,12 +7092,12 @@ CTRL+F [Windows]</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>Nyissa ki a sültet az artisan.plusban</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>Nyissa ki a sültet az Artisan Scopeban</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
         <translation>Artisan.plus fiók szükséges</translation>
     </message>
     <message>
@@ -7184,8 +7184,8 @@ Kattintson ismét duplán az eredeti nézethez való nagyításhoz</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>Szinkronizálja a sültet az artisan.plusszal</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>Szinkronizálja a sültet az Artisan Scopeszal</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16072,8 +16072,8 @@ FIGYELEM: A rögzített adatok megerősítés nélkül törlődnek.</translation
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>Az artisan.plusnak tudnia kell, milyen kávébabot pörköl</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Az Artisan Scopenak tudnia kell, milyen kávébabot pörköl</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16481,10 +16481,10 @@ FIGYELEM: A rögzített adatok megerősítés nélkül törlődnek.</translation
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Az Artisan ingyenesen használható!
 
-Annak érdekében, hogy ingyenes és naprakész legyen, kérjük, támogasson minket adományával, és iratkozzon fel az artisan.plus oldalra, hogy letiltja ezt a párbeszédpanelt!</translation>
+Annak érdekében, hogy ingyenes és naprakész legyen, kérjük, támogasson minket adományával, és iratkozzon fel az Artisan Scope oldalra, hogy letiltja ezt a párbeszédpanelt!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18153,8 +18153,8 @@ Folytatni?</translation>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>Frissített adatok érkeztek az artisan.plus webhelyről</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Frissített adatok érkeztek az Artisan Scope webhelyről</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18173,15 +18173,15 @@ Folytatni?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>Csatlakoztatva az artisan.plus fájlhoz</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Csatlakoztatva az Artisan Scope fájlhoz</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus kikapcsolva</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope kikapcsolva</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18190,28 +18190,28 @@ Folytatni?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>Nem sikerült csatlakozni az artisan.plus fájlhoz</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>Nem sikerült csatlakozni az Artisan Scope fájlhoz</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>Leválasztja az artisan.plus terméket?</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>Leválasztja az Artisan Scope terméket?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>artisan.plus kapcsolat megszakadt. Automatikus újracsatlakozás...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Artisan Scope kapcsolat megszakadt. Automatikus újracsatlakozás...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus leválasztva</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope leválasztva</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus újracsatlakozott</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope újracsatlakozott</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21423,24 +21423,24 @@ Nincs bejelölve: Sima spline-t illeszt a görbe alakjának megőrzése érdeké
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>Szinkronizálás az artisan.plusszal</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>Szinkronizálás az Artisan Scopeszal</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>Az artisan.plus leválasztása</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>Az Artisan Scope leválasztása</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>Feltöltés az artisan.plus oldalra</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>Feltöltés az Artisan Scope oldalra</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>Csatlakoztassa az artisan.plus-t</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>Csatlakoztassa az Artisan Scope-t</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

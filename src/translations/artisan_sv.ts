@@ -7087,13 +7087,13 @@ CTRL+F [Vinn]</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>Öppna steken i artisan.plus</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>Öppna steken i Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>Kräver ett artisan.plus-konto</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>Kräver ett Artisan Scope-konto</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7179,8 +7179,8 @@ Dubbelklicka igen för att zooma in till originalvyn</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>Synka steken med artisan.plus</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>Synka steken med Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16057,8 +16057,8 @@ OBS! Inspelad data kommer att raderas utan bekräftelse</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus behöver veta vilka bönor du rostar</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope behöver veta vilka bönor du rostar</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16466,10 +16466,10 @@ OBS! Inspelad data kommer att raderas utan bekräftelse</translation>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Artisan är gratis att använda!
 
-För att hålla det gratis och aktuellt, stöd oss ​​med din donation och prenumerera på artisan.plus för att undertrycka den här dialogrutan!</translation>
+För att hålla det gratis och aktuellt, stöd oss ​​med din donation och prenumerera på Artisan Scope för att undertrycka den här dialogrutan!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18146,8 +18146,8 @@ Fortsätta?</translation>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>Uppdaterad data mottagen från artisan.plus</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Uppdaterad data mottagen från Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18166,15 +18166,15 @@ Fortsätta?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>Ansluten till artisan.plus</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Ansluten till Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus stängdes av</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope stängdes av</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18183,28 +18183,28 @@ Fortsätta?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>Det gick inte att ansluta till artisan.plus</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>Det gick inte att ansluta till Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>Koppla bort artisan.plus?</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>Koppla bort Artisan Scope?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>artisan.plus-anslutningen avbruten. Återansluter automatiskt...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Artisan Scope-anslutningen avbruten. Återansluter automatiskt...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus frånkopplad</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope frånkopplad</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus återansluten</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope återansluten</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21418,24 +21418,24 @@ Avmarkerat: Anpassar en jämn spline för att bevara kurvans form.</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>Synkroniseras med artisan.plus</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>Synkroniseras med Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>Koppla bort artisan.plus</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>Koppla bort Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>Ladda upp till artisan.plus</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>Ladda upp till Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>Anslut artisan.plus</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>Anslut Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

@@ -7104,13 +7104,13 @@ CTRL+F [Win]</source>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>Ouvrir le rôti dans artisan.plus</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>Ouvrir le rôti dans le navigateur (application web cloud)</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>Nécessite un compte artisan.plus</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>Nécessite une session cloud connectée (Plus) pour afficher</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7196,8 +7196,8 @@ Double-cliquez à nouveau pour revenir à la vue originale.</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>Synchronisez le rôti avec artisan.plus</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>Synchroniser le rôti avec le cloud</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16098,8 +16098,8 @@ ATTENTION : Les données enregistrées seront effacées sans confirmation.</tra
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus a besoin de connaître les grains de café que vous torréfiez.</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope a besoin de connaître les grains de café que vous torréfiez.</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16507,10 +16507,10 @@ ATTENTION : Les données enregistrées seront effacées sans confirmation.</tra
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>L'utilisation de Artisan est gratuite !
 
-Pour le garder gratuit et à jour, veuillez nous soutenir avec votre don et vous abonner à artisan.plus pour supprimer cette boîte de dialogue !</translation>
+Pour le garder gratuit et à jour, veuillez nous soutenir avec votre don et vous abonner à Artisan Scope pour supprimer cette boîte de dialogue !</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18187,8 +18187,8 @@ Continuez?</translation>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>Données mises à jour depuis artisan plus</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Données mises à jour depuis Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18207,15 +18207,15 @@ Continuez?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>Connecté à artisan plus</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Connecté à Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan plus desactivé</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope désactivé</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18224,28 +18224,28 @@ Continuez?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>Impossible de se connecter à artisan.plus</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>Impossible de se connecter à Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>Déconnecter artisan.plus?</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>Déconnecter Artisan Scope?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>Connexion à artisan.plus perdue. Reconnexion automatique...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Connexion à Artisan Scope perdue. Reconnexion automatique...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan plus déconnecté</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope déconnecté</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus reconnecté</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope reconnecté</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21465,24 +21465,24 @@ Décoché : applique une spline lisse pour préserver la forme de la courbe.</t
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>Synchroniser avec artisan.plus</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>Synchroniser avec Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>Déconnecter artisan.plus</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>Déconnecter Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>Charger sur artisan.plus</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>Charger sur Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>Connecter artisan.plus</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>Connecter Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

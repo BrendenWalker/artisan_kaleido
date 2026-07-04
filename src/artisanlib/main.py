@@ -285,7 +285,7 @@ class Artisan(QtSingleApplication):
             if aw is not None and self.darkmode != bool(colorScheme == Qt.ColorScheme.Dark):
                 self.darkmode = bool(colorScheme == Qt.ColorScheme.Dark)
 #                aw.updateCanvasColors()
-                QTimer.singleShot(500, aw.updateScheduleSignal.emit) # only redraw scheduler window # to adjust the colors of its items (QWidgets are updated automatically)
+                QTimer.singleShot(500, lambda: aw.updateCanvasColors(checkColors=True))
     except Exception: # pylint: disable=broad-except
         pass
 
@@ -298,18 +298,6 @@ class Artisan(QtSingleApplication):
                 if state == Qt.ApplicationState.ApplicationActive and self.sentToBackground is not None and aw.editgraphdialog is None:
                     #app raised
 #                    _log.debug('app put to foreground')
-                    try:
-                        if (libtime.time() - self.sentToBackground > self.plus_sync_cache_expiration and
-                              aw.plus_account is not None and aw.qmc.roastUUID is not None and aw.curFile is not None):
-                            plus.sync.getUpdate(aw.qmc.roastUUID, aw.curFile) # sync the loaded profile data if any
-
-                        if aw.schedule_window is not None and aw.plus_account is not None and not aw.qmc.flagstart:
-                            # only if not recording, scheduler is active and plus connected we update the stock on app raise which triggers a scheduler redraw implicitly
-                            # NOTE the scheduler redraw is also happening if stock was not updated due to the update request time limit
-                            plus.stock.update() # stock update (frequency limited by plus/config.py:stock_cache_expiration)
-
-                    except Exception as e: # pylint: disable=broad-except
-                        _log.exception(e)
                     self.sentToBackground = None
 
                 #elif state == Qt.ApplicationState.ApplicationInactive:
@@ -336,7 +324,6 @@ class Artisan(QtSingleApplication):
 #                            plus.sync.getUpdate(aw.qmc.roastUUID,aw.curFile)
 #                    except Exception as e: # pylint: disable=broad-except
 #                        _log.exception(e)
-#                    aw.updateScheduleSignal.emit()
 #                    self.sentToBackground = None
 #
 #                elif oldFocusWidget is not None and newFocusWidget is None and aw is not None and aw.centralWidget() == oldFocusWidget:
@@ -363,7 +350,7 @@ class Artisan(QtSingleApplication):
                 roast_UUID = url.toString(QUrl.UrlFormattingOption.RemoveScheme | QUrl.UrlFormattingOption.RemoveAuthority | QUrl.UrlFormattingOption.RemoveQuery | QUrl.UrlFormattingOption.RemoveFragment | QUrl.UrlFormattingOption.StripTrailingSlash)[1:]
                 if aw.qmc.roastUUID is None or aw.qmc.roastUUID != roast_UUID:
                     # not yet open, lets try to find the path to that roastUUID and open it
-                    profile_path = plus.register.getPath(roast_UUID)
+                    profile_path = None
                     if profile_path:
                         aw.sendmessage(QApplication.translate('Message','URL open profile: {0}').format(profile_path))
                         file_url = QUrl.fromLocalFile(profile_path)
@@ -416,22 +403,6 @@ class Artisan(QtSingleApplication):
                 elif file_suffix == 'json' and not aw.app.artisanviewerMode and aw.comparator is None:
                     # import Artisan JSON profile
                     aw.importJSON(filename)
-                elif file_suffix == 'xls' and not aw.app.artisanviewerMode and aw.comparator is None:
-                    # import Cropster XLS profile
-                    from artisanlib.cropster import extractProfileCropsterXLS
-                    aw.importExternal(extractProfileCropsterXLS, QApplication.translate('Message','Import {}').format('Cropster XLS'),'*.xls',filename)
-                elif file_suffix == 'csv' and not aw.app.artisanviewerMode and aw.comparator is None:
-                    # import Giesen CSV profile
-                    from artisanlib.giesen import extractProfileGiesenCSV
-                    aw.importExternal(extractProfileGiesenCSV, QApplication.translate('Message','Import {}').format('Giesen CSV'),'*.csv',filename)
-                elif file_suffix == 'xlsx' and not aw.app.artisanviewerMode and aw.comparator is None:
-                    # import Stronghold XLSX profile
-                    from artisanlib.stronghold import extractProfileStrongholdXLSX
-                    aw.importExternal(extractProfileStrongholdXLSX, QApplication.translate('Message','Import {}').format('Stronghold XLSX'),'*.xlsx',filename)
-                if filename.endswith(('.zip', '.rop')) and not aw.app.artisanviewerMode and aw.comparator is None:
-                    # import Orbiter .rop/.zip profile
-                    from artisanlib.orbiter import extractProfileOrbiterROP
-                    aw.importExternal(extractProfileOrbiterROP, QApplication.translate('Message','Import {}').format('Orbiter'),'(*.rop *.zip)',filename)
 
 
         elif platform.system() == 'Windows' and not self.artisanviewerMode:
@@ -719,20 +690,6 @@ from artisanlib.phases_canvas import tphasescanvas
 from artisanlib.scale import ScaleManager
 
 
-# import artisan.plus module
-import plus.config
-import plus.util
-import plus.sync
-import plus.queue
-import plus.controller
-import plus.connection
-import plus.register
-import plus.notifications
-import plus.blend
-import plus.stock
-import plus.schedule
-
-
 
 
 #####
@@ -743,8 +700,6 @@ class VMToolbar(NavigationToolbar): # pylint: disable=abstract-method
 
         # toolitem entries of the form (text, tooltip_text, image_file, callback)
         self.toolitems: list[tuple[str, ...] | tuple[None, ...]] = [ # zuban:ignore[assignment] # pyrefly:ignore[bad-override]
-                ('Plus', QApplication.translate('Tooltip', 'Connect to plus service'), 'plus', 'plus'),
-                ('', QApplication.translate('Tooltip', 'Subscription'), 'plus-pro', 'subscription'),
                 (QApplication.translate('Toolbar', 'Home'), QApplication.translate('Tooltip', 'Reset original view'), 'home', 'home'),
                 (QApplication.translate('Toolbar', 'Back'), QApplication.translate('Tooltip', 'Back to  previous view'), 'back', 'back'),
                 (QApplication.translate('Toolbar', 'Forward'), QApplication.translate('Tooltip', 'Forward to next view'), 'forward', 'forward'),
@@ -805,8 +760,6 @@ class VMToolbar(NavigationToolbar): # pylint: disable=abstract-method
                     QToolButton:hover {border:1px solid ' + border_color + '; margin: 2px; padding: 2px; background-color:transparent;border-radius: 3px;} \
                     QToolButton:checked:hover {border:1px solid ' + border_color + '; margin: 2px; padding: 2px; background-color:' + selected_canvas_color.name() + ';border-radius: 3px;} \
                     QToolButton {border:1px solid transparent; margin: 2px; padding: 2px; background-color: transparent;border-radius: 3px;}')
-
-        self.aw.updatePlusStatus(self)
 
         self.update_view_org = self._update_view # type: ignore[has-type] # Cannot determine type of "_update_view"
         self._update_view = self.update_view_new # pyright: ignore # Cannot assign to a method  [method-assign]
@@ -1203,88 +1156,6 @@ class VMToolbar(NavigationToolbar): # pylint: disable=abstract-method
             self._last_event = None
         self.update_message()
 
-#PLUS
-    def plus(self) -> None:
-        modifiers = QApplication.keyboardModifiers()
-        if modifiers in [(Qt.KeyboardModifier.AltModifier | Qt.KeyboardModifier.ControlModifier), (Qt.KeyboardModifier.AltModifier | Qt.KeyboardModifier.ShiftModifier)]:
-            # ALT+CTRL-CLICK (OPTION+COMMAND on macOS) toggles  or alternatively ALT-SHIFT-CLICK
-            # toggle debug logging
-            debug_level = debugLogLevelToggle()
-            self.aw.sendmessage(
-                    QApplication.translate('Plus', 'debug logging ON') if debug_level else
-                    QApplication.translate('Plus', 'debug logging OFF')
-            )
-        elif modifiers == Qt.KeyboardModifier.AltModifier:
-            # ALT-click (OPTION on macOS) sends the log file by email
-            self.aw.sendLog()
-        else:
-            plus.controller.toggle(self.aw)
-
-    def subscription(self) -> None:
-        if self.aw.plus_paidUntil is not None: # after reset and authentication, it might still take a moment until the paidUntil is set via its signal
-            try:
-                remaining_days = max(0,(self.aw.plus_paidUntil.date() - datetime.datetime.now(datetime.UTC).date()).days)
-                if remaining_days == 1:
-                    days = QApplication.translate('Plus','1 day left')
-                else:
-                    days = QApplication.translate('Plus','{} days left').format(remaining_days)
-                pu = self.aw.plus_paidUntil.date()
-                message = f"{QApplication.translate('Plus','Paid until')} {QDate(pu.year,pu.month,pu.day).toString(QLocale().dateFormat(QLocale.FormatType.ShortFormat))}"
-                reminder_message = ''
-                percent_used_formatted = ''
-                if self.aw.plus_rlimit > 0:
-                    percent_used = self.aw.plus_used/(self.aw.plus_rlimit/100)
-                    unit = 1 # 1: kg, 2: lb
-                    if self.qmc.weight[2] in {'lb', 'oz'}:
-                        unit = 2
-                    rlimit = plus.stock.renderAmount(self.aw.plus_rlimit, target_unit_idx=unit)
-                    used = plus.stock.renderAmount(self.aw.plus_used, target_unit_idx=unit)
-                    percent_used_formatted = f"{percent_used:.0f}% {QApplication.translate('Label','roasted')} ({used} / {rlimit})"
-                    # if 90% of quota is used, render usage in red
-                    if percent_used >= 90:
-                        style = 'background-color:#cc0f50;color:white;'
-                    else:
-                        style = ''
-                    reminder_message += f'<blockquote><b><span style="{style}">{percent_used_formatted}</span></b></blockquote>'
-                if remaining_days <31:
-                    if remaining_days <= 3:
-                        style = 'background-color:#cc0f50;color:white;'
-                    else:
-                        style = ''
-                    reminder_message += f'<blockquote><b><span style="{style}">{days}</span></b></blockquote>'
-                if reminder_message == '':
-                    message += '<br><br>'
-                else:
-                    message += reminder_message
-                message += QApplication.translate('Plus','Please visit our {0}shop{1} to extend your subscription').format('<a href="' + plus.config.shop_base_url + '">','</a>')
-                #
-                # if less then 31 days:
-                # n days left <= red if <=3
-                #  3 days, 2 days, 1 day, 0 days left
-                #
-# no links in macOS style boxes
-#                subscription_message_box = ArtisanMessageBox(self.aw, QApplication.translate('Message', 'Subscription'), message)
-                subscription_message_box = QMessageBox() # only without super this one shows the native dialog on macOS under Qt 6.6.2
-#                subscription_message_box.setTextFormat(Qt.TextFormat.RichText)
-                plus.util.setPlusIcon(subscription_message_box)
-                if percent_used_formatted != '':
-                    percent_used_formatted = '\n' + percent_used_formatted
-                subscription_message_box.setText(QApplication.translate('Plus','Do you want to extend your subscription?'))
-                subscription_message_box.setInformativeText((QApplication.translate('Plus','Your subscription ends on') if remaining_days>0 else QApplication.translate('Plus','Your subscription ended on')) + f' {QDate(pu.year,pu.month,pu.day).toString(QLocale().dateFormat(QLocale.FormatType.ShortFormat))}\n{days}{percent_used_formatted}')
-                subscription_message_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-                res = subscription_message_box.exec()
-                plus_link = plus.config.shop_base_url
-                if self.aw.plus_subscription == 'PRO':
-                    plus_link += '/professional-roasters'
-                elif self.aw.plus_subscription == 'HOME':
-                    plus_link += '/home-roasters'
-                if res == QMessageBox.StandardButton.Yes:
-                    QDesktopServices.openUrl(QUrl(plus_link, QUrl.ParsingMode.TolerantMode)) # zuban:ignore[unreachable]
-#                box = QMessageBox(self)
-#                box.about(self.aw, QApplication.translate('Message', 'Subscription'),message)
-            except Exception as e: # pylint: disable=broad-except
-                _log.exception(e)
-
 
     @pyqtSlot()
     @pyqtSlot(bool)
@@ -1406,7 +1277,6 @@ class ApplicationWindow(QMainWindow):
 
     singleShotPhidgetsPulseOFF = pyqtSignal(int,int,str) # signal to be called from the eventaction thread to realise Phidgets pulse via QTimer in the main thread
     singleShotPhidgetsPulseOFFSerial = pyqtSignal(int,int,str,str)
-    updatePlusStatusSignal = pyqtSignal() # can be called from another thread or a QTimer to trigger to update the plus icon status
     setTitleSignal = pyqtSignal(str,bool) # can be called from another thread or a QTimer to set the profile title in the main GUI thread
     sendmessageSignal = pyqtSignal(str,bool,str)
     openPropertiesSignal = pyqtSignal()
@@ -1449,14 +1319,12 @@ class ApplicationWindow(QMainWindow):
     importArtisanURLSignal = pyqtSignal(QUrl)
     comparatorAddProfileURLSignal = pyqtSignal(QUrl)
     comparatorAddProfileSignal = pyqtSignal(str)
-    updateScheduleSignal = pyqtSignal()
-    disconnectPlusSignal = pyqtSignal()
 
-    __slots__ = [ 'locale_str', 'app', 'superusermode', 'sample_loop_running', 'time_stopped', 'plus_account', 'plus_account_id', 'plus_remember_credentials', 'plus_email', 'plus_language', 'plus_subscription', 'percent_decimals',
-        'plus_paidUntil', 'plus_rlimit', 'plus_used', 'plus_readonly', 'plus_user_id', 'appearance', 'mpl_fontproperties', 'full_screen_mode_active', 'processingKeyEvent', 'quickEventShortCut',
+    __slots__ = [ 'locale_str', 'app', 'superusermode', 'sample_loop_running', 'time_stopped', 'percent_decimals',
+        'appearance', 'mpl_fontproperties', 'full_screen_mode_active', 'processingKeyEvent', 'quickEventShortCut',
         'eventaction_running_threads', 'curFile', 'MaxRecentFiles', 'recentFileActs', 'recentSettingActs',
         'recentThemeActs', 'applicationDirectory', 'helpdialog', 'redrawTimer', 'lastLoadedProfile', 'lastLoadedBackground', 'LargeScaleLCDsFlag', 'largeScaleLCDs_dialog',
-        'analysisresultsanno', 'segmentresultsanno', 'schedule_window', 'scheduleFlag', 'scheduled_items_uuids', 'largeLCDs_dialog', 'LargeLCDsFlag', 'largeDeltaLCDs_dialog', 'LargeDeltaLCDsFlag', 'largePIDLCDs_dialog',
+        'analysisresultsanno', 'segmentresultsanno', 'largeLCDs_dialog', 'LargeLCDsFlag', 'largeDeltaLCDs_dialog', 'LargeDeltaLCDsFlag', 'largePIDLCDs_dialog',
         'LargePIDLCDsFlag', 'largeExtraLCDs_dialog', 'LargeExtraLCDsFlag', 'largePhasesLCDs_dialog', 'LargePhasesLCDsFlag', 'WebLCDs', 'WebLCDsPort', 'weblcds_server',
         'weblcds_index_path', 'weblcds_websocket_path',
         'taskWebDisplayGreenActive', 'taskWebDisplayGreenPort', 'taskWebDisplayRoastedActive', 'taskWebDisplayRoastedPort',
@@ -1464,7 +1332,7 @@ class ApplicationWindow(QMainWindow):
         'custom_scale_ids', 'custom_scale_names',
         'scale_manager', 'scale1_model', 'scale1_name', 'scale1_id', 'container1_idx', 'two_bucket_mode', 'green_task_precision', 'scale2_model', 'scale2_name', 'scale2_id', 'container2_idx',
         'WebLCDsAlerts', 'EventsDlg_activeTab', 'graphColorDlg_activeTab', 'PID_DlgControl_activeTab', 'CurveDlg_activeTab', 'editGraphDlg_activeTab',
-        'backgroundDlg_activeTab', 'DeviceAssignmentDlg_activeTab', 'AlarmDlg_activeTab', 'schedule_activeTab', 'StatisticsDlg_activeTab', 'resetqsettings', 'settingspath', 'wheelpath', 'profilepath',
+        'backgroundDlg_activeTab', 'DeviceAssignmentDlg_activeTab', 'AlarmDlg_activeTab', 'StatisticsDlg_activeTab', 'resetqsettings', 'settingspath', 'wheelpath', 'profilepath',
         'userprofilepath', 'printer', 'main_widget', 'defaultdpi', 'dpi', 'qmc', 'HottopControlActive', 'AsyncSamplingTimer', 'wheeldialog',
         'simulator', 'simulatorpath', 'comparator', 'eventsbuttonflag', 'minieventsflags', 'seriallogflag',
         'seriallog', 'ser', 'modbus', 'extraMODBUStemps', 'extraMODBUStx', 's7', 'extraS7tx', 'ws', 'extraser', 'extracomport', 'extrabaudrate',
@@ -1481,7 +1349,7 @@ class ApplicationWindow(QMainWindow):
         'eventquantifierthresholdfine', 'eventquantifierthresholdcoarse', 'eventquantifierthresholdmed', 'lastdigitizedvalue', 'lastdigitizedtemp',
         'readingslcdsflags', 'controlsflags', 'logoimgalpha', 'logoimgflag', 'logofilename', 'redrawOnResize', 'searchtextartisansettings', 'fileMenu', 'editMenu',
         'RoastMenu', 'ConfMenu', 'ToolkitMenu', 'viewMenu', 'helpMenu', 'newRoastMenu', 'fileLoadAction', 'openRecentMenu', 'importMenu',
-        'fileSaveAction', 'fileSaveCopyAsAction', 'exportMenu', 'convMenu', 'convFromMenu', 'saveGraphMenu', 'reportMenu', 'htmlAction', 'productionMenu',
+        'fileSaveAction', 'fileSaveCopyAsAction', 'exportMenu', 'convMenu', 'saveGraphMenu', 'reportMenu', 'htmlAction', 'productionMenu',
         'productionWebAction', 'productionCsvAction', 'productionExcelAction', 'rankingMenu', 'rankingWebAction', 'rankingCsvAction', 'rankingExcelAction',
         'saveStatisticsMenu', 'printAction', 'quitAction', 'cutAction', 'copyAction', 'pasteAction', 'editGraphAction', 'backgroundAction',
         'flavorAction', 'switchAction', 'switchETBTAction', 'machineMenu', 'deviceAction', 'commportAction', 'calibrateDelayAction', 'curvesAction',
@@ -1489,7 +1357,7 @@ class ApplicationWindow(QMainWindow):
         'batchAction', 'temperatureConfMenu', 'FahrenheitAction', 'CelsiusAction', 'languageMenu', 'analyzeMenu', 'fitIdealautoAction',
         'analyzeMenu', 'fitIdealx2Action', 'fitIdealx3Action', 'fitIdealx0Action', 'fitBkgndAction', 'clearresultsAction', 'roastCompareAction',
         'designerAction', 'simulatorAction', 'wheeleditorAction', 'transformAction', 'temperatureMenu', 'ConvertToFahrenheitAction',
-        'ConvertToCelsiusAction', 'controlsAction', 'readingsAction', 'eventsEditorAction', 'buttonsAction', 'slidersAction', 'scheduleAction', 'lcdsAction', 'deltalcdsAction',
+        'ConvertToCelsiusAction', 'controlsAction', 'readingsAction', 'eventsEditorAction', 'buttonsAction', 'slidersAction', 'lcdsAction', 'deltalcdsAction',
         'pidlcdsAction', 'scalelcdsAction', 'extralcdsAction', 'phaseslcdsAction', 'fullscreenAction', 'newRoastAction', 'loadSettingsAction', 'openRecentSettingMenu',
         'saveAsSettingsAction', 'resetAction', 'messagelabel', 'button_font_size_pt', 'button_font_size', 'button_font_size_small', 'button_font_size_small_selected',
         'button_font_size_tiny', 'button_font_size_micro',
@@ -1524,11 +1392,12 @@ class ApplicationWindow(QMainWindow):
         'lastIOResult', 'lastArtisanResult', 'max_palettes', 'palette_entries', 'eventsliders', 'defaultSettings', 'zoomInShortcut', 'zoomOutShortcut',
         'summarystatstypes_default', 'summarystatstypes','summarystats_startup', 'summarystatsfontsize', 'bbp_total_time','bbp_bottom_temp','bbp_begin_to_bottom_time','bbp_bottom_to_charge_time',
         'bbp_begin_to_bottom_ror', 'bbp_bottom_to_charge_ror', 'bbp_time_added_from_prev', 'bbp_begin', 'bbp_endroast_epoch_msec', 'bbp_endevents',
-        'bbp_dropevents', 'bbp_dropbt', 'bbp_dropet', 'bbp_drop_to_end', 'schedule_day_filter', 'schedule_user_filter', 'schedule_machine_filter',
-        'schedule_visible_filter', 'scheduler_tasks_visible', 'scheduler_completed_details_visible', 'scheduler_filters_visible', 'scheduler_auto_open',
+        'bbp_dropevents', 'bbp_dropbt', 'bbp_dropet', 'bbp_drop_to_end',
         'main_menu_actions_with_shortcuts', 'ui_mode', 'UIModeMenu',  'productionModeAction', 'defaultModeAction', 'expertModeAction', 'calculatorAction',
         'helpAboutAction', 'checkUpdateAction', 'errorAction', 'messageAction', 'serialAction', 'platformAction', 'aboutQtAction',
-        'helpDocumentationAction', 'KshortCAction' ]
+        'helpDocumentationAction', 'KshortCAction',
+        'plus_account', 'plus_remember_credentials', 'plus_email', 'plus_language', 'plus_user_id', 'plus_account_id',
+        'plus_subscription', 'plus_rlimit', 'plus_used', 'plus_paidUntil' ]
 
     nLCDS: Final[int] = 10 # maximum number of LCDs and extra devices (2x10 => 20 in total!)
 
@@ -1548,20 +1417,6 @@ class ApplicationWindow(QMainWindow):
 
         self.QtWebEngineSupport:bool = WebEngineSupport
         self.artisanviewerFirstStart:bool = artisanviewerFirstStart
-
-#PLUS
-        self.plus_account:str|None = None # if set to a login string, Artisan plus features are enabled
-        self.plus_account_id:str|None = None # holds last used account_id; not reset on loggout
-        self.plus_user_id:str|None = None # holds the UUID of the last logged in user; preserved over restart
-        self.plus_remember_credentials:bool = True # store plus account credentials in systems keychain
-        self.plus_email:str|None = None # if self.plus_remember_credentials is ticked, we remember here the login to be pre-set as plus_account in the dialog
-        self.plus_language:str = 'en' # one of ["en", "de", "it", ..] indicates the language setting of the plus_account used on the artisan.plus platform,
-                # used in links back to objects on the platform (see plus/util.py#storeLink() and similars)
-        self.plus_subscription:str|None = None # one of [None, "HOME", "PRO"]
-        self.plus_paidUntil:datetime.datetime|None = None # either None if unknown or otherwise a datetime.datetime object with indicating the expiration date of the account
-        self.plus_rlimit:float = 0 # account amount limit (kg); if 0 then considered as not valid
-        self.plus_used:float = 0   # account amount greens roasted within rlimit (kg); if 0 then considered as not valid
-        self.plus_readonly:bool = False # True if the plus user has only read rights to the plus account (account might be deactivated, or user might be a read-only user)
 
         self.percent_decimals:int = 1 # number of decimals to render percentage values like weight loss (set to 0, 1 or 2)
 
@@ -1589,6 +1444,16 @@ class ApplicationWindow(QMainWindow):
 
         #############################  Define variables that need to exist before calling settingsload()
         self.curFile:str|None = None
+        self.plus_account:str|None = None
+        self.plus_remember_credentials:bool = False
+        self.plus_email:str|None = None
+        self.plus_language:str|None = None
+        self.plus_user_id:str|None = None
+        self.plus_account_id:str|None = None
+        self.plus_subscription:str|None = None
+        self.plus_rlimit:float = -1.0
+        self.plus_used:float = -1.0
+        self.plus_paidUntil:Any = None
         self.MaxRecentFiles = 20
         self.recentFileActs:list[QAction] = []
         self.recentSettingActs:list[QAction] = []
@@ -1612,22 +1477,6 @@ class ApplicationWindow(QMainWindow):
         # analyzer
         self.analysisresultsanno:Annotation|None = None
         self.segmentresultsanno:Annotation|None = None
-
-        # Schedule
-        self.schedule_window:plus.schedule.ScheduleWindow|None = None # None if scheduler is not active
-        # the uuids of the scheduled items in local custom order on last closing the scheduler
-        # persistet along the app settings
-        self.scheduled_items_uuids:list[str] = []
-
-        self.scheduleFlag:bool = False
-        self.schedule_day_filter:bool = True
-        self.schedule_user_filter:bool = True
-        self.schedule_machine_filter:bool = True
-        self.schedule_visible_filter:bool = True
-        self.scheduler_tasks_visible:bool = False # scheduler tasks pane visible?
-        self.scheduler_completed_details_visible:bool = False # scheduler completed items details pane visible?
-        self.scheduler_filters_visible:bool = False # scheduler filter pane visible?
-        self.scheduler_auto_open:bool = True # if set the scheduler is activated (window opened) automatically if there are scheduled items
 
         # initialize the BBP metrics
         self.resetBBPMetrics()
@@ -1686,7 +1535,6 @@ class ApplicationWindow(QMainWindow):
         self.backgroundDlg_activeTab:int = 0
         self.DeviceAssignmentDlg_activeTab:int = 0
         self.AlarmDlg_activeTab:int = 0
-        self.schedule_activeTab:int = 0
         self.StatisticsDlg_activeTab:int = 0
 
         #flag to reset Qsettings
@@ -2080,140 +1928,6 @@ class ApplicationWindow(QMainWindow):
         fileImportJSONAction.triggered.connect(self.fileImportJSON)
         self.importMenu.addAction(fileImportJSONAction)
 
-        self.importMenu.addSeparator()
-
-#        importBulletAction = QAction('Aillio RoasTime...', self)
-#        #importBulletAction.triggered.connect(self.importBullet)
-#        self.importMenu.addAction(importBulletAction)
-#        importBulletAction.setEnabled(False)
-#
-#        importBulletAction = QAction('Aillio Roast.World URL...', self)
-#        #importBulletAction.triggered.connect(self.importBulletURL)
-#        self.importMenu.addAction(importBulletAction)
-#        importBulletAction.setEnabled(False)
-
-        importCropsterAction = QAction('Cropster XLS...', self)
-        importCropsterAction.triggered.connect(self.importCropster)
-        self.importMenu.addAction(importCropsterAction)
-
-        importGiesenAction = QAction('Giesen CSV...', self)
-        importGiesenAction.triggered.connect(self.importGiesen)
-        self.importMenu.addAction(importGiesenAction)
-
-        importHH506RAAction = QAction('HH506RA...', self)
-        importHH506RAAction.triggered.connect(self.importHH506RA)
-        self.importMenu.addAction(importHH506RAAction)
-
-        importHiBeanAction = QAction('HiBean JSON...', self)
-        importHiBeanAction.triggered.connect(self.importHiBean)
-        self.importMenu.addAction(importHiBeanAction)
-
-        importIkawaURLAction = QAction('IKAWA URL...', self)
-        importIkawaURLAction.triggered.connect(self.importIkawaURL)
-        self.importMenu.addAction(importIkawaURLAction)
-
-        importIkawaAction = QAction('IKAWA CSV...', self)
-        importIkawaAction.triggered.connect(self.importIkawa)
-        self.importMenu.addAction(importIkawaAction)
-
-        importKaleidoAction = QAction('Kaleido CSV...', self)
-        importKaleidoAction.triggered.connect(self.importKaleido)
-        self.importMenu.addAction(importKaleidoAction)
-
-        importK202Action = QAction('K202...', self)
-        importK202Action.triggered.connect(self.importK202)
-        self.importMenu.addAction(importK202Action)
-
-        importK204Action = QAction('K204...', self)
-        importK204Action.triggered.connect(self.importK204)
-        self.importMenu.addAction(importK204Action)
-
-        importLoringAction = QAction('Loring CSV...', self)
-        importLoringAction.triggered.connect(self.importLoring)
-        self.importMenu.addAction(importLoringAction)
-
-        imporOrbiterAction = QAction('Orbiter...', self)
-        imporOrbiterAction.triggered.connect(self.importOrbiter)
-        self.importMenu.addAction(imporOrbiterAction)
-
-        importPetronciniAction = QAction('Petroncini CSV...', self)
-        importPetronciniAction.triggered.connect(self.importPetroncini)
-        self.importMenu.addAction(importPetronciniAction)
-
-        importROESTAction = QAction('ROEST CSV...', self)
-        importROESTAction.triggered.connect(self.importRoest)
-        self.importMenu.addAction(importROESTAction)
-
-        importRubasseAction = QAction('Rubasse CSV...', self)
-        importRubasseAction.triggered.connect(self.importRubasse)
-        self.importMenu.addAction(importRubasseAction)
-
-#        importPilotAction = QAction('Probat Pilot...', self)
-#        importPilotAction.triggered.connect(self.importPilot)
-#        self.importMenu.addAction(importPilotAction)
-
-#        fileImportRoastLoggerAction = QAction('RoastLogger...', self)
-#        fileImportRoastLoggerAction.triggered.connect(self.fileImportRoastLogger)
-#        self.importMenu.addAction(fileImportRoastLoggerAction)
-
-        importRoastLogAction = QAction('RoastLog URL...',self)
-        importRoastLogAction.triggered.connect(self.importRoastLog)
-        self.importMenu.addAction(importRoastLogAction)
-
-#        importRoastPathAction = QAction('RoastPATH URL...',self)
-#        #importRoastPathAction.triggered.connect(self.importRoastPATH)
-#        self.importMenu.addAction(importRoastPathAction)
-#        importRoastPathAction.setEnabled(False)
-
-        importStrongholdAction = QAction('Stronghold XLSX...', self)
-        importStrongholdAction.triggered.connect(self.importStronghold)
-        self.importMenu.addAction(importStrongholdAction)
-
-        self.convFromMenu:QMenu = QMenu(QApplication.translate('Menu', 'Convert From'))
-        fileConvertFromCropsterAction = QAction(QApplication.translate('Menu', 'Cropster XLS...'), self)
-        fileConvertFromCropsterAction.triggered.connect(self.convertFromCropster)
-        self.convFromMenu.addAction(fileConvertFromCropsterAction)
-
-        fileConvertFromGiesenAction = QAction(QApplication.translate('Menu', 'Giesen CSV...'), self)
-        fileConvertFromGiesenAction.triggered.connect(self.convertFromGiesen)
-        self.convFromMenu.addAction(fileConvertFromGiesenAction)
-
-        fileConvertFromHiBeanAction = QAction(QApplication.translate('Menu', 'HiBean JSON...'), self)
-        fileConvertFromHiBeanAction.triggered.connect(self.convertFromHiBean)
-        self.convFromMenu.addAction(fileConvertFromHiBeanAction)
-
-        fileConvertFromIKAWAAction = QAction(QApplication.translate('Menu', 'IKAWA CSV...'), self)
-        fileConvertFromIKAWAAction.triggered.connect(self.convertFromIKAWA)
-        self.convFromMenu.addAction(fileConvertFromIKAWAAction)
-
-        fileConvertFromKaleidoAction = QAction(QApplication.translate('Menu', 'Kaleido CSV...'), self)
-        fileConvertFromKaleidoAction.triggered.connect(self.convertFromKaleido)
-        self.convFromMenu.addAction(fileConvertFromKaleidoAction)
-
-        fileConvertFromLoringAction = QAction(QApplication.translate('Menu', 'Loring CSV...'), self)
-        fileConvertFromLoringAction.triggered.connect(self.convertFromLoring)
-        self.convFromMenu.addAction(fileConvertFromLoringAction)
-
-        fileConvertFromOrbiterAction = QAction('Orbiter...', self)
-        fileConvertFromOrbiterAction.triggered.connect(self.convertFromOrbiter)
-        self.convFromMenu.addAction(fileConvertFromOrbiterAction)
-
-        fileConvertFromPetronciniAction = QAction(QApplication.translate('Menu', 'Petroncini CSV...'), self)
-        fileConvertFromPetronciniAction.triggered.connect(self.convertFromPetroncini)
-        self.convFromMenu.addAction(fileConvertFromPetronciniAction)
-
-        fileConvertFromROESTAction = QAction(QApplication.translate('Menu', 'ROEST CSV...'), self)
-        fileConvertFromROESTAction.triggered.connect(self.convertFromROEST)
-        self.convFromMenu.addAction(fileConvertFromROESTAction)
-
-        fileConvertFromRubaseAction = QAction(QApplication.translate('Menu', 'Rubase CSV...'), self)
-        fileConvertFromRubaseAction.triggered.connect(self.convertFromRubase)
-        self.convFromMenu.addAction(fileConvertFromRubaseAction)
-
-        fileConvertFromStrongholdAction = QAction(QApplication.translate('Menu', 'Stronghold XLSX...'), self)
-        fileConvertFromStrongholdAction.triggered.connect(self.convertFromStronghold)
-        self.convFromMenu.addAction(fileConvertFromStrongholdAction)
-
         self.fileSaveAction = QAction(QApplication.translate('Menu', 'Save'), self)
         self.fileSaveAction.setShortcut(QKeySequence.StandardKey.Save)
         if QIcon.hasThemeIcon('document-save'):
@@ -2249,10 +1963,10 @@ class ApplicationWindow(QMainWindow):
 
         self.exportMenu.addSeparator()
 
-        fileExportOrbiterAction = QAction('Orbiter...', self)
-        fileExportOrbiterAction.triggered.connect(self.fileExportOrbiter)
-        self.exportMenu.addAction(fileExportOrbiterAction)
-
+#        fileExportOrbiterAction = QAction('Orbiter...', self)
+#        fileExportOrbiterAction.triggered.connect(self.fileExportOrbiter)
+#        self.exportMenu.addAction(fileExportOrbiterAction)
+#
 #        fileExportPilotAction = QAction(QApplication.translate('Menu', 'Probat Pilot...'), self)
 #        fileExportPilotAction.triggered.connect(self.fileExportPilot)
 #        self.exportMenu.addAction(fileExportPilotAction)
@@ -2282,10 +1996,10 @@ class ApplicationWindow(QMainWindow):
 
         self.convMenu.addSeparator()
 
-        fileConvertOrbiterAction = QAction('Orbiter...', self)
-        fileConvertOrbiterAction.triggered.connect(self.fileConvertOrbiter)
-        self.convMenu.addAction(fileConvertOrbiterAction)
-
+#        fileConvertOrbiterAction = QAction('Orbiter...', self)
+#        fileConvertOrbiterAction.triggered.connect(self.fileConvertOrbiter)
+#        self.convMenu.addAction(fileConvertOrbiterAction)
+#
 #        fileConvertProbatAction = QAction(QApplication.translate('Menu', 'Probat Pilot...'), self)
 #        fileConvertProbatAction.triggered.connect(self.fileConvertPilot)
 #        self.convMenu.addAction(fileConvertProbatAction)
@@ -2706,13 +2420,6 @@ class ApplicationWindow(QMainWindow):
         self.slidersAction.triggered.connect(self.toggleSliders)
         self.slidersAction.setCheckable(True)
         self.slidersAction.setChecked(False)
-
-        self.scheduleAction: QAction = QAction(QApplication.translate('Menu', 'Schedule'), self)
-        self.scheduleAction.triggered.connect(self.schedule)
-        self.scheduleAction.setCheckable(True)
-        self.scheduleAction.setChecked(False)
-        if self.app.artisanviewerMode:
-            self.scheduleAction.setEnabled(False) # no scheduler in ArtisanViewer mode
 
         self.lcdsAction: QAction = QAction(QApplication.translate('Menu', 'Main LCDs'), self)
         self.lcdsAction.setShortcut('Ctrl+L')
@@ -4323,8 +4030,6 @@ class ApplicationWindow(QMainWindow):
         self.importArtisanURLSignal.connect(self.importArtisanURLSlot, type=Qt.ConnectionType.QueuedConnection)  # type: ignore[call-arg]
         self.comparatorAddProfileURLSignal.connect(self.comparatorAddProfileURLSlot, type=Qt.ConnectionType.QueuedConnection)  # type: ignore[call-arg]
         self.comparatorAddProfileSignal.connect(self.comparatorAddProfileSlot, type=Qt.ConnectionType.QueuedConnection)  # type: ignore[call-arg]
-        self.updateScheduleSignal.connect(self.updateSchedule, type=Qt.ConnectionType.QueuedConnection)  # type: ignore[call-arg]
-
         self.notificationManager:NotificationManager|None = None
         if not self.app.artisanviewerMode:
             self.notificationManager = NotificationManager()
@@ -4332,11 +4037,6 @@ class ApplicationWindow(QMainWindow):
 #        if sys.platform.startswith('darwin') and QVersionNumber.fromString(qVersion())[0] < QVersionNumber(6,5,0):
 #            # only on macOS we install the eventFilter to catch the signal on switching between light and dark modes
 #            self.installEventFilter(self)
-
-#PLUS
-        self.updatePlusStatusSignal.connect(self.updatePlusStatusSlot)
-
-        QTimer.singleShot(2000,self.donate)
 
         QTimer.singleShot(0, self.logStartupTime)
         QTimer.singleShot(500, self.updateBadge)
@@ -4355,7 +4055,6 @@ class ApplicationWindow(QMainWindow):
         file_menu.addMenu(self.openRecentMenu)         # Open recent
         if ui_mode in {UI_MODE.EXPERT, UI_MODE.DEFAULT}:
             file_menu.addMenu(self.importMenu)         # Import
-            file_menu.addMenu(self.convFromMenu)       # Convert from
         file_menu.addSeparator()                       # ---
         file_menu.addAction(self.fileSaveAction)       # Save
         file_menu.addAction(self.fileSaveAsAction)     # SaveAs
@@ -4461,10 +4160,6 @@ class ApplicationWindow(QMainWindow):
             view_menu.addAction(self.buttonsAction)
         if self.ui_mode is not UI_MODE.PRODUCTION or self.slidersVisible():
             view_menu.addAction(self.slidersAction)
-        view_menu.addSeparator()
-        view_menu.addAction(self.scheduleAction)
-        if self.app.artisanviewerMode:
-            self.scheduleAction.setEnabled(False) # no scheduler in ArtisanViewer mode
         view_menu.addSeparator()
         view_menu.addAction(self.lcdsAction)
         view_menu.addAction(self.deltalcdsAction)
@@ -4639,21 +4334,13 @@ class ApplicationWindow(QMainWindow):
         custom_name = self.get_custom_scale_name(scale_device[1])
         return custom_name or scale_device[0]
 
-    # today is expected to be w.r.t. local timezone
-    def scheduledItemsfilter(self, today:datetime.date, item:plus.schedule.ScheduledItem, hidden:bool = False) -> bool:
-        # if user filter is active only items not for a specific user or for the current user (if available) are listed
-        # if machine filter is active only items not for a specific machine or for the current machine setup are listed in case a current machine is set
-        return ((not self.schedule_visible_filter or not hidden) and
-                (not self.schedule_day_filter or item.date == today) and
-                (not self.schedule_user_filter or not bool(plus.connection.getNickname()) or item.user is None or item.user == self.plus_user_id) and
-                (self.qmc.roastertype_setup.strip() == '' or not self.schedule_machine_filter or item.machine is None or
-                    (self.qmc.roastertype_setup.strip() != '' and
-                        item.machine.strip() == self.qmc.roastertype_setup.strip())))
-
     def updateBadge(self, count:int|None = None) -> None:
-        if self.schedule_window is None:
-            item_count = (plus.schedule.ScheduleWindow.openScheduleItemsCount(self) if count is None else count)
-            plus.schedule.ScheduleWindow.setAppBadge(item_count)
+        del count
+        try:
+            from PyQt6.QtWidgets import QApplication
+            QApplication.setWindowIcon(QApplication.windowIcon())
+        except Exception:
+            pass
 
     def blockTicks(self) -> int:
         return max(1, int(round(self.sampling_seconds_to_block_quantifiction / (self.qmc.delay / 1000))) + 1)
@@ -4753,26 +4440,7 @@ class ApplicationWindow(QMainWindow):
         _log.debug('updateLimits(%s,%s,%s,%s,%s)', rlimit, rused, pu, notifications, machines)
         self.updatePlusLimits(rlimit, rused)
         self.updatePlusPaidUntil(pu)
-        self.updatePlusStatus()
-        plus.notifications.updateNotifications(notifications, machines)
-
-
-    @pyqtSlot()
-    def updateSchedule(self) -> None:
-        if self.schedule_window is None:
-            # schedule window is closed
-            item_count:int = plus.schedule.ScheduleWindow.openScheduleItemsCount(self)
-            if self.scheduler_auto_open:
-                if item_count > 0 and plus.controller.is_connected():
-                    # if plus is connected and there are open schedule items, we open the scheduler window automatically
-                    self.schedule(True)
-                elif item_count == 0:
-                    self.scheduler_auto_open = True # next time new schedule items arrive we again auto open
-            # in any case we update the badge
-            self.updateBadge(item_count)
-        else:
-            # if schedule window is already open we update its content as well as the app badge
-            self.schedule_window.updateScheduleWindow()
+        del notifications, machines
 
     @pyqtSlot(str,str,NotificationType)
     def sendNotificationMessage(self, title:str, message:str, notification_type:NotificationType) -> None:
@@ -4975,15 +4643,14 @@ class ApplicationWindow(QMainWindow):
         from email.mime.text import MIMEText
 
         message = MIMEMultipart()
-        if self.plus_email is not None:
-            message['From'] = self.plus_email
-        message['To'] = f"{'logfile'}@{'artisan.plus'}"
+        message['From'] = getpass.getuser()
+        message['To'] = 'logs@local'
         message['Subject'] = 'artisan log'
         message['X-Unsent'] = '1'
         # message["X-Uniform-Type-Identifier"] = "com.apple.mail-draft"
         message.attach(
             MIMEText(
-                f"Please find attached the log files written by Artisan!\nPlease forward this email to {message['To']}\n--\n",
+                "Please find attached the log files written by Artisan.\n--\n",
                 'plain',
             )
         )
@@ -5032,7 +4699,7 @@ class ApplicationWindow(QMainWindow):
         except Exception as e:  # pylint: disable=broad-except
             _log.exception(e)
         # Save message to file tmp file
-        tmpfile = QDir(QDir.tempPath()).filePath('plus-log.eml')
+        tmpfile = QDir(QDir.tempPath()).filePath('artisan-log.eml')
         try:
             os.remove(tmpfile)
         except OSError:
@@ -5081,37 +4748,7 @@ class ApplicationWindow(QMainWindow):
 
     @pyqtSlot()
     def donate(self) -> None:
-        try:
-            everytime = 4*30*24*60*60 # 4 month in seconds
-            everystarts = 30 # number of recordings
-            starts = None
-            lastdonationpopup = None
-            settings = QSettings()
-            if settings.contains('starts'):
-                starts = toInt(settings.value('starts'))
-            if settings.contains('lastdonationpopup'):
-                lastdonationpopup = toInt(settings.value('lastdonationpopup'))
-            now = int(libtime.time())
-            if not(settings.status() == QSettings.Status.NoError and
-                    lastdonationpopup is not None and
-                    starts is not None and
-                    (now >= lastdonationpopup > now-everytime) and
-                    0 <= starts < everystarts):
-#                message = QApplication.translate('Message', 'Artisan is free to use!<br><br>To keep it free and current please support us<br><br><a href="{0}">{0}</a><br><br>and book<br><br><a href="{1}">{1}</a><br><br>to suppress this dialog')
-#                message = message.format('https://artisan-scope.org/donate/', 'https://artisan.plus')
-                message = QApplication.translate('Message', 'Artisan is free to use!\n\nTo keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!')
-                donate_message_box = QMessageBox()
-                donate_message_box.setText(message)
-                donate_message_box.setIcon(QMessageBox.Icon.Information)
-                donate_message_box.setModal(True)
-                donate_message_box.setStandardButtons(QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Ok)
-                donate_message_box.setDefaultButton(QMessageBox.StandardButton.Ok)
-                res = donate_message_box.exec()
-                if res == QMessageBox.StandardButton.Ok:
-                    QDesktopServices.openUrl(QUrl('https://artisan-scope.org/donate/', QUrl.ParsingMode.TolerantMode)) # zuban:ignore[unreachable]
-                self.resetDonateCounter()
-        except Exception as e: # pylint: disable=broad-except
-            _log.exception(e)
+        pass
 
     @pyqtSlot(str)
     def setCanvasColor(self, c:str) -> None: # pylint: disable=no-self-use # used as slot
@@ -5355,84 +4992,11 @@ class ApplicationWindow(QMainWindow):
 #PLUS
     @pyqtSlot()
     def updatePlusStatusSlot(self) -> None:
-        self.updatePlusStatus()
+        pass
 
-    def updatePlusStatus(self,ntb:VMToolbar|None = None) -> None:
-        if ntb is None:
-            ntb = self.ntb
-        try:
-            subscription_icon = None
-            if self.plus_account is not None:
-                if plus.controller.is_connected():
-                    if self.editgraphdialog is False:
-                        # syncing from server in progress
-                        plus_icon = 'plus-dirty'
-                        tooltip = QApplication.translate('Tooltip', 'Syncing with artisan.plus')
-                    elif plus.controller.is_synced():
-                        plus_icon = 'plus-connected'
-                        tooltip = QApplication.translate('Tooltip', 'Disconnect artisan.plus')
-                    else:
-                        plus_icon = 'plus-unsynced'
-                        tooltip = QApplication.translate('Tooltip', 'Upload to artisan.plus')
-                    if self.plus_subscription == 'HOME':
-                        subscription_icon = 'plus-home'
-                        if self.plus_paidUntil is not None:
-                            remaining_days = (self.plus_paidUntil.date() - datetime.datetime.now(datetime.UTC).date()).days
-                            if remaining_days <= 0:
-                                subscription_icon = 'plus-home-off'
-                            elif remaining_days < 31:
-                                subscription_icon = 'plus-home-low'
-                            if self.plus_rlimit > 0:
-                                percent_used = self.plus_used/(self.plus_rlimit/100)
-                                if percent_used >= 100:
-                                    subscription_icon = 'plus-home-off'
-                                elif percent_used >= 90:
-                                    subscription_icon = 'plus-home-low'
-                    elif self.plus_subscription == 'PRO':
-                        subscription_icon = 'plus-pro'
-                        if self.plus_paidUntil is not None:
-                            remaining_days = (self.plus_paidUntil.date() - datetime.datetime.now(datetime.UTC).date()).days
-                            if remaining_days <= 0:
-                                subscription_icon = 'plus-pro-off'
-                            elif remaining_days < 31:
-                                subscription_icon = 'plus-pro-low'
-                            if self.plus_rlimit > 0:
-                                percent_used = self.plus_used/(self.plus_rlimit/100)
-                                if percent_used >= 100:
-                                    subscription_icon = 'plus-pro-off'
-                                elif percent_used >= 90:
-                                    subscription_icon = 'plus-pro-low'
-                else:
-                    plus_icon = 'plus-on'
-                    tooltip = QApplication.translate('Tooltip', 'Disconnect artisan.plus')
-            else:
-                plus_icon = 'plus-off'
-                tooltip = QApplication.translate('Tooltip', 'Connect artisan.plus')
-            if svgsupport:
-                plus_icon += '.svg'
-            else:
-                plus_icon += '.png'
-            if subscription_icon is not None:
-                if svgsupport:
-                    subscription_icon += '.svg'
-                else:
-                    subscription_icon += '.png'
-            if len(ntb.actions()) > 0: # pyright:ignore[reportUnknownArgumentType]
-                a = ntb.actions()[0] # the plus action is the first one
-                a.setIcon(ntb._icon(plus_icon)) # pylint: disable=protected-access
-                a.setToolTip(tooltip)
-                if len(ntb.actions()) > 1: # pyright:ignore[reportUnknownArgumentType]
-                    a = ntb.actions()[1] # the plus subscription action is the second one
-                    if subscription_icon is None:
-                        a.setEnabled(False)
-                        a.setIcon(QIcon())
-                    else:
-                        a.setEnabled(True)
-                        a.setIcon(ntb._icon(subscription_icon)) # pylint: disable=protected-access
-        except Exception as e: # pylint: disable=broad-except
-            _log.exception(e)
-            _, _, exc_tb = sys.exc_info()
-            self.qmc.adderror((QApplication.translate('Error Message', 'Exception:') + ' updatePlusStatus(): {0}').format(str(e)),getattr(exc_tb, 'tb_lineno', '?'))
+    def updatePlusStatus(self, ntb:VMToolbar|None = None) -> None:
+        del ntb
+        return
 
 
 
@@ -5545,7 +5109,7 @@ class ApplicationWindow(QMainWindow):
             weightUnit:str, volumeIn:float, volumeUnit:str, densityWeight:float, beanSize_min:int, beanSize_max:int,
             moistureGreen:float, colorSystem:str, file:str|None, roastUUID:str|None,
             batchnr:int, batchprefix:str, plus_account:str|None, plus_store:str|None, plus_store_label:str|None ,plus_coffee:str|None,
-            plus_coffee_label:str|None, plus_blend_label:str|None, plus_blend_spec:plus.stock.Blend|None, plus_blend_spec_labels:list[str]|None,
+            plus_coffee_label:str|None, plus_blend_label:str|None, plus_blend_spec:object|None, plus_blend_spec_labels:list[str]|None,
             weightOut:float|None, volumeOut:float|None, densityRoasted:float|None, moistureRoasted:float|None, wholeColor:float|None, groundColor:float|None) -> 'RecentRoast':
         d = RecentRoast(
             title = title,
@@ -5639,52 +5203,20 @@ class ApplicationWindow(QMainWindow):
                 self.qmc.color_system_idx = rr['colorSystem'] # type: ignore[unreachable]
 
         # Note: the background profile will not be changed if recent roast is activated from Roast Properties
-#PLUS
-        if self.plus_account is not None and 'plus_account' in rr and self.plus_account == rr['plus_account']:
-            if 'plus_store' in rr:
-                self.qmc.plus_store = rr['plus_store']
-            if 'plus_store_label' in rr:
-                self.qmc.plus_store_label = rr['plus_store_label']
-            if 'plus_coffee' in rr:
-                self.qmc.plus_coffee = rr['plus_coffee']
-            if 'plus_coffee_label' in rr:
-                self.qmc.plus_coffee_label = rr['plus_coffee_label']
-            if 'plus_blend_label' in rr:
-                self.qmc.plus_blend_label = rr['plus_blend_label']
-            if 'plus_blend_spec' in rr:
-                self.qmc.plus_blend_spec = rr['plus_blend_spec']
-            if 'plus_blend_spec_labels' in rr:
-                self.qmc.plus_blend_spec_labels = rr['plus_blend_spec_labels']
-            if self.qmc.plus_default_store is not None and self.qmc.plus_default_store != self.qmc.plus_store:
-                self.qmc.plus_default_store = None # we reset the defaultstore
-            # update blend spec/label/spec_labels and other attributes from current stock
-            if self.qmc.plus_blend_spec is not None and 'hr_id' in self.qmc.plus_blend_spec and self.qmc.plus_store is not None:
-                try:
-                    weight_unit_idx = weight_units.index(rr['weightUnit'])
-                    blends = plus.stock.getStandardBlends(weight_unit_idx,self.qmc.plus_store)
-                    blend = next(b for b in blends if \
-                        plus.stock.getBlendId(b) == self.qmc.plus_blend_spec['hr_id'] and
-                        plus.stock.getBlendStockDict(b)['location_hr_id'] == self.qmc.plus_store)
-                    w = convertWeight(self.qmc.weight[0],weight_unit_idx,weight_units.index('Kg')) # w is weightIn converted to kg
-                    bd:plus.stock.Blend = plus.stock.getBlendBlendDict(blend,w)
-                    self.qmc.plus_blend_label = bd['label']
-                    self.qmc.plus_blend_spec_labels = [i.get('label', '') for i in self.qmc.plus_blend_spec['ingredients']]
-                    self.qmc.beans = '\n'.join(plus.stock.blend2beans(blend,weight_unit_idx,self.qmc.weight[0]))
-                    if 'moisture' in bd:
-                        self.qmc.moisture_greens = bd['moisture']
-                    else:
-                        self.qmc.moisture_greens = 0
-                    self.qmc.density = (bd.get('density', 0), self.qmc.density[1],self.qmc.density[2],self.qmc.density[3])
-                    if 'screen_min' in bd:
-                        self.qmc.beansize_min = bd['screen_min']
-                    else:
-                        self.qmc.beansize_min = 0
-                    if 'screen_max' in bd:
-                        self.qmc.beansize_max = bd['screen_max']
-                    else:
-                        self.qmc.beansize_max = 0
-                except Exception as e: # pylint: disable=broad-except
-                    _log.exception(e)
+        if 'plus_store' in rr:
+            self.qmc.plus_store = rr['plus_store']
+        if 'plus_store_label' in rr:
+            self.qmc.plus_store_label = rr['plus_store_label']
+        if 'plus_coffee' in rr:
+            self.qmc.plus_coffee = rr['plus_coffee']
+        if 'plus_coffee_label' in rr:
+            self.qmc.plus_coffee_label = rr['plus_coffee_label']
+        if 'plus_blend_label' in rr:
+            self.qmc.plus_blend_label = rr['plus_blend_label']
+        if 'plus_blend_spec' in rr:
+            self.qmc.plus_blend_spec = rr['plus_blend_spec']
+        if 'plus_blend_spec_labels' in rr:
+            self.qmc.plus_blend_spec_labels = rr['plus_blend_spec_labels']
         self.sendmessage(QApplication.translate('Message',f"Recent roast properties '{self.recentRoastLabel(rr)}' set"))
 
     # returns the list of recentRoasts with the first entry with the given title, weight and weightunit removed
@@ -5915,37 +5447,6 @@ class ApplicationWindow(QMainWindow):
                             self.qmc.machinesetup = action.text()
                         if res:
                             QTimer.singleShot(700, self.qmc.startPhidgetManager)
-                    elif action.data()[1] == 'ROEST' and self.qmc.device:
-                        # select ROEST machine and retrieve MQTT credentials
-                        from artisanlib.roest import RoestMachine, selectROESTmachine
-                        roest_machine:RoestMachine|None = selectROESTmachine(self)
-                        if roest_machine is not None:
-                            self.mqtt.user = roest_machine['mqtt_user']
-                            self.mqtt.password = roest_machine['mqtt_password']
-                            self.mqtt.topic = roest_machine['mqtt_topic']
-
-                            has_drum = roest_machine.get('has_drum', None)
-                            if has_drum is not None:
-                                self.extraLCDvisibility1[0] = has_drum
-                                self.extraLCDframe1[0].setVisible(has_drum)
-                                self.extraCurveVisibility1[0] = has_drum
-                                self.qmc.resetlinecountcaches()
-
-                            has_inlet = roest_machine.get('has_inlet', None)
-                            if has_inlet is not None:
-                                self.extraLCDvisibility2[0] = has_inlet
-                                self.extraLCDframe2[0].setVisible(has_inlet)
-                                self.extraCurveVisibility2[0] = has_inlet
-                                self.qmc.resetlinecountcaches()
-
-                            if 'next_batch_number' in roest_machine:
-                                self.qmc.batchcounter = max(0, roest_machine['next_batch_number'] - 1)
-                            if 'elevation' in roest_machine:
-                                self.qmc.elevation = roest_machine['elevation']
-                            res = True
-                        else:
-                            res = False
-                            self.sendmessage(QApplication.translate('Message','Action canceled'))
                     else:
                         self.qmc.machinesetup = action.text()
                         res = True
@@ -13272,8 +12773,6 @@ class ApplicationWindow(QMainWindow):
             self.exportJSON(filename + '.json')
         elif self.qmc.autosaveimageformat == 'Excel':
             self.exportExcel(filename + '.xlsx')
-        elif self.qmc.autosaveimageformat == 'Orbiter':
-            self.exportOrbiterROP(filename + '.zip')
         else:
             self.resizeImgToSize(0,0,self.qmc.autosaveimageformat,fname=filename)
 
@@ -13302,12 +12801,6 @@ class ApplicationWindow(QMainWindow):
                 if res:
                     #write
                     pf = self.getProfile()
-                    sync_record_hash = plus.controller.updateSyncRecordHashAndSync()
-                    if sync_record_hash is not None:
-                        # we add the hash over the sync record to be able to detect offline changes
-                        hash_encoded = encodeLocal(sync_record_hash)
-                        if hash_encoded is not None:
-                            pf['plus_sync_record_hash'] = hash_encoded
                     self.plusAddPath(cast(dict[str, Any], pf), filename_path)
                     serialize(filename_path, cast(dict[str, Any], pf))
                     self.sendmessage(QApplication.translate('Message','Profile {0} saved in: {1}').format(filename,self.qmc.autosavepath))
@@ -13789,12 +13282,11 @@ class ApplicationWindow(QMainWindow):
                 self.sendmessage(message)
                 _log.info('profile loaded: %s', filename)
 
-                # update plus data set modification date
-                self.qmc.plus_file_last_modified = plus.util.getModificationDate(filename)
+                try:
+                    self.qmc.plus_file_last_modified = os.path.getmtime(filename)
+                except OSError:
+                    self.qmc.plus_file_last_modified = None
                 self.updatePlusStatus()
-                if self.plus_account is not None and plus.config.uuid_tag in obj:
-                    QTimer.singleShot(100, plus.sync.sync)
-                    QTimer.singleShot(700, lambda: plus.schedule.update_completed_item_from_loaded_profile(self))
 
                 #check colors
                 self.checkColors(self.getcolorPairsToCheck())
@@ -14148,15 +13640,7 @@ class ApplicationWindow(QMainWindow):
             except Exception: # pylint: disable=broad-except
                 return False
         elif UUID is not None and (force_reload or self.qmc.backgroundUUID != UUID):
-            filepath = plus.register.getPath(UUID)
-            if filepath is not None:
-                try:
-                    self.loadbackground(filepath)
-                    return True
-                except Exception: # pylint: disable=broad-except
-                    return False
-            else:
-                return False
+            return False
         else:
             return False
 
@@ -14448,8 +13932,7 @@ class ApplicationWindow(QMainWindow):
                 # set current batch size from this background profile if
                 #  - setBatchSizeFromBackground is ticked
                 #  - no foreground profile is loaded
-                #  - scheduler is not active
-                if self.qmc.setBatchSizeFromBackground and (self.qmc.flagon or not self.curFile) and self.schedule_window is None:
+                if self.qmc.setBatchSizeFromBackground and (self.qmc.flagon or not self.curFile):
                     self.qmc.weight = (profile['weight'][0],self.qmc.weight[1],profile['weight'][2])
 
 
@@ -14604,18 +14087,18 @@ class ApplicationWindow(QMainWindow):
             self.qmc.adderror((QApplication.translate('Error Message','Exception:') + ' exportJSON() {0}').format(str(ex)),getattr(exc_tb, 'tb_lineno', '?'))
             return False
 
-    def exportOrbiterROP(self, filename:str) -> bool:
-        from artisanlib.orbiter import saveOrbiterROP
-        try:
-            res:bool = saveOrbiterROP(filename, self.getProfile())
-            if res:
-                self.sendmessage(f"{QApplication.translate('Message','{} file saved successfully').format('Orbiter')} ({filename})")
-                return True
-        except Exception as ex: # pylint: disable=broad-except
-            _log.exception(ex)
-            _, _, exc_tb = sys.exc_info()
-            self.qmc.adderror((QApplication.translate('Error Message','Exception:') + ' exportOrbiterROP() {0}').format(str(ex)),getattr(exc_tb, 'tb_lineno', '?'))
-        return False
+#    def exportOrbiterROP(self, filename:str) -> bool:
+#        from artisanlib.orbiter import saveOrbiterROP
+#        try:
+#            res:bool = saveOrbiterROP(filename, self.getProfile())
+#            if res:
+#                self.sendmessage(f"{QApplication.translate('Message','{} file saved successfully').format('Orbiter')} ({filename})")
+#                return True
+#        except Exception as ex: # pylint: disable=broad-except
+#            _log.exception(ex)
+#            _, _, exc_tb = sys.exc_info()
+#            self.qmc.adderror((QApplication.translate('Error Message','Exception:') + ' exportOrbiterROP() {0}').format(str(ex)),getattr(exc_tb, 'tb_lineno', '?'))
+#        return False
 
     def indent(self, elem:'XMLElement', level:int = 0) -> None:
         i = '\r\n' + level*'  ' # Windows line ending (as Pilot is only available on Windows)
@@ -15390,13 +14873,7 @@ class ApplicationWindow(QMainWindow):
 
     @staticmethod
     def plusAddPath(obj:dict[str, Any], fn:str) -> None:
-        # fill plus UUID register
-        try:
-            if plus.config.uuid_tag in obj:
-                plus.register.addPath(obj[plus.config.uuid_tag],fn)
-        except Exception: # pylint: disable=broad-except
-            pass
-
+        del obj, fn
 
     def ensureCorrectExtraDeviceListLength(self) -> None:
         self.qmc.extraname1 = self.qmc.extraname1[:len(self.qmc.extradevices)]
@@ -16041,8 +15518,8 @@ class ApplicationWindow(QMainWindow):
                 self.qmc.plus_coffee = None
                 self.qmc.plus_coffee_label = None
             if 'plus_blend_spec' in profile:
-                # we convert the blend specification from its list to its internal dictionary representation
-                self.qmc.plus_blend_spec = plus.stock.list2blend(profile['plus_blend_spec'])
+                pbs = profile['plus_blend_spec']
+                self.qmc.plus_blend_spec = pbs if isinstance(pbs, dict) else None
                 if 'plus_blend_label' in profile:
                     self.qmc.plus_blend_label = decodeLocalStrict(profile['plus_blend_label'])
                 else:
@@ -16472,20 +15949,7 @@ class ApplicationWindow(QMainWindow):
                         _log.exception(e)
                         self.deleteBackground() # delete a loaded background if any
                 elif 'backgroundUUID' in profile and self.qmc.backgroundUUID != profile['backgroundUUID']:
-                    # background file path moved, we try to resolve via the UUID cache
-                    background_path = plus.register.getPath(profile['backgroundUUID'])
-                    if background_path is not None and os.path.isfile(background_path):
-                        try:
-                            self.loadbackground(background_path)
-                            self.qmc.background = not self.qmc.hideBgafterprofileload
-                            self.qmc.timealign(redraw=False) # there will be a later redraw triggered that also recomputes the deltas
-                            self.qmc.backgroundpath = background_path
-                            self.qmc.fileDirtySignal.emit() # as we updated the background path we force a profile save
-                        except Exception as e: # pylint: disable=broad-except
-                            _log.exception(e)
-                            self.deleteBackground() # delete a loaded background if any
-                    else:
-                        self.deleteBackground() # delete a loaded background if any
+                    self.deleteBackground()
                 else:
                     self.deleteBackground() # delete a loaded background if any
             self.autoAdjustAxis()
@@ -17093,10 +16557,7 @@ class ApplicationWindow(QMainWindow):
                 if self.qmc.plus_coffee_label is not None:
                     profile['plus_coffee_label'] = encodeLocalStrict(self.qmc.plus_coffee_label)
             if self.qmc.plus_blend_spec is not None:
-                # we convert the internal blend dictionary specification to the external list specification
-                blend_spec = plus.stock.blend2list(self.qmc.plus_blend_spec)
-                if blend_spec is not None:
-                    profile['plus_blend_spec'] = blend_spec
+                profile['plus_blend_spec'] = self.qmc.plus_blend_spec
                 profile['plus_blend_label'] = encodeLocalStrict(self.qmc.plus_blend_label)
                 if self.qmc.plus_blend_spec_labels is not None:
                     profile['plus_blend_spec_labels'] = [encodeLocalStrict(l) for l in self.qmc.plus_blend_spec_labels]
@@ -17385,13 +16846,6 @@ class ApplicationWindow(QMainWindow):
                         import uuid
                         pf['roastUUID'] = uuid.uuid4().hex # generate UUID
 
-                    sync_record_hash = plus.controller.updateSyncRecordHashAndSync()
-                    if sync_record_hash is not None:
-                        # we add the hash over the sync record to be able to detect offline changes
-                        srh = encodeLocal(sync_record_hash)
-                        if srh is not None:
-                            pf['plus_sync_record_hash'] = srh
-
                     # we save the file and set the filename
                     self.plusAddPath(cast(dict[str,Any], pf), filename)
                     serialize(filename, cast(dict[str,Any], pf))
@@ -17402,8 +16856,10 @@ class ApplicationWindow(QMainWindow):
                         self.curFile = filename
                         self.qmc.fileCleanSignal.emit()
 
-                    # update plus data set modification date
-                    self.qmc.plus_file_last_modified = plus.util.getModificationDate(filename)
+                    try:
+                        self.qmc.plus_file_last_modified = os.path.getmtime(filename)
+                    except OSError:
+                        self.qmc.plus_file_last_modified = None
 
                     if self.qmc.autosaveimage and not self.qmc.flagon:
                         #
@@ -17459,10 +16915,10 @@ class ApplicationWindow(QMainWindow):
     def fileExportJSON(self, _:bool = False) -> None:
         self.fileExport(QApplication.translate('Message', 'Export {}').format('JSON'),'*.json',self.exportJSON)
 
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def fileExportOrbiter(self, _:bool = False) -> None:
-        self.fileExport(QApplication.translate('Message', 'Export {}').format('Orbiter'),'*.rop.zip',self.exportOrbiterROP)
+#    @pyqtSlot()
+#    @pyqtSlot(bool)
+#    def fileExportOrbiter(self, _:bool = False) -> None:
+#        self.fileExport(QApplication.translate('Message', 'Export {}').format('Orbiter'),'*.rop.zip',self.exportOrbiterROP)
 
 #    @pyqtSlot()
 #    @pyqtSlot(bool)
@@ -17475,128 +16931,6 @@ class ApplicationWindow(QMainWindow):
 #        self.fileExport(QApplication.translate('Message', 'Export Probat Pilot'),'*.xml',self.exportPilot)
 
 #--
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def convertFromCropster(self, _:bool = False) -> None:
-        from artisanlib.cropster import extractProfileCropsterXLS
-        self.fileConvertFrom('*.xls', extractProfileCropsterXLS)
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def convertFromHiBean(self, _:bool = False) -> None:
-        from artisanlib.hibean import extractProfileHiBeanJSON
-        self.fileConvertFrom('*.json', extractProfileHiBeanJSON)
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def convertFromGiesen(self, _:bool = False) -> None:
-        from artisanlib.giesen import extractProfileGiesenCSV
-        self.fileConvertFrom('*.csv', extractProfileGiesenCSV)
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def convertFromIKAWA(self, _:bool = False) -> None:
-        from artisanlib.ikawa import extractProfileIkawaCSV
-        self.fileConvertFrom('*.csv', extractProfileIkawaCSV)
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def convertFromKaleido(self, _:bool = False) -> None:
-        from artisanlib.kaleido import extractProfileKaleidoCSV
-        self.fileConvertFrom('*.csv', extractProfileKaleidoCSV)
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def convertFromLoring(self, _:bool = False) -> None:
-        from artisanlib.loring import extractProfileLoringCSV
-        self.fileConvertFrom('*.csv', extractProfileLoringCSV)
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def convertFromPetroncini(self, _:bool = False) -> None:
-        from artisanlib.petroncini import extractProfilePetronciniCSV
-        self.fileConvertFrom('*.csv', extractProfilePetronciniCSV)
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def convertFromOrbiter(self, _:bool = False) -> None:
-        from artisanlib.orbiter import extractProfileOrbiterROP
-        self.fileConvertFrom('(*.rop *.zip)', extractProfileOrbiterROP)
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def convertFromROEST(self, _:bool = False) -> None:
-        from artisanlib.roest import extractProfileRoestCSV
-        self.fileConvertFrom('*.csv', extractProfileRoestCSV)
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def convertFromRubase(self, _:bool = False) -> None:
-        from artisanlib.rubasse import extractProfileRubasseCSV
-        self.fileConvertFrom('*.csv', extractProfileRubasseCSV)
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def convertFromStronghold(self, _:bool = False) -> None:
-        from artisanlib.stronghold import extractProfileStrongholdXLSX
-        self.fileConvertFrom('*.xlsx', extractProfileStrongholdXLSX)
-
-
-    # extractor expects the following arguments
-    #   file:str
-    #   etypesdefault:list[str]               # translated to current locale
-    #   alt_etypesdefault:list[str]           # translated to current locale
-    #   artisanflavordefaultlabels:list[str]  # translated to current locale
-    #   eventsExternal2InternalValue: Callable[[int],float]
-    def fileConvertFrom(self,
-            ext:str,
-            extractor: Callable[[str, list[str], list[str], list[str], Callable[[int],float]],'ProfileData|None']) -> None:
-        files = self.ArtisanOpenFilesDialog(ext=ext)
-        if files and len(files) > 0:
-            loaded_profile = self.curFile
-            if self.qmc.reset(soundOn=False):
-                self.saveExtradeviceSettings()
-                outdir = self.ArtisanExistingDirectoryDialog()
-                progress:QProgressDialog = QProgressDialog(QApplication.translate('Message', 'Converting...'), '', 0, len(files), self)
-                progress.setCancelButton(None)
-                progress.setWindowModality(Qt.WindowModality.WindowModal)
-                progress.setAutoClose(True)
-                progress.show()
-                i = 1
-                flag_temp = self.qmc.roastpropertiesflag
-                for f in files:
-                    try:
-                        progress.setValue(i)
-                        QApplication.processEvents()
-                        fname = str(QFileInfo(f).fileName())
-                        fconv = str(QDir(outdir).filePath(f'{fname}.alog'))
-                        if not os.path.exists(fconv):
-                            self.qmc.reset(redraw=False,soundOn=False)
-                            pd = extractor(f,
-                                    self.qmc.etypesdefault[:],
-                                    self.qmc.alt_etypesdefault[:],
-                                    self.qmc.artisanflavordefaultlabels[:],
-                                    self.qmc.eventsExternal2InternalValue)
-                            if pd is not None:
-                                self.plusAddPath(cast(dict[str,Any], pd), fconv)
-                                serialize(fconv, cast(dict[str,Any], pd))
-                            else:
-                                self.sendmessage(QApplication.translate('Message','Target file {0} exists. {1} not converted.').format(fconv,fname + str(ext)))
-                        else:
-                            self.sendmessage(QApplication.translate('Message','Target file {0} exists. {1} not converted.').format(fconv,fname + str(ext)))
-                    except Exception as e: # pylint: disable=broad-except
-                        _log.exception(e)
-                    i += 1
-                    self.qmc.fileCleanSignal.emit()
-                    self.qmc.reset(soundOn=False)
-                    self.restoreExtradeviceSettings()
-                if loaded_profile:
-                    self.loadFile(loaded_profile,quiet=True)
-                self.qmc.roastpropertiesflag = flag_temp
-                progress.cancel()
-                del progress
-
 
     def fileConvert(self, ext:str, dumper:Callable[[str],bool]) -> None:
         files = self.ArtisanOpenFilesDialog(ext='*.alog')
@@ -17655,10 +16989,10 @@ class ApplicationWindow(QMainWindow):
     def fileConvertJSON(self, _:bool = False) -> None:
         self.fileConvert('.json',self.exportJSON)
 
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def fileConvertOrbiter(self, _:bool = False) -> None:
-        self.fileConvert('.zip',self.exportOrbiterROP)
+#    @pyqtSlot()
+#    @pyqtSlot(bool)
+#    def fileConvertOrbiter(self, _:bool = False) -> None:
+#        self.fileConvert('.zip',self.exportOrbiterROP)
 
 #    @pyqtSlot()
 #    @pyqtSlot(bool)
@@ -18050,7 +17384,7 @@ class ApplicationWindow(QMainWindow):
     @staticmethod
     def clearWindowGeometry(settings:QSettings) -> None:
         for s in ['MainWindowState', 'Geometry', 'BlendGeometry','RoastGeometry','FlavorProperties','CalculatorGeometry','EventsGeometry', 'CompareGeometry',
-                'BackgroundGeometry','ScheduleGeometry','ScheduleRemainingSplitter', 'ScheduleMainSplitter', 'ScheduleCompletedSplitter', 'LCDGeometry','DeltaLCDGeometry','ExtraLCDGeometry','PhasesLCDGeometry','AlarmsGeometry',
+                'BackgroundGeometry','LCDGeometry','DeltaLCDGeometry','ExtraLCDGeometry','PhasesLCDGeometry','AlarmsGeometry',
                 'DeviceAssignmentGeometry','PortsGeometry','TransformatorPosition', 'CurvesPosition', 'StatisticsPosition',
                 'AxisPosition','PhasesPosition', 'BatchPosition', 'SamplingPosition', 'autosaveGeometry', 'PIDPosition',
                 'DesignerPosition','PIDLCDGeometry','ScaleLCDGeometry', 'MainSplitter', 'StatisticsGeometry']:
@@ -18163,15 +17497,8 @@ class ApplicationWindow(QMainWindow):
 #--- END GROUP Batch
 
             if filename is None:
-                # don't load fullscreen or artisan.plus account from external settings file
                 self.full_screen_mode_active = toBool(settings.value('fullscreen',self.full_screen_mode_active))
-                self.plus_account = settings.value('plus_account',self.plus_account)
-            self.plus_remember_credentials = toBool(settings.value('plus_remember_credentials',self.plus_remember_credentials))
-            self.plus_email = settings.value('plus_email',self.plus_email)
-            self.plus_language = settings.value('plus_language',self.plus_language)
-            self.plus_user_id = settings.value('plus_user_id',self.plus_user_id)
-            self.plus_account_id = settings.value('plus_account_id',self.plus_account_id)
-            plus.stock.coffee_label_normal_order = settings.value('standard_bean_labels',plus.stock.coffee_label_normal_order)
+            self.qmc.coffee_label_normal_order = settings.value('standard_bean_labels',self.qmc.coffee_label_normal_order)
             #restore mode
             old_mode = self.qmc.mode
             self.qmc.mode = ('F' if str(settings.value('Mode',self.qmc.mode)) == 'F' else 'C')
@@ -19120,19 +18447,15 @@ class ApplicationWindow(QMainWindow):
             self.qmc.beansize_max = toInt(settings.value('beansize_max',self.qmc.beansize_max))
             self.qmc.plus_default_store = settings.value('plus_default_store',self.qmc.plus_default_store)
             if filename is None and settings.contains('plus_custom_blend_name'):
-                # we don't import plus custom blend data from external settings file as the custom blend is considered temporary
                 plus_custom_blend_name = toString(settings.value('plus_custom_blend_name',''))
                 plus_custom_blend_coffees = [toString(x) for x in toList(settings.value('plus_custom_blend_coffees', []))]
                 plus_custom_blend_ratios = [toFloat(x) for x in toList(settings.value('plus_custom_blend_ratios', []))]
                 if plus_custom_blend_name != '' and len(plus_custom_blend_coffees)>1 and len(plus_custom_blend_ratios) == len(plus_custom_blend_coffees):
-                    try:
-                        plus_custom_blend_components = [plus.blend.Component(c,r) for (c,r) in zip(plus_custom_blend_coffees, plus_custom_blend_ratios, strict=True)]
-                        self.qmc.plus_custom_blend = plus.blend.CustomBlend(
-                            plus_custom_blend_name,
-                            plus_custom_blend_components)
-                    except Exception as e: # pylint: disable=broad-except
-                        _log.exception(e)
-                        self.qmc.plus_custom_blend = None
+                    self.qmc.plus_custom_blend = {
+                        'name': plus_custom_blend_name,
+                        'coffees': plus_custom_blend_coffees,
+                        'ratios': plus_custom_blend_ratios,
+                    }
                 else:
                     self.qmc.plus_custom_blend = None
             settings.endGroup()
@@ -19411,6 +18734,8 @@ class ApplicationWindow(QMainWindow):
             self.qmc.autosaveaddtorecentfilesflag = toBool(settings.value('autosaveaddtorecentfilesflag',self.qmc.autosaveaddtorecentfilesflag))
             self.qmc.autosaveimage = toBool(settings.value('autosavepdf',self.qmc.autosaveimage))
             self.qmc.autosaveimageformat = toString(settings.value('autosaveimageformat',self.qmc.autosaveimageformat))
+            if self.qmc.autosaveimageformat not in self.qmc.autoasaveimageformat_types:
+                self.qmc.autosaveimageformat = 'PDF'
             self.qmc.autosaveprefix = toString(settings.value('autosaveprefix',self.qmc.autosaveprefix))
 
 #--- BEGIN GROUP WebLCDs
@@ -19480,21 +18805,6 @@ class ApplicationWindow(QMainWindow):
                 self.scale_manager.set_scale2_signal.emit(self.scale2_model, self.scale2_id, self.scale2_name)
 
 #--- END GROUP Scales
-
-            self.schedule_day_filter =toBool(settings.value('ScheduleDayFilter',self.schedule_day_filter))
-            self.schedule_user_filter = toBool(settings.value('ScheduleUserFilter',self.schedule_user_filter))
-            self.schedule_machine_filter = toBool(settings.value('ScheduleMachineFilter',self.schedule_machine_filter))
-            self.schedule_visible_filter = toBool(settings.value('ScheduleVisibleFilter',self.schedule_visible_filter))
-            self.scheduled_items_uuids = list(toStringList(settings.value('scheduled_items',self.scheduled_items_uuids)))
-            self.scheduleFlag = toBool(settings.value('Schedule',self.scheduleFlag))
-            self.scheduler_tasks_visible = toBool(settings.value('SchedulerTasks',self.scheduler_tasks_visible))
-            self.scheduler_completed_details_visible = toBool(settings.value('SchedulerCompletedDetails',self.scheduler_completed_details_visible))
-            self.scheduler_filters_visible = toBool(settings.value('SchedulerFilter',self.scheduler_filters_visible))
-            if self.scheduleFlag:
-                try:
-                    QTimer.singleShot(700, lambda:self.schedule(True))
-                except Exception as e: # pylint: disable=broad-except
-                    _log.exception(e)
 
             self.LargeLCDsFlag = toBool(settings.value('LargeLCDs',self.LargeLCDsFlag))
             if self.LargeLCDsFlag:
@@ -19721,12 +19031,6 @@ class ApplicationWindow(QMainWindow):
                 if self.fullscreenAction is not None and not (platform.system() == 'Darwin' and self.qmc.locale_str == 'en'):
                     self.fullscreenAction.setChecked(True)
 
-            if filename is None and self.plus_account is not None:
-                try:
-                    plus.controller.start(self)
-                except Exception as e: # pylint: disable=broad-except
-                    _log.exception(e)
-
             # this one has done here, if it is done on start of the section the slider title colors are not set correctly on Linux and macOS
             if 'canvas' in self.qmc.palette:
                 self.updateCanvasColors(checkColors=False)
@@ -19809,13 +19113,9 @@ class ApplicationWindow(QMainWindow):
                 res = self.taskWebDisplayGreen_server.startWeb()
                 if res:
                     self.taskWebDisplayGreenActive = True
-                    if self.schedule_window is not None:
-                        self.schedule_window.green_web_display.update()
-                    else:
-                        # send init message
-                        from json import dumps as json_dumps
-                        msg = json_dumps(plus.schedule.GreenWebDisplay.INIT_PAYLOAD, indent=None, separators=(',', ':'))
-                        self.taskWebDisplayGreen_server.send_msg(msg)
+                    from json import dumps as json_dumps
+                    msg = json_dumps({}, indent=None, separators=(',', ':'))
+                    self.taskWebDisplayGreen_server.send_msg(msg)
                     return True
                 self.stopWebGreen()
                 self.taskWebDisplayGreenActive = False
@@ -19859,13 +19159,9 @@ class ApplicationWindow(QMainWindow):
                 res = self.taskWebDisplayRoasted_server.startWeb()
                 if res:
                     self.taskWebDisplayRoastedActive = True
-                    if self.schedule_window is not None:
-                        self.schedule_window.roasted_web_display.update()
-                    else:
-                        # send init message
-                        from json import dumps as json_dumps
-                        msg = json_dumps(plus.schedule.RoastedWebDisplay.INIT_PAYLOAD, indent=None, separators=(',', ':'))
-                        self.taskWebDisplayRoasted_server.send_msg(msg)
+                    from json import dumps as json_dumps
+                    msg = json_dumps({}, indent=None, separators=(',', ':'))
+                    self.taskWebDisplayRoasted_server.send_msg(msg)
                     return True
                 self.stopWebRoasted()
                 self.taskWebDisplayRoastedActive = False
@@ -20220,17 +19516,7 @@ class ApplicationWindow(QMainWindow):
         try:
             if filename is None:
                 self.settingsSetValue(settings, default_settings, 'fullscreen', self.full_screen_mode_active or self.isFullScreen(), read_defaults)
-                if not read_defaults:
-                    if self.plus_account is None:
-                        settings.remove('plus_account')
-                    else:
-                        settings.setValue('plus_account', self.plus_account)
-                self.settingsSetValue(settings, default_settings, 'plus_remember_credentials', self.plus_remember_credentials, read_defaults)
-                self.settingsSetValue(settings, default_settings, 'plus_email', self.plus_email, read_defaults)
-                self.settingsSetValue(settings, default_settings, 'plus_language', self.plus_language, read_defaults)
-                self.settingsSetValue(settings, default_settings, 'plus_user_id', self.plus_user_id, read_defaults)
-                self.settingsSetValue(settings, default_settings, 'plus_account_id', self.plus_account_id, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'standard_bean_labels', plus.stock.coffee_label_normal_order, read_defaults)
+                self.settingsSetValue(settings, default_settings, 'standard_bean_labels', self.qmc.coffee_label_normal_order, read_defaults)
 
             if not read_defaults: # we don't add those to the cache forcing those settings to be saved always
                 #save window geometry if not in fullscreen mode
@@ -20907,9 +20193,10 @@ class ApplicationWindow(QMainWindow):
                 # we don't export plus default store and custom blend data to external settings file as the custom blend is considered temporary
                 self.settingsSetValue(settings, default_settings, 'plus_default_store',self.qmc.plus_default_store, read_defaults)
                 if self.qmc.plus_custom_blend is not None:
-                    self.settingsSetValue(settings, default_settings, 'plus_custom_blend_name', self.qmc.plus_custom_blend.name, read_defaults)
-                    self.settingsSetValue(settings, default_settings, 'plus_custom_blend_coffees', [c.coffee for c in self.qmc.plus_custom_blend.components], read_defaults)
-                    self.settingsSetValue(settings, default_settings, 'plus_custom_blend_ratios',  [c.ratio for c in self.qmc.plus_custom_blend.components], read_defaults)
+                    cb = self.qmc.plus_custom_blend
+                    self.settingsSetValue(settings, default_settings, 'plus_custom_blend_name', cb['name'], read_defaults)
+                    self.settingsSetValue(settings, default_settings, 'plus_custom_blend_coffees', cb['coffees'], read_defaults)
+                    self.settingsSetValue(settings, default_settings, 'plus_custom_blend_ratios', cb['ratios'], read_defaults)
             #remove pre v2.0 settings no longer used
             try:
                 if settings.contains('organization'):
@@ -21138,15 +20425,6 @@ class ApplicationWindow(QMainWindow):
             settings.endGroup()
 #--- END GROUP Scales
 
-            self.settingsSetValue(settings, default_settings, 'ScheduleDayFilter',self.schedule_day_filter, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'ScheduleUserFilter',self.schedule_user_filter, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'ScheduleMachineFilter',self.schedule_machine_filter, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'ScheduleVisibleFilter',self.schedule_visible_filter, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'Schedule',self.scheduleFlag, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'scheduled_items',self.scheduled_items_uuids, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'SchedulerTasks',self.scheduler_tasks_visible, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'SchedulerCompletedDetails',self.scheduler_completed_details_visible, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'SchedulerFilter',self.scheduler_filters_visible, read_defaults)
             self.settingsSetValue(settings, default_settings, 'LargeLCDs',self.LargeLCDsFlag, read_defaults)
             self.settingsSetValue(settings, default_settings, 'LargeDeltaLCDs',self.LargeDeltaLCDsFlag, read_defaults)
             self.settingsSetValue(settings, default_settings, 'LargePIDLCDs',self.LargePIDLCDsFlag, read_defaults)
@@ -21394,20 +20672,10 @@ class ApplicationWindow(QMainWindow):
             self.stopWebRoasted()
             self.taskWebDisplayRoastedActive = True # to ensure they are started again on restart
 
-        if self.scheduleFlag and self.schedule_window:
-            tmp_Schedule = self.scheduleFlag # we keep the state to properly store it in the settings
-            self.scheduler_auto_open = False
-            self.schedule_window.closeWithoutDialog()
-            self.scheduleFlag = tmp_Schedule
-        else:
-            # the scheduler closes the connection to all connected scales, but if that one is not active we might
-            # still be connected to some scales
-            try:
-                #self.scale_manager.disconnect_all_signal.emit()
-                # closing via signal does not work on app quite for unknown reasons thus we make a direct call
-                self.scale_manager.disconnect_all_slot()
-            except Exception as e: # pylint: disable=broad-except
-                _log.exception(e)
+        try:
+            self.scale_manager.disconnect_all_slot()
+        except Exception as e: # pylint: disable=broad-except
+            _log.exception(e)
 
         if self.LargeLCDsFlag and self.largeLCDs_dialog:
             tmp_LargeLCDs = self.LargeLCDsFlag # we keep the state to properly store it in the settings
@@ -21727,13 +20995,7 @@ class ApplicationWindow(QMainWindow):
         try:
             if 'roastUUID' in data and data['roastUUID'] != '':
                 roast_uuid = data['roastUUID']
-#                if plus.register.getPath(roast_uuid):
-#                    title_html = f'<a href="artisan://roast/{roast_uuid}">{title_html}</a>'
                 title_html = f'<a href="artisan://roast/{roast_uuid}">{title_html}</a>'
-                if bool(plus.sync.getSync(roast_uuid)):
-                    time_html = f"<a href='{plus.util.roastLink(roast_uuid)}' target='_blank'>{time_html}</a>"
-                if 'plus_coffee' in data and data['plus_coffee'] != '':
-                    beans_html = f"<a href=\"{plus.util.coffeeLink(data['plus_coffee'])}\" target=\"_blank\">{beans_html}</a>"
         except Exception: # pylint: disable=broad-except
             pass
         return libstring.Template(HTML_REPORT_TEMPLATE).safe_substitute(
@@ -22646,11 +21908,7 @@ class ApplicationWindow(QMainWindow):
         try:
             if 'roastUUID' in production_data:
                 roast_uuid = production_data['roastUUID']
-#                if plus.register.getPath(roast_uuid):
-#                    title_html = '<a href="artisan://roast/{0}">{1}</a>'.format(roast_uuid,title_html)
                 title_html = f'<a href="artisan://roast/{roast_uuid}">{title_html}</a>'
-                if bool(plus.sync.getSync(roast_uuid)):
-                    time_html = f'<a href="{plus.util.roastLink(roast_uuid)}" target="_blank">{time_html}</a>'
         except Exception as e: # pylint: disable=broad-except
             _log.exception(e)
         weight_fmt = ('{0:.2f}' if self.qmc.weight[2] in {'Kg', 'lb', 'oz'} else '{0:.0f}')
@@ -23851,21 +23109,12 @@ class ApplicationWindow(QMainWindow):
             else:
                 batch = self.qmc.roastbatchprefix + str(self.qmc.roastbatchnr) + ' '
             datetime_html=self.qmc.roastdate.date().toString() + ', ' + self.qmc.roastdate.time().toString()[:-3]
-            # add artisan or artisan.plus links to title, background and beans if possible
+            # add artisan:// profile links to title and background when applicable
             title_html = str(htmllib.escape(batch)) + str(htmllib.escape(self.qmc.title))
             if self.qmc.roastUUID is not None and self.qmc.roastUUID != '':
-#                if plus.register.getPath(self.qmc.roastUUID):
-#                    title_html = '<a href="artisan://roast/' + self.qmc.roastUUID + '">' + title_html + "</a>"
                 title_html = '<a href="artisan://roast/' + self.qmc.roastUUID + '">' + title_html + '</a>'
-                if bool(plus.sync.getSync(self.qmc.roastUUID)):
-                    datetime_html = f'<a href="{plus.util.roastLink(self.qmc.roastUUID)}" target="_blank">{datetime_html}</a>'
-#            if self.qmc.background and self.qmc.titleB is not None and self.qmc.titleB != "" and self.qmc.backgroundUUID is not None and plus.register.getPath(self.qmc.backgroundUUID):
-#                background_html = '<a href="artisan://roast/' + self.qmc.backgroundUUID + '">' + background_html + "</a>"
             if self.qmc.background and self.qmc.titleB != '' and self.qmc.backgroundUUID is not None:
                 background_html = '<a href="artisan://roast/' + self.qmc.backgroundUUID + '">' + background_html + '</a>'
-            if beans_html != '' and self.qmc.plus_coffee is not None:
-                beans_html = f'<a href="{plus.util.coffeeLink(self.qmc.plus_coffee)}" target="_blank">{beans_html}</a>'
-                # note that blends are hard to link back as it requires to link component by component
             cupping_score, cupping_all_default = self.cuppingSum(self.qmc.flavors)
             cupping_notes = self.note2html(self.qmc.cuppingnotes).strip()
             special_events = self.specialevents2html().strip()
@@ -25360,19 +24609,6 @@ class ApplicationWindow(QMainWindow):
 
     @pyqtSlot()
     @pyqtSlot(bool)
-    def schedule(self, b:bool = False) -> None:
-        if b and self.schedule_window is None:
-            if  not self.app.artisanviewerMode:  # no scheduler in ArtisanViewer mode
-                self.schedule_window = plus.schedule.ScheduleWindow(self, self, self.schedule_activeTab)
-                self.scheduleFlag = True
-                self.scheduleAction.setChecked(True)
-                self.schedule_window.show()
-        elif self.schedule_window is not None:
-            self.schedule_window.close()
-            self.schedule_window = None
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
     def largeLCDs(self, _:bool = False) -> None:
         if self.largeLCDs_dialog is None:
             self.largeLCDs_dialog = LargeMainLCDs(self,self)
@@ -25724,152 +24960,6 @@ class ApplicationWindow(QMainWindow):
             return 0.
         return 100. * ((float(roasted) - float(green)) / float(green))
 
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importK202(self, _:bool = False) -> None:
-        import csv
-        try:
-            filename = self.ArtisanOpenFileDialog(msg=QApplication.translate('Message','Import {}').format('K202 CSV'))
-            if len(filename) == 0:
-                return
-            if self.qmc.reset():
-                f = QFile(filename)
-                if not f.open(QIODevice.OpenModeFlag.ReadOnly):
-                    raise OSError(str(f.errorString()))
-                with open(filename, encoding='utf-8') as csvFile:
-                    csvReader = csv.DictReader(csvFile,['Date','Time','T1','T1unit','T2','T2unit'],delimiter='\t')
-                    zero_t:int|None = None
-                    roastdate:QDateTime|None = None
-                    unit:str|None = None
-                    for item in csvReader:
-                        try:
-                            #set date
-                            if roastdate is None:
-                                roastdate = QDateTime(QDate.fromString(item['Date'],"dd'.'MM'.'yyyy"), QTime())
-                                self.qmc.roastdate = roastdate
-                                self.qmc.roastepoch = self.qmc.roastdate.toSecsSinceEpoch()
-                                self.qmc.roasttzoffset = 0
-                            #set zero
-                            if zero_t is None:
-                                date = QDate.fromString(item['Date'],"dd'.'MM'.'yyyy")
-                                zero = QDateTime()
-                                zero.setDate(date)
-                                zero.setTime(QTime.fromString(item['Time'],"hh':'mm':'ss"))
-                                zero_t = zero.toSecsSinceEpoch()
-                            #set temperature mode
-                            if not unit:
-                                unit = item['T1unit']
-                                if unit == 'F' and self.qmc.mode == 'C':
-                                    self.qmc.fahrenheitMode()
-                                if unit == 'C' and self.qmc.mode == 'F':
-                                    self.qmc.celsiusMode()
-                            #add one measurement
-                            dt = QDateTime()
-                            dt.setDate(QDate.fromString(item['Date'],"dd'.'MM'.'yyyy"))
-                            dt.setTime(QTime.fromString(item['Time'],"hh':'mm':'ss"))
-                            self.qmc.timex.append(float(dt.toSecsSinceEpoch() - zero_t))
-                            self.qmc.temp1.append(float(item['T1'].replace(',','.')))
-                            self.qmc.temp2.append(float(item['T2'].replace(',','.')))
-                        except ValueError:
-                            pass
-                #swap temperature curves if needed such that BT is the lower and ET the upper one
-                if (freduce(lambda x,y:x + y, self.qmc.temp2)) > freduce(lambda x,y:x + y, self.qmc.temp1):
-                    tmp = self.qmc.temp1
-                    self.qmc.temp1 = self.qmc.temp2
-                    self.qmc.temp2 = tmp
-                self.qmc.endofx = self.qmc.timex[-1]
-                self.autoAdjustAxis()
-                self.sendmessage(QApplication.translate('Message','K202 file loaded successfully'))
-                self.qmc.redraw()
-        except OSError as ex:
-            self.qmc.adderror((QApplication.translate('Error Message','IO Error:') + ' importK202(): {0}').format(str(ex)))
-        except ValueError as ex:
-            self.qmc.adderror((QApplication.translate('Error Message','Value Error:') + ' importK202(): {0}').format(str(ex)))
-        except Exception as ex: # pylint: disable=broad-except
-            _log.exception(ex)
-            _a, _b, exc_tb = sys.exc_info()
-            self.qmc.adderror((QApplication.translate('Error Message','Exception:') + ' importK202() {0}').format(str(ex)),getattr(exc_tb, 'tb_lineno', '?'))
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importK204(self, _:bool = False) -> None:
-        import csv
-        try:
-            filename = self.ArtisanOpenFileDialog(msg=QApplication.translate('Message','Import {}').format('K204 CSV'))
-            if len(filename) == 0:
-                return
-            if self.qmc.reset():
-                f = QFile(filename)
-                if not f.open(QIODevice.OpenModeFlag.ReadOnly):
-                    raise OSError(str(f.errorString()))
-                with open(filename, encoding='utf-8') as csvFile:
-                    csvReader = csv.DictReader(csvFile,['Date','Time','T1','T2','T3','T4'],delimiter='\t')
-                    zero_t:int|None = None
-                    roastdate:QDateTime|None = None
-                    # we add an extra device if needed
-                    if len(self.qmc.extradevices) == 0:
-                        self.addDevice()
-                    for item in csvReader:
-                        try:
-                            #set date
-                            if roastdate is None:
-                                roastdate = QDateTime(QDate.fromString(item['Date'],"dd'.'MM'.'yyyy"), QTime())
-                                self.qmc.roastdate = roastdate
-                                self.qmc.roastepoch = self.qmc.roastdate.toSecsSinceEpoch()
-                                self.qmc.roasttzoffset = 0
-                            #set zero
-                            if zero_t is None:
-                                date = QDate.fromString(item['Date'],"dd'.'MM'.'yyyy")
-                                zero = QDateTime()
-                                zero.setDate(date)
-                                zero.setTime(QTime.fromString(item['Time'],"hh':'mm':'ss"))
-                                zero_t = zero.toSecsSinceEpoch()
-        # The K204 export does not contain a trace of the temperature mode.
-        # We have to assume here that the mode was set correctly before the import.
-                            #add one measurement
-                            dt = QDateTime()
-                            dt.setDate(QDate.fromString(item['Date'],"dd'.'MM'.'yyyy"))
-                            dt.setTime(QTime.fromString(item['Time'],"hh':'mm':'ss"))
-                            tx = float(dt.toSecsSinceEpoch() - zero_t)
-                            self.qmc.timex.append(tx)
-                            t1 = float(item['T1'].replace(',','.'))
-                            if t1 > 800 or t1 < 0.0:
-                                t1 = 0.0
-                            self.qmc.temp1.append(t1)
-                            t2 = float(item['T2'].replace(',','.'))
-                            if t2 > 800 or t2 < 0.0:
-                                t2 = 0.0
-                            self.qmc.temp2.append(t2)
-                            if len(self.qmc.extradevices) > 0:
-                                self.qmc.extratimex[0].append(tx)
-                                t3 = float(item['T3'].replace(',','.'))
-                                if t3 > 800 or t3 < 0.0:
-                                    t3 = 0.0
-                                self.qmc.extratemp1[0].append(t3)
-                                t4 = float(item['T4'].replace(',','.'))
-                                if t4 > 800 or t4 < 0.0:
-                                    t2 = 0.0
-                                self.qmc.extratemp2[0].append(t4)
-                        except ValueError:
-                            pass
-                #swap temperature curves if needed such that BT is the lower and ET the upper one
-                if (freduce(lambda x,y:x + y, self.qmc.temp2)) > freduce(lambda x,y:x + y, self.qmc.temp1):
-                    tmp = self.qmc.temp1
-                    self.qmc.temp1 = self.qmc.temp2
-                    self.qmc.temp2 = tmp
-                self.qmc.endofx = self.qmc.timex[-1]
-                self.autoAdjustAxis()
-                self.sendmessage(QApplication.translate('Message','K204 file loaded successfully'))
-                self.qmc.redraw()
-        except OSError as ex:
-            self.qmc.adderror((QApplication.translate('Error Message','IO Error:') + ' importK204(): {0}').format(str(ex)))
-        except ValueError as ex:
-            self.qmc.adderror((QApplication.translate('Error Message','Value Error:') + ' importK204(): {0}').format(str(ex)))
-        except Exception as ex: # pylint: disable=broad-except
-            _log.exception(ex)
-            _a, _b, exc_tb = sys.exc_info()
-            self.qmc.adderror((QApplication.translate('Error Message','Exception:') + ' importK204() {0}').format(str(ex)),getattr(exc_tb, 'tb_lineno', '?'))
-
     # normalize xml tags and attributes to lower case
     def normalize_tags(self, root:'XMLElement') -> None:
         root.tag = root.tag.lower()
@@ -26169,202 +25259,6 @@ class ApplicationWindow(QMainWindow):
             _log.exception(ex)
             _, _, exc_tb = sys.exc_info()
             self.qmc.adderror((QApplication.translate('Error Message','Exception:') + ' {1} {0}').format(str(ex),message),getattr(exc_tb, 'tb_lineno', '?'))
-
-    # extractor expects the following arguments
-    #   file:str
-    #   etypesdefault:list[str]               # translated to current locale
-    #   alt_etypesdefault:list[str]           # translated to current locale
-    #   artisanflavordefaultlabels:list[str]  # translated to current locale
-    #   eventsExternal2InternalValue: Callable[[int],float]
-    def importExternal(self, extractor:  Callable[[str, list[str], list[str], list[str], Callable[[int],float]],
-            'ProfileData'], message:str, extension:str, filename:str|None = None) -> None:
-        try:
-            if filename is None:
-                filename = self.ArtisanOpenFileDialog(msg=message,ext=extension)
-            if len(filename) == 0:
-                return
-            res = self.qmc.reset(redraw=False,soundOn=False)
-            if res:
-                obj:ProfileData = extractor(filename,
-                                        self.qmc.etypesdefault,
-                                        self.qmc.alt_etypesdefault,
-                                        self.qmc.artisanflavordefaultlabels,
-                                        self.qmc.eventsExternal2InternalValue)
-                res = self.setProfile(filename, obj)
-
-            if res:
-                #update etypes combo box
-                self.etypeComboBox.clear()
-                self.etypeComboBox.addItems(self.qmc.etypes)
-                # profiles was adjusted, ensure that it does not overwrite the original file on saving
-                self.qmc.fileDirtySignal.emit()
-                self.curFile = None
-                # clear annotation cache
-                self.qmc.l_annotations_dict = {}
-                self.qmc.l_event_flags_dict = {}
-                self.orderEvents()
-                #Plot everything
-                self.qmc.redraw()
-                message = QApplication.translate('Message','{0} imported').format(filename)
-                self.sendmessage(message)
-
-        except OSError as ex:
-            self.qmc.adderror((QApplication.translate('Error Message','IO Error:') + ' {1}: {0}').format(str(ex),message))
-        except ValueError as ex:
-            self.qmc.adderror((QApplication.translate('Error Message','Value Error:') + ' {1}: {0}').format(str(ex),message))
-        except Exception as ex: # pylint: disable=broad-except
-            _log.exception(ex)
-            _, _, exc_tb = sys.exc_info()
-            self.qmc.adderror((QApplication.translate('Error Message','Exception:') + ' {1} {0}').format(str(ex),message),getattr(exc_tb, 'tb_lineno', '?'))
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importCropster(self, _:bool = False) -> None:
-        from artisanlib.cropster import extractProfileCropsterXLS
-        self.importExternal(extractProfileCropsterXLS, QApplication.translate('Message','Import {}').format('Cropster XLS'),'*.xls')
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importStronghold(self, _:bool = False) -> None:
-        from artisanlib.stronghold import extractProfileStrongholdXLSX
-        self.importExternal(extractProfileStrongholdXLSX, QApplication.translate('Message','Import {}').format('Stronghold XLSX'), '*.xlsx')
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importRoastLog(self, _:bool = False) -> None:
-        from artisanlib.roastlog import extractProfileRoastLog
-        self.importExternalURL(extractProfileRoastLog,QApplication.translate('Message','Import {}').format('RoastLog URL'))
-
-#    @pyqtSlot()
-#    @pyqtSlot(bool)
-#    def importRoastPATH(self, _:bool = False) -> None:
-#        from artisanlib.roastpath import extractProfileRoastPathHTML
-#        self.importExternalURL(extractProfileRoastPathHTML,QApplication.translate('Message','Import {}').format('RoastPath URL'))
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importHiBean(self, _:bool = False) -> None:
-        from artisanlib.hibean import extractProfileHiBeanJSON
-        self.importExternal(extractProfileHiBeanJSON,QApplication.translate('Message','Import {}').format('HiBean JSON'),'*.json')
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importGiesen(self, _:bool = False) -> None:
-        from artisanlib.giesen import extractProfileGiesenCSV
-        self.importExternal(extractProfileGiesenCSV,QApplication.translate('Message','Import {}').format('Giesen CSV'),'*.csv')
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importPetroncini(self, _:bool = False) -> None:
-        from artisanlib.petroncini import extractProfilePetronciniCSV
-        self.importExternal(extractProfilePetronciniCSV,QApplication.translate('Message','Import {}').format('Petroncini CSV'),'*.csv')
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importIkawaURL(self, _:bool = False) -> None:
-        from artisanlib.ikawa import extractProfileIkawaURL
-        self.importExternalURL(extractProfileIkawaURL,QApplication.translate('Message','Import {}').format('IKAWA URL'))
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importIkawa(self, _:bool = False) -> None:
-        from artisanlib.ikawa import extractProfileIkawaCSV
-        self.importExternal(extractProfileIkawaCSV,QApplication.translate('Message','Import {}').format('IKAWA CSV'),'*.csv')
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importOrbiter(self, _:bool = False) -> None:
-        from artisanlib.orbiter import extractProfileOrbiterROP
-        self.importExternal(extractProfileOrbiterROP,QApplication.translate('Message','Import {}').format('Orbiter'),'(*.rop *.zip)')
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importKaleido(self, _:bool = False) -> None:
-        from artisanlib.kaleido import extractProfileKaleidoCSV
-        self.importExternal(extractProfileKaleidoCSV,QApplication.translate('Message','Import {}').format('Kaleido CSV'),'*.csv')
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importLoring(self, _:bool = False) -> None:
-        from artisanlib.loring import extractProfileLoringCSV
-        self.importExternal(extractProfileLoringCSV,QApplication.translate('Message','Import {}').format('Loring CSV'),'*.csv')
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importRoest(self, _:bool = False) -> None:
-        from artisanlib.roest import extractProfileRoestCSV
-        self.importExternal(extractProfileRoestCSV,QApplication.translate('Message','Import {}').format('ROEST CSV'),'*.csv')
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importRubasse(self, _:bool = False) -> None:
-        from artisanlib.rubasse import extractProfileRubasseCSV
-        self.importExternal(extractProfileRubasseCSV,QApplication.translate('Message','Import {}').format('Rubasse CSV'),'*.csv')
-
-    @pyqtSlot()
-    @pyqtSlot(bool)
-    def importHH506RA(self, _:bool = False) -> None:
-        import csv
-        try:
-            filename = self.ArtisanOpenFileDialog(msg=QApplication.translate('Message','Import {}').format('HH506RA CSV'))
-            if len(filename) == 0:
-                return
-            if self.qmc.reset():
-                f = QFile(filename)
-                if not f.open(QIODevice.OpenModeFlag.ReadOnly):
-                    raise OSError(str(f.errorString()))
-                with open(filename, encoding='utf-8') as csvFile:
-                    data = csv.reader(csvFile,delimiter='\t')
-                    #read file header
-                    header = next(data)
-                    zero = QDateTime()
-                    date = QDateTime(QDate.fromString(header[0].split('Date:')[1],"yyyy'/'MM'/'dd"), QTime())
-                    self.qmc.roastdate = date
-                    self.qmc.roastepoch = self.qmc.roastdate.toSecsSinceEpoch()
-                    self.qmc.roasttzoffset = 0
-                    zero.setDate(date.date())
-                    zero.setTime(QTime.fromString(header[1].split('Time:')[1],"hh':'mm':'ss"))
-                    zero_t = zero.toSecsSinceEpoch()
-                    #read column headers
-                    fields = next(data)
-                    unit:str|None = None
-                    #read data
-                    for row in data:
-                        items:list[tuple[str,str]] = list(zip(fields, row, strict=True))
-                        item:dict[str,str] = {}
-                        for (name, value) in items:
-                            item[name] = value.strip()
-                        #set temperature mode
-                        if not unit:
-                            unit = item['Unit']
-                            if unit == 'F' and self.qmc.mode == 'C':
-                                self.qmc.fahrenheitMode()
-                            if unit == 'C' and self.qmc.mode == 'F':
-                                self.qmc.celsiusMode()
-                        #add one measurement
-                        dt = QDateTime()
-                        dt.setDate(QDate.fromString(item['Date'],"yyyy'/'MM'/'dd"))
-                        dt.setTime(QTime.fromString(item['Time'],"hh':'mm':'ss"))
-                        self.qmc.timex.append(float(dt.toSecsSinceEpoch() - zero_t))
-                        self.qmc.temp1.append(float(item['T1']))
-                        self.qmc.temp2.append(float(item['T2']))
-                #swap temperature curves if needed such that BT is the lower and ET the upper one
-                if (freduce(lambda x,y:x + y, self.qmc.temp2)) > freduce(lambda x,y:x + y, self.qmc.temp1):
-                    tmp = self.qmc.temp1
-                    self.qmc.temp1 = self.qmc.temp2
-                    self.qmc.temp2 = tmp
-                self.qmc.endofx = self.qmc.timex[-1]
-                self.autoAdjustAxis()
-                self.sendmessage(QApplication.translate('Message','HH506RA file loaded successfully'))
-                self.qmc.redraw()
-        except OSError as ex:
-            self.qmc.adderror((QApplication.translate('Error Message','IO Error:') + ' importHH506RA(): {0}').format(str(ex)))
-        except ValueError as ex:
-            self.qmc.adderror((QApplication.translate('Error Message','Value Error:') + ' importHH506RA(): {0}').format(str(ex)))
-        except Exception as ex: # pylint: disable=broad-except
-            _log.exception(ex)
-            _a, _b, exc_tb = sys.exc_info()
-            self.qmc.adderror((QApplication.translate('Error Message','Exception:') + ' importHH506RA() {0}').format(str(ex)),getattr(exc_tb, 'tb_lineno', '?'))
 
     @pyqtSlot()
     @pyqtSlot(bool)

@@ -7096,13 +7096,13 @@ CTRL+F [Menang]</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>Buka daging panggang di artisan.plus</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>Buka daging panggang di Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>Membutuhkan akun artisan.plus</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>Membutuhkan akun Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7188,8 +7188,8 @@ Klik dua kali lagi untuk memperbesar tampilan ke tampilan semula</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>Sinkronkan daging panggang dengan artisan.plus</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>Sinkronkan daging panggang dengan Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16082,8 +16082,8 @@ PERHATIAN: Data yang direkam akan dihapus tanpa konfirmasi.</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus perlu mengetahui jenis biji kopi yang Anda sangrai.</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope perlu mengetahui jenis biji kopi yang Anda sangrai.</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16491,10 +16491,10 @@ PERHATIAN: Data yang direkam akan dihapus tanpa konfirmasi.</translation>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Pengrajin bebas untuk digunakan!
 
-Agar tetap gratis dan terkini, dukung kami dengan donasi Anda dan berlangganan artisan.plus untuk menyembunyikan dialog ini!</translation>
+Agar tetap gratis dan terkini, dukung kami dengan donasi Anda dan berlangganan Artisan Scope untuk menyembunyikan dialog ini!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18171,8 +18171,8 @@ Melanjutkan?</translation>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>Data yang diperbarui diterima dari artisan.plus</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Data yang diperbarui diterima dari Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18191,15 +18191,15 @@ Melanjutkan?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>Terhubung ke artisan.plus</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Terhubung ke Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus dimatikan</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope dimatikan</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18208,28 +18208,28 @@ Melanjutkan?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>Tidak dapat terhubung ke artisan.plus</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>Tidak dapat terhubung ke Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>Putuskan sambungan artisan.plus?</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>Putuskan sambungan Artisan Scope?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>Koneksi ke artisan.plus terputus. Sedang menyambungkan kembali secara otomatis...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Koneksi ke Artisan Scope terputus. Sedang menyambungkan kembali secara otomatis...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus terputus</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope terputus</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus terhubung kembali</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope terhubung kembali</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21455,24 +21455,24 @@ Tidak dicentang: Menyesuaikan spline halus untuk mempertahankan bentuk kurva.</t
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>Menyinkronkan dengan artisan.plus</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>Menyinkronkan dengan Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>Putuskan sambungan artisan.plus</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>Putuskan sambungan Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>Unggah ke artisan.plus</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>Unggah ke Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>Hubungkan artisan.plus</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>Hubungkan Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

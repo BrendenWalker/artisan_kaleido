@@ -26,20 +26,11 @@ if TYPE_CHECKING:
     from artisanlib.main import ApplicationWindow # noqa: F401 # pylint: disable=unused-import
     from artisanlib.dialogs import HelpDlg # noqa: F401 # pylint: disable=unused-import
     from artisanlib.atypes import RecentRoast, BTU
-    from plus.stock import Blend # noqa: F401  # pylint: disable=unused-import
     from PyQt6.QtWidgets import QLayout, QAbstractItemView, QCompleter # pylint: disable=unused-import
     from PyQt6.QtGui import QClipboard, QCloseEvent, QKeyEvent, QMouseEvent # pylint: disable=unused-import
     from PyQt6.QtCore import QObject, QMetaObject # pylint: disable=unused-import
 
 from artisanlib.main import UI_MODE
-
-# import artisan.plus modules
-import plus.config  # @UnusedImport
-import plus.util
-import plus.stock
-import plus.controller
-import plus.queue
-import plus.blend
 
 #from artisanlib.suppress_errors import suppress_stdout_stderr
 from artisanlib.util import (deltaLabelUTF8, stringfromseconds,stringtoseconds, toInt, toFloat, abbrevString,
@@ -1316,120 +1307,41 @@ class editGraphDlg(ArtisanResizeablDialog):
         template_font.setPointSize(template_font.pointSize() -1)
         self.template_line.setFont(template_font)
 
-#PLUS
-        self.user_updated_coffee_or_blend:bool = False # this is set if user changed once either the coffee or blend popup selection. Only after this, changes to the plus coffee/blend selections are persisted on leaving the dialog with OK not to overwrite existing selections if coffees/blends become unvable in the selected store
-        self.plus_store_selected:str|None = None # holds the hr_id of the store of the selected coffee or blend
-        self.plus_store_selected_label:str|None = None # the label of the selected store
-        self.plus_coffee_selected:str|None = None # holds the hr_id of the selected coffee
-        self.plus_coffee_selected_label:str|None = None # the label of the selected coffee
-        self.plus_blend_selected_label:str|None = None # the name of the selected blend
-        self.plus_blend_selected_spec:Blend|None = None # holds the blend dict specification of the selected blend
-        self.plus_blend_selected_spec_labels:list[str]|None = None # the list of coffee labels of the selected blend specification
-        if self.aw.plus_account is not None:
-            plus.stock.init() # we try to init the stock from the cache before populating the popups
-            # variables populated by stock data as rendered in the corresponding popups
-            self.plus_stores:list[tuple[str, str]]|None = None
-            self.plus_coffees:list[tuple[str, tuple[plus.stock.Coffee, plus.stock.StockItem]]]|None = None
-            self.plus_blends:list[plus.stock.BlendStructure]|None = None
-            self.plus_default_store = self.aw.qmc.plus_default_store
-            # current selected stock/coffee/blend _id
-            if self.aw.qmc.plus_store is not None:
-                self.plus_store_selected = self.aw.qmc.plus_store # holds the store corresponding to the plus_coffee_selected/plus_blend_selected
-                self.plus_store_selected_label = self.aw.qmc.plus_store_label
-            if self.aw.qmc.plus_coffee is not None:
-                self.plus_coffee_selected = self.aw.qmc.plus_coffee
-                self.plus_coffee_selected_label = self.aw.qmc.plus_coffee_label
-            elif self.aw.qmc.plus_blend_spec is not None:
-                self.plus_blend_selected_label = self.aw.qmc.plus_blend_label
-                self.plus_blend_selected_spec = self.aw.qmc.plus_blend_spec
-                self.plus_blend_selected_spec_labels = self.aw.qmc.plus_blend_spec_labels
-
-                # try to generate self.plus_blend_selected_spec_labels from self.plus_blend_selected_spec and current stock
-                # if any coffee is missing from current stock, we keep what we have stored in the alog file
-                if 'ingredients' in self.aw.qmc.plus_blend_spec: # pyrefly: ignore
-                    generated_blend_spec_labels:list[str] = []
-                    for i in self.aw.qmc.plus_blend_spec['ingredients']: # pyrefly: ignore
-                        c = plus.stock.getCoffee(i['coffee'])
-                        if c is None:
-                            generated_blend_spec_labels = [] # clear the list
-                            break
-                        generated_blend_spec_labels.append(c.get('label', ''))
-                    if generated_blend_spec_labels:
-                        self.plus_blend_selected_spec_labels = generated_blend_spec_labels
-
-            self.plus_amount_selected:float|None = None # holds the max amount of the selected coffee/blend if known
-            self.plus_amount_replace_selected:float|None = None # holds the max amount of the selected coffee/blend incl. replacements if known
-            plusCoffeeslabel = QLabel('<b>' + QApplication.translate('Label', 'Stock') + '</b>')
-            plusCoffeeslabel.setToolTip(QApplication.translate('Tooltip','Select beans from your inventory'))
-            self.plusStoreslabel = QLabel('<b>' + QApplication.translate('Label', 'Store') + '</b>')
-            self.plusStoreslabel.setToolTip(QApplication.translate('Tooltip','Select a storage location'))
-            self.plusBlendslabel = QLabel('<b>' + QApplication.translate('Label', 'Blend') + '</b>')
-            self.plusBlendslabel.setToolTip(QApplication.translate('Tooltip','Select a blend from your inventory'))
-            self.plus_stores_combo = MyQComboBox(self)
-            self.plus_stores_combo.setToolTip(QApplication.translate('Tooltip','Select a storage location'))
-            self.plus_coffees_combo = CoffeesComboBox(self)
-            self.plus_coffees_combo.setToolTip(QApplication.translate('Tooltip','Select beans from your inventory'))
-            self.plus_blends_combo = BlendsComboBox(self)
-            self.plus_blends_combo.setToolTip(QApplication.translate('Tooltip','Select a blend from your inventory'))
-            self.plus_stores_combo.currentIndexChanged.connect(self.storeSelectionChanged)
-            self.plus_coffees_combo.currentIndexChanged.connect(self.coffeeSelectionChanged)
-            self.plus_blends_combo.currentIndexChanged.connect(self.blendSelectionChanged)
-            self.plus_custom_blend_button = QToolButton()
-            self.plus_custom_blend_button.setToolTip(QApplication.translate('Tooltip','Define a custom blend'))
-            self.plus_custom_blend_button.setText('...')
-            self.plus_custom_blend_button.clicked.connect(self.customBlendButton_triggered)
-            self.plus_selected_line = QLabel()
-            self.plus_selected_line.setOpenExternalLinks(True)
-            label_font = self.plus_selected_line.font()
-            label_font.setPointSize(label_font.pointSize() -2)
-            self.plus_selected_line.setFont(label_font)
-            # layouting
-            self.plus_coffees_combo.setMinimumContentsLength(15)
-            self.plus_blends_combo.setMinimumContentsLength(10)
-            self.plus_stores_combo.setMinimumContentsLength(10)
-            self.plus_stores_combo.setMaximumWidth(130)
-            self.plus_coffees_combo.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
-            self.plus_coffees_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-            self.plus_blends_combo.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
-            self.plus_blends_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-            self.plus_stores_combo.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
-            self.plus_stores_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-            # plus widget row
-            plusLineStores = QHBoxLayout()
-            plusLineStores.addSpacing(10)
-            plusLineStores.addWidget(self.plusStoreslabel)
-            plusLineStores.addSpacing(5)
-            plusLineStores.addWidget(self.plus_stores_combo)
-            plusLineStores.setContentsMargins(0, 0, 0, 0) # left, top, right, bottom
-            plusLineStores.setSpacing(5)
-            self.plusLineStoresFrame = QFrame()
-            self.plusLineStoresFrame.setLayout(plusLineStores)
-            plusLine = QHBoxLayout()
-            plusLine.addWidget(self.plus_coffees_combo)
-            plusLine.addSpacing(10)
-            plusLine.addWidget(self.plusBlendslabel)
-            plusLine.addSpacing(4)
-            plusLine.addWidget(self.plus_blends_combo)
-            plusLine.addWidget(self.plus_custom_blend_button)
-            plusLine.addWidget(self.plusLineStoresFrame)
-            plusLine.setStretch(0, 3)
-            plusLine.setStretch(4, 2)
-            plusLine.setStretch(6, 1)
+        self.user_updated_coffee_or_blend:bool = False
+        self.plus_store_selected:str|None = None
+        self.plus_store_selected_label:str|None = None
+        self.plus_coffee_selected:str|None = None
+        self.plus_coffee_selected_label:str|None = None
+        self.plus_blend_selected_label:str|None = None
+        self.plus_blend_selected_spec:object|None = None
+        self.plus_blend_selected_spec_labels:list[str]|None = None
+        self.plus_stores:list[Any]|None = None
+        self.plus_coffees:list[Any]|None = None
+        self.plus_blends:list[Any]|None = None
+        self.plus_amount_selected:float|None = None
+        self.plus_amount_replace_selected:float|None = None
+        self.plus_default_store:str|None = self.aw.qmc.plus_default_store
+        if self.aw.qmc.plus_store is not None:
+            self.plus_store_selected = self.aw.qmc.plus_store
+            self.plus_store_selected_label = self.aw.qmc.plus_store_label
+        if self.aw.qmc.plus_coffee is not None:
+            self.plus_coffee_selected = self.aw.qmc.plus_coffee
+            self.plus_coffee_selected_label = self.aw.qmc.plus_coffee_label
+        elif self.aw.qmc.plus_blend_spec is not None:
+            self.plus_blend_selected_label = self.aw.qmc.plus_blend_label
+            self.plus_blend_selected_spec = self.aw.qmc.plus_blend_spec
+            self.plus_blend_selected_spec_labels = self.aw.qmc.plus_blend_spec_labels
+        textLayoutPlusOffset = 0
+        if self.aw.ui_mode is UI_MODE.EXPERT:
             self.label_origin_flag = QCheckBox(QApplication.translate('CheckBox','Standard bean labels'))
             self.label_origin_flag.setToolTip(QApplication.translate('Tooltip',"Beans are listed as 'origin, name' if ticked, otherwise as 'name, origin'"))
-            self.label_origin_flag.setChecked(bool(plus.stock.coffee_label_normal_order))
+            self.label_origin_flag.setChecked(bool(self.aw.qmc.coffee_label_normal_order))
             self.label_origin_flag.stateChanged.connect(self.labelOriginFlagChanged)
             selectedLineLayout = QHBoxLayout()
-            selectedLineLayout.addWidget(self.plus_selected_line)
             selectedLineLayout.addStretch()
-            if self.aw.ui_mode is UI_MODE.EXPERT:
-                selectedLineLayout.addWidget(self.label_origin_flag)
+            selectedLineLayout.addWidget(self.label_origin_flag)
             textLayout.addLayout(selectedLineLayout,4,1)
-            textLayout.addWidget(plusCoffeeslabel,5,0)
-            textLayout.addLayout(plusLine,5,1)
-            textLayoutPlusOffset = 2 # to insert the plus widget row, we move the remaining ones one step lower
-        else:
-            textLayoutPlusOffset = 0
+            textLayoutPlusOffset = 1
         textLayout.addWidget(self.template_line,2,1)
         textLayout.addWidget(titlelabel,3,0)
         textLayout.addLayout(titleLine,3,1)
@@ -1680,10 +1592,9 @@ class editGraphDlg(ArtisanResizeablDialog):
 
         if start_recording_on_exit:
             from PyQt6.QtWidgets import QMessageBox
-            string = QApplication.translate('Message', 'artisan.plus needs to know the beans you are roasting')
+            string = QApplication.translate('Message', 'Please enter the beans you are roasting in Roast Properties.')
             mbox = QMessageBox(self.aw)
             mbox.setText(string)
-            plus.util.setPlusIcon(mbox)
             mbox.setStandardButtons(QMessageBox.StandardButton.Ok)
             mbox.exec()
             self.aw.qmc.plus_beans_reminder_on_start = False # prevent this warning to be shown again for this recording
@@ -1709,18 +1620,6 @@ class editGraphDlg(ArtisanResizeablDialog):
             self.resize(self.minimumSizeHint())
 
 
-#PLUS
-        self.updateStockSignalConnection:QMetaObject.Connection|None = None
-        self.stockWorker:plus.stock.Worker|None = None
-        try:
-            if self.aw.plus_account is not None:
-                self.stockWorker= plus.stock.getWorker()
-                if self.stockWorker is not None:
-                    self.updateStockSignalConnection = self.stockWorker.updatedSignal.connect(self.populatePlusCoffeeBlendCombos)
-                    QTimer.singleShot(10, plus.stock.update)
-
-        except Exception as e:  # pylint: disable=broad-except
-            _log.exception(e)
         if platform.system() != 'Windows':
             ok_button: QPushButton|None = self.dialogbuttons.button(QDialogButtonBox.StandardButton.Ok)
             if ok_button is not None:
@@ -1762,45 +1661,9 @@ class editGraphDlg(ArtisanResizeablDialog):
     def setActiveTab(self) -> None:
         self.TabWidget.setCurrentIndex(self.activeTab)
 
-## CUSTOM BLEND DIALOG
-
     @pyqtSlot(bool)
     def customBlendButton_triggered(self, _:bool = False) -> None:
-        inWeight:float = float(comma2dot(str(self.weightinedit.text())))
-
-
-        coffees = plus.stock.getCoffeeLabels()
-
-        if len(coffees)>2:
-            if self.aw.qmc.plus_custom_blend is not None and self.aw.qmc.plus_custom_blend.isValid(coffees.values()):
-                blend = self.aw.qmc.plus_custom_blend
-            else:
-                coffee_tuples = sorted(coffees.items(), key=lambda x: x[0])
-                blend = plus.blend.CustomBlend(QApplication.translate('Form Caption','Custom Blend'),[
-                    plus.blend.Component(coffee_tuples[0][1], 0.5),
-                    plus.blend.Component(coffee_tuples[1][1], 0.5)
-                ])
-            # only entries of coffees with stock in the selected store or in all stores if no store is selected) should be enabled in blend component coffee popups
-            coffee_hr_ids_with_stock_in_store:set[str] = set()
-            if self.plus_coffees is not None:
-                coffee_hr_ids_with_stock_in_store = {plus.stock.getCoffeeId(c) for c in self.plus_coffees if
-                    # if there are multiple stores defined and non is selected, only coffees with stock in all stores are enabled in the blend component coffee popups
-                    self.plus_stores is None or len(self.plus_stores) < 2 or self.plus_stores_combo.currentIndex() != 0 or len(plus.stock.getCoffeeCoffeeStocks(c)) == len(self.plus_stores)}
-
-            total_weight:float
-            res, total_weight = plus.blend.openCustomBlendDialog(self, self.aw, inWeight, self.aw.qmc.weight[2],
-                    coffees, blend, coffee_hr_ids_with_stock_in_store)
-            if res is not None: # not canceled
-                self.aw.qmc.plus_custom_blend = res
-                self.populatePlusCoffeeBlendCombos() # we update the blend menu to reflect the current custom blend
-                if self.aw.qmc.plus_custom_blend.name.strip() == '' and self.plus_blend_selected_spec is not None and 'hr_id' in self.plus_blend_selected_spec and self.plus_blend_selected_spec['hr_id'] == '':
-                    # if the custom blend entry was selected before, which is now removed, we select the empty first entry
-                    self.plus_blends_combo.setCurrentIndex(0)
-                    self.blendSelectionChanged(0)
-                # update inweight
-                inw = f'{float2floatWeightVolume(total_weight):g}'
-                self.weightinedit.setText(inw)
-                self.weightineditChanged()
+        return
 
 ##
 
@@ -1830,7 +1693,6 @@ class editGraphDlg(ArtisanResizeablDialog):
             self.aw.qmc.drumspeed_setup = self.setup_ui.lineEditDrumSpeed.text()
             self.populateSetupDefaults()
             self.setupEdited()
-            self.aw.updateScheduleSignal.emit()
 
     @pyqtSlot(bool)
     def SetupDefaults(self, _:bool = False) -> None:
@@ -1947,46 +1809,17 @@ class editGraphDlg(ArtisanResizeablDialog):
 
     def updatePlusSelectedLine(self) -> None:
         try:
-            if self.aw.app.darkmode:
-                dark_mode_link_color = " style=\"color: #e5e9ec;\""
-            else:
-                dark_mode_link_color = ''
-            line = ''
-            if self.plus_coffee_selected is not None and self.plus_coffee_selected_label:
-                line = f'<a href="{plus.util.coffeeLink(self.plus_coffee_selected)}"{dark_mode_link_color}>{self.plus_coffee_selected_label}</a>'
-            elif self.plus_blend_selected_spec and self.plus_blend_selected_spec_labels:
-                # limit to max 3 component links
-                line = f'{self.plus_blend_selected_label}: '
-                first_component = True
-                for i, ll in sorted(zip(self.plus_blend_selected_spec['ingredients'],self.plus_blend_selected_spec_labels, strict=True), key=lambda tup:tup[0]['ratio'],reverse = True)[:3]:
-                    if first_component:
-                        first_component = False
-                    else:
-                        line = line + ', '
-                    c = f"<a href=\"{plus.util.coffeeLink(i['coffee'])}\"{dark_mode_link_color}>{abbrevString(ll, 18)}</a>"
-                    line = line + str(int(round(i['ratio']*100))) + '% ' + c
-            if line and len(line)>0 and self.plus_store_selected is not None and self.plus_store_selected_label is not None:
-                line = line + f'  (<a href="{plus.util.storeLink(self.plus_store_selected)}"{dark_mode_link_color}>{self.plus_store_selected_label}</a>)'
-            ok_button: QPushButton|None
-            if line == '':
-                # beans not specified
-                line = QApplication.translate('Label','Choose beans')
-                if self.start_recording_on_exit:
-                    ok_button = self.dialogbuttons.button(QDialogButtonBox.StandardButton.Ok)
-                    if ok_button is not None:
-                        ok_button.setEnabled(False)
-            elif self.start_recording_on_exit:
+            if self.start_recording_on_exit:
                 ok_button = self.dialogbuttons.button(QDialogButtonBox.StandardButton.Ok)
                 if ok_button is not None:
-                    ok_button.setEnabled(True)
-
-            self.plus_selected_line.setText(line)
+                    ok_button.setEnabled(bool(self.beansedit.toPlainText().strip()))
         except Exception as e: # pylint: disable=broad-except
             _log.exception(e)
 
     @pyqtSlot()
     def beansEdited(self) -> None:
         self.modified_beans = self.beansedit.toPlainText()
+        self.updatePlusSelectedLine()
 
     @pyqtSlot()
     def beanSizeMinEdited(self) -> None:
@@ -2005,149 +1838,12 @@ class editGraphDlg(ArtisanResizeablDialog):
         self.checkMoistureOut()
 
     def plus_popups_set_enabled(self, b:bool) -> None:
-        if self.aw.plus_account is not None:
-            try:
-                self.plus_stores_combo.setEnabled(b)
-                self.plus_coffees_combo.setEnabled(b)
-                self.plus_blends_combo.setEnabled(b)
-            except Exception as e: # pylint: disable=broad-except
-                _log.exception(e)
+        del b
 
-    # storeIndex is the index of the selected store entry in the popup
     @pyqtSlot()
     @pyqtSlot(int)
     def populatePlusCoffeeBlendCombos(self, storeIndex:int|None = None) -> None:
-        if self.aw.plus_account is not None:
-            try: # this can crash if dialog got closed while this is processed in a different thread!
-                self.plus_popups_set_enabled(False)
-
-                #---- Stores
-
-                if storeIndex is None or storeIndex == -1:
-                    self.plus_stores = plus.stock.getStores()
-                    try:
-                        if len(self.plus_stores) == 1:
-                            self.plus_default_store = plus.stock.getStoreId(self.plus_stores[0])
-                        if len(self.plus_stores) < 2:
-                            self.plusLineStoresFrame.hide()
-                        else:
-                            self.plusLineStoresFrame.show()
-                    except Exception as e:  # pylint: disable=broad-except
-                        _log.exception(e)
-                    self.plus_stores_combo.blockSignals(True)
-                    self.plus_stores_combo.clear()
-                    store_items = plus.stock.getStoreLabels(self.plus_stores)
-                    self.plus_stores_combo.addItems([''] + store_items)
-                    p = (plus.stock.getStorePosition(self.plus_default_store,self.plus_stores) if self.plus_default_store is not None else None)
-                    if p is None:
-                        self.plus_stores_combo.setCurrentIndex(0)
-                    else:
-                        # we set to the default_store if available
-                        self.plus_stores_combo.setCurrentIndex(p+1)
-                    self.plus_stores_combo.blockSignals(False)
-
-                storeIdx = self.plus_stores_combo.currentIndex()
-
-                # we reset the store if a coffee or blend is selected and the selected store is not equal to the default store
-                # we clean the coffee/blend selection as it does not fit
-                if storeIdx > 0 and self.plus_stores is not None and len(self.plus_stores)>storeIdx-1:
-                    selected_store = self.plus_stores[storeIdx-1]
-                    selected_store_id = plus.stock.getStoreId(selected_store)
-                    if (self.plus_coffee_selected or self.plus_blend_selected_spec) and self.plus_store_selected != selected_store_id:
-                        self.defaultCoffeeData()
-                        self.plus_amount_selected = None
-                        self.plus_store_selected_label = None
-                        # we keep the plus_coffee_selected/label or plus_blend_selected_spec/labels to store and display them
-                    self.plus_default_store = selected_store_id
-                else:
-                    self.plus_default_store = None
-
-                mark_coffee_fields = False
-
-
-                #---- Coffees
-
-                self.plus_coffees = plus.stock.getCoffees(self.unitsComboBox.currentIndex(),self.plus_default_store)
-                self.plus_coffees_combo.blockSignals(True)
-                self.plus_coffees_combo.clear()
-                self.plus_coffees_combo.resetInverted()
-                coffee_items = plus.stock.getCoffeesLabels(self.plus_coffees)
-                self.plus_coffees_combo.addItems([''] + coffee_items)
-
-                p = None
-                if self.plus_coffee_selected is not None and self.plus_store_selected is not None:
-                    p = plus.stock.getCoffeeStockPosition(self.plus_coffee_selected,self.plus_store_selected,self.plus_coffees)
-                if p is None:
-                    # not in the current stock
-                    self.plus_coffees_combo.setCurrentIndex(0)
-                    #self.plus_coffee_selected = None # we don't "deselect" a coffee just because it is not in the popup!
-                    self.plus_coffees_combo.blockSignals(False)
-                else:
-                    # if roast is complete (charge and drop are set)
-                    if self.aw.qmc.timeindex[0] > -1 and self.aw.qmc.timeindex[6] > 0:
-                        # we first change the index and then unblock signals to avoid properties being overwritten from the selected coffee
-                        self.plus_coffees_combo.setCurrentIndex(p+1)
-                        self.plus_coffees_combo.blockSignals(False)
-                    else:
-                        # if roast is not yet complete we unblock the signals before changing the index to get the coffee data be filled in
-                        self.plus_coffees_combo.blockSignals(False)
-                        self.plus_coffees_combo.setCurrentIndex(p+1)
-                    mark_coffee_fields = True
-
-                #---- Blends
-
-                custom_blend:plus.stock.Blend|None = None
-                # if a valid custom_blend with a non-empty name exists, we add it to the blend popups
-                if self.aw.qmc.plus_custom_blend is not None and self.aw.qmc.plus_custom_blend.name.strip() != '':
-                    coffees = plus.stock.getCoffeeLabels()
-                    if len(coffees)>2 and self.aw.qmc.plus_custom_blend.isValid(coffees.values()):
-                        custom_blend = plus.stock.Blend(
-                            hr_id = '',
-                            label = self.aw.qmc.plus_custom_blend.name.strip(),
-                            ingredients = [plus.stock.BlendIngredient(ratio = c.ratio, coffee = c.coffee) for c in self.aw.qmc.plus_custom_blend.components])
-                self.plus_blends = plus.stock.getBlends(self.unitsComboBox.currentIndex(),self.plus_default_store, custom_blend)
-                self.plus_blends_combo.blockSignals(True)
-                self.plus_blends_combo.clear()
-                self.plus_blends_combo.resetInverted()
-                blend_items = plus.stock.getBlendLabels(self.plus_blends)
-
-                self.plus_blends_combo.addItems([''] + blend_items)
-
-                if len(self.plus_blends) == 0:
-                    self.plusBlendslabel.setVisible(False)
-                    self.plus_blends_combo.setVisible(False)
-                else:
-                    self.plusBlendslabel.setVisible(True)
-                    self.plus_blends_combo.setVisible(True)
-
-                p = None
-                if self.plus_blend_selected_spec is not None and self.plus_store_selected is not None:
-                    p = plus.stock.getBlendSpecStockPosition(self.plus_blend_selected_spec,self.plus_store_selected,self.plus_blends)
-                if p is None:
-                    self.plus_blends_combo.setCurrentIndex(0)
-                    #self.plus_blend_selected_spec = None # we don't deselect a blend just because it is not in the popup
-                    self.plus_blends_combo.blockSignals(False)
-                else:
-                    # if roast is complete (charge and drop are set)
-                    if self.aw.qmc.timeindex[0] > -1 and self.aw.qmc.timeindex[6] > 0:
-                        # we first change the index and then unblock signals to avoid properties being overwritten from the selected blend
-                        self.plus_blends_combo.setCurrentIndex(p+1)
-                        self.plus_blends_combo.blockSignals(False)
-                    else:
-                        # if roast is not yet complete we unblock the signals before changing the index to get the blend data be filled in
-                        self.plus_blends_combo.blockSignals(False)
-                        self.plus_blends_combo.setCurrentIndex(p+1)
-                    mark_coffee_fields = True
-
-                self.markPlusCoffeeFields(mark_coffee_fields)
-                self.updatePlusSelectedLine()
-            except Exception as e: # pylint: disable=broad-except
-                _log.exception(e)
-            finally:
-                self.plus_popups_set_enabled(True)
-                self.plus_stores_combo.blockSignals(False)
-                self.plus_coffees_combo.blockSignals(False)
-                self.plus_blends_combo.blockSignals(False)
+        del storeIndex
 
     def markPlusCoffeeFields(self, b:bool) -> None:
         # for QTextEdit
@@ -2193,103 +1889,14 @@ class editGraphDlg(ArtisanResizeablDialog):
                 self.titleedit.textEdited(default_title)
                 self.titleedit.setEditText(default_title)
 
-    def updateBlendLines(self, blend:plus.stock.BlendStructure) -> None:
-        if self.weightinedit.text() != '':
-            weightIn = float(comma2dot(self.weightinedit.text()))
-        else:
-            weightIn = 0.0
-        weight_unit_idx = self.unitsComboBox.currentIndex()
-        blend_lines = plus.stock.blend2beans(blend,weight_unit_idx,weightIn)
-        self.beansedit.clear()
-        for ll in blend_lines:
-            self.beansedit.append(ll)
+    def updateBlendLines(self, blend:Any) -> None:
+        del blend
 
-    def fillBlendData(self, blend:plus.stock.BlendStructure, prev_coffee_label:str|None, prev_blend_label:str|None) -> None:
-        try:
-            self.updateBlendLines(blend)
-            keep_modified_moisture = self.modified_moisture_greens_text
-            keep_modified_density = self.modified_density_in_text
+    def fillBlendData(self, blend:Any, prev_coffee_label:str|None, prev_blend_label:str|None) -> None:
+        del blend, prev_coffee_label, prev_blend_label
 
-            blend_dict = self.getBlendDictCurrentWeight(blend)
-
-            moisture_txt = '0'
-            try:
-                if 'moisture' in blend_dict:
-                    moisture_txt = f"{blend_dict['moisture']:g}"
-            except Exception:  # pylint: disable=broad-except
-                pass
-            self.moisture_greens_edit.setText(moisture_txt)
-            density_txt = '0'
-            try:
-                if 'density' in blend_dict:
-                    density_txt = f"{float2float(blend_dict['density']):g}"
-            except Exception:  # pylint: disable=broad-except
-                pass
-            self.bean_density_in_edit.setText(density_txt)
-            screen_size_min = '0'
-            screen_size_max = '0'
-            try:
-                if 'screen_min' in blend_dict:
-                    screen_size_min = str(int(blend_dict['screen_min']))
-                if 'screen_max' in blend_dict:
-                    screen_size_max = str(int(blend_dict['screen_max']))
-            except Exception:  # pylint: disable=broad-except
-                pass
-            self.bean_size_min_edit.setText(screen_size_min)
-            self.bean_size_max_edit.setText(screen_size_max)
-            # check if title should be changed (if still default, or equal to the previous selection:
-            self.updateTitle(prev_coffee_label,prev_blend_label)
-            self.markPlusCoffeeFields(True)
-            self.density_in_editing_finished()
-            self.moistureEdited()
-            self.modified_density_in_text = keep_modified_density
-            self.modified_moisture_greens_text = keep_modified_moisture
-        except Exception as e:  # pylint: disable=broad-except
-            _log.exception(e)
-
-    # if current title is equal to default title or prev_coffee/blend_label, we set title from selected label
-    def fillCoffeeData(self, coffee:tuple[str, tuple[plus.stock.Coffee, plus.stock.StockItem]],
-            prev_coffee_label:str|None, prev_blend_label:str|None) -> None:
-        try:
-            cd = plus.stock.getCoffeeCoffeeDict(coffee)
-            self.beansedit.setPlainText(plus.stock.coffee2beans(cd))
-            keep_modified_moisture = self.modified_moisture_greens_text
-            keep_modified_density = self.modified_density_in_text
-            moisture_txt = '0'
-            try:
-                if 'moisture' in cd:
-                    moisture_txt = f"{cd['moisture']:g}"
-            except Exception:  # pylint: disable=broad-except
-                pass
-            self.moisture_greens_edit.setText(moisture_txt)
-            density_txt = '0'
-            try:
-                if 'density' in cd:
-                    density_txt = f"{float2float(cd['density']):g}"
-            except Exception: # pylint: disable=broad-except
-                pass
-            self.bean_density_in_edit.setText(density_txt)
-            screen_size_min = '0'
-            screen_size_max = '0'
-            try:
-                if 'screen_size' in cd:
-                    screen = cd['screen_size']
-                    if 'min' in screen:
-                        screen_size_min = str(int(screen['min']))
-                    if 'max' in screen:
-                        screen_size_max = str(int(screen['max']))
-            except Exception:  # pylint: disable=broad-except
-                pass
-            self.bean_size_min_edit.setText(screen_size_min)
-            self.bean_size_max_edit.setText(screen_size_max)
-            self.updateTitle(prev_coffee_label,prev_blend_label)
-            self.markPlusCoffeeFields(True)
-            self.density_in_editing_finished()
-            self.moistureEdited()
-            self.modified_density_in_text = keep_modified_density
-            self.modified_moisture_greens_text = keep_modified_moisture
-        except Exception as e:  # pylint: disable=broad-except
-            _log.exception(e)
+    def fillCoffeeData(self, coffee:Any, prev_coffee_label:str|None, prev_blend_label:str|None) -> None:
+        del coffee, prev_coffee_label, prev_blend_label
 
     def defaultCoffeeData(self) -> None:
         self.beansedit.setPlainText(self.modified_beans)
@@ -2304,106 +1911,19 @@ class editGraphDlg(ArtisanResizeablDialog):
 
     @pyqtSlot(int)
     def storeSelectionChanged(self, n:int) -> None:
-        if n != -1:
-            prev_coffee_label = self.plus_coffee_selected_label
-            prev_blend_label = self.plus_blend_selected_label
-            self.populatePlusCoffeeBlendCombos(n)
-            self.updateTitle(prev_coffee_label, prev_blend_label)
+        del n
 
     @pyqtSlot(int)
     def coffeeSelectionChanged(self, n:int) -> None:
-        # check for previously selected blend label
-        prev_coffee_label = self.plus_coffee_selected_label
-        prev_blend_label = self.plus_blend_selected_label
-        self.user_updated_coffee_or_blend = True # on leaving the dialog with OK the new selection will be persisted
-        if n < 1 or self.plus_coffees is None:
-            self.defaultCoffeeData()
-            self.plus_store_selected = None
-            self.plus_store_selected_label = None
-            self.plus_coffee_selected = None
-            self.plus_coffee_selected_label = None
-            self.plus_amount_selected = None
-            self.plus_amount_replace_selected = None
-            self.updateTitle(prev_coffee_label,prev_blend_label)
-        else:
-            # reset blend and set new coffee
-            self.plus_blends_combo.setCurrentIndex(0)
-            selected_coffee = self.plus_coffees[n-1]
-            sd = plus.stock.getCoffeeStockDict(selected_coffee)
-            self.plus_store_selected = sd['location_hr_id']
-            self.plus_store_selected_label = sd['location_label']
-            cd = plus.stock.getCoffeeCoffeeDict(selected_coffee)
-            self.plus_coffee_selected = cd.get('hr_id','')
-            self.plus_coffee_selected_label = plus.stock.coffeeLabel(cd)
-            self.plus_blend_selected_label = None
-            self.plus_blend_selected_spec = None
-            self.plus_blend_selected_spec_labels = None
-            if 'amount' in plus.stock.getCoffeeStockDict(selected_coffee):
-                self.plus_amount_selected = plus.stock.getCoffeeStockDict(selected_coffee)['amount']
-            else:
-                self.pus_amount_selected = None
-            self.plus_amount_replace_selected = None
-            self.fillCoffeeData(selected_coffee,prev_coffee_label,prev_blend_label)
-        self.checkWeightIn()
-        self.updatePlusSelectedLine()
+        del n
 
-    def getBlendDictCurrentWeight(self, blend:tuple[str, tuple[plus.stock.Blend, plus.stock.StockItem, float, dict[str, str], float, list[tuple[float, plus.stock.Blend]]]]) -> plus.stock.Blend:
-        if self.weightinedit.text() != '':
-            weightIn = float(comma2dot(self.weightinedit.text()))
-        else:
-            weightIn = 0.0
-        weight_unit_idx = self.unitsComboBox.currentIndex()
-        v = convertWeight(weightIn,weight_unit_idx,weight_units.index('Kg')) # v is weightIn converted to kg
-        return plus.stock.getBlendBlendDict(blend,v)
+    def getBlendDictCurrentWeight(self, blend:Any) -> dict[str, Any]:
+        del blend
+        return {}
 
     @pyqtSlot(int)
     def blendSelectionChanged(self, n:int) -> None:
-        # check for previously selected blend label
-        prev_coffee_label = self.plus_coffee_selected_label
-        prev_blend_label = self.plus_blend_selected_label
-        self.user_updated_coffee_or_blend = True # on leaving the dialog with OK the new selection will be persisted
-        if n < 1 or self.plus_blends is None:
-            self.defaultCoffeeData()
-            self.plus_store_selected = None
-            self.plus_store_selected_label = None
-            self.plus_blend_selected_label = None
-            self.plus_blend_selected_spec = None
-            self.plus_blend_selected_spec_labels = None
-            self.pus_amount_selected = None
-            self.updateTitle(prev_coffee_label,prev_blend_label)
-        else:
-            # reset coffee and set new blend
-            self.plus_coffees_combo.setCurrentIndex(0)
-            selected_blend = self.plus_blends[n-1]
-            bsd:plus.stock.StockItem = plus.stock.getBlendStockDict(selected_blend)
-            self.plus_store_selected = bsd['location_hr_id']
-            self.plus_store_selected_label = bsd['location_label']
-
-            bd = self.getBlendDictCurrentWeight(selected_blend)
-            self.plus_coffee_selected = None
-            self.plus_blend_selected_label = bd['label']
-            self.plus_blend_selected_spec = cast(plus.stock.Blend, dict(bd)) # make a copy of the blend dict
-# UPDATE: we keep the hr_id in to be able to adjust the blend with its replacements if needed
-#            # we trim the blend_spec to the external from
-#            self.plus_blend_selected_spec.pop("hr_id", None) # remove the hr_id
-
-            self.plus_blend_selected_spec_labels = [i.get('label','') for i in self.plus_blend_selected_spec['ingredients']]
-            # remove labels from ingredients
-            ingredients = []
-            for i in self.plus_blend_selected_spec['ingredients']:
-                entry = plus.stock.BlendIngredient(ratio = i['ratio'], coffee = i['coffee'])
-                if 'ratio_num' in i:
-                    entry['ratio_num'] = i['ratio_num']
-                if 'ratio_denom' in i:
-                    entry['ratio_denom'] = i['ratio_denom']
-                ingredients.append(entry)
-            self.plus_blend_selected_spec['ingredients'] = ingredients
-            self.plus_amount_selected = plus.stock.getBlendMaxAmount(selected_blend)
-            self.plus_amount_replace_selected = plus.stock.getBlendReplaceMaxAmount(selected_blend)
-            self.fillBlendData(selected_blend,prev_coffee_label,prev_blend_label)
-
-        self.checkWeightIn()
-        self.updatePlusSelectedLine()
+        del n
 
     # keeps the weightoutdefectsedit placeholder text set along the weightoutedit text
     def weightouteditSetText(self, txt:str) -> None:
@@ -2486,44 +2006,6 @@ class editGraphDlg(ArtisanResizeablDialog):
                 self.template_batchprefix = None
             self.updateTemplateLine()
             self.percent()
-
-#PLUS
-            if self.aw.plus_account is not None and 'plus_account' in rr and self.aw.plus_account == rr['plus_account']:
-                if 'plus_store' in rr:
-                    self.plus_store_selected = rr['plus_store']
-                if 'plus_store_label' in rr:
-                    self.plus_store_selected_label = rr['plus_store_label']
-                self.plus_coffee_selected = rr.get('plus_coffee', None)
-                if 'plus_coffee_label' in rr:
-                    self.plus_coffee_selected_label = rr['plus_coffee_label']
-                else:
-                    self.plus_coffee_selected_label = None
-                if 'plus_blend_spec' in rr:
-                    self.plus_blend_selected_label = rr.get('plus_blend_label', None)
-                    self.plus_blend_selected_spec = rr['plus_blend_spec']
-                    if 'plus_blend_spec_labels' in rr:
-                        self.plus_blend_selected_spec_labels = rr['plus_blend_spec_labels']
-                else:
-                    self.plus_blend_selected_label = None
-                    self.plus_blend_selected_spec = None
-                    self.plus_blend_selected_spec_labels = None
-                if self.plus_store_selected is not None and self.plus_default_store is not None and self.plus_default_store != self.plus_store_selected:
-                    self.plus_default_store = None # we reset the defaultstore
-                # we now set the actual values from the stock
-                self.populatePlusCoffeeBlendCombos()
-                if self.plus_blend_selected_spec is not None and self.plus_blends is not None and 'hr_id' in self.plus_blend_selected_spec:
-                    # try to apply blend replacement (blend recipe might have been updated on the server since this recent roast blend entry was established
-                    # search for the position of blend/location hr_id combo in self.plus_blends and call blendSelectionChanged with pos+1
-                    try:
-                        pos_in_blends = next(i for i, b in enumerate(self.plus_blends) if \
-                            plus.stock.getBlendId(b) == self.plus_blend_selected_spec['hr_id'] and
-                            plus.stock.getBlendStockDict(b)['location_hr_id'] == self.plus_store_selected)
-                        self.blendSelectionChanged(pos_in_blends+1)
-                    except Exception:  # pylint: disable=broad-except
-                        self.updatePlusSelectedLine()
-                else:
-                    # blend replacements not applied
-                    self.updatePlusSelectedLine()
 
             self.aw.sendmessage(QApplication.translate('Message',f"Recent roast properties '{self.aw.recentRoastLabel(rr)}' set"))
         self.recentRoastEnabled()
@@ -2619,7 +2101,7 @@ class editGraphDlg(ArtisanResizeablDialog):
                     self.aw.qmc.roastUUID, # could be empty
                     self.aw.qmc.roastbatchnr, #self.batchcounterSpinBox # self.aw.superusermode and self.aw.qmc.batchcounter > -1
                     self.aw.qmc.roastbatchprefix,  #self.batchprefixedit
-                    self.aw.plus_account,
+                    None,
                     self.plus_store_selected,
                     self.plus_store_selected_label,
                     self.plus_coffee_selected,
@@ -2724,8 +2206,6 @@ class editGraphDlg(ArtisanResizeablDialog):
         settings.setValue('RoastGeometry',self.saveGeometry())
         self.aw.editGraphDlg_activeTab = self.TabWidget.currentIndex()
         self.aw.editgraphdialog = None
-        if self.stockWorker is not None and self.updateStockSignalConnection is not None:
-            self.stockWorker.updatedSignal.disconnect(self.updateStockSignalConnection)
 
     # calcs volume (in ml) from density (in g/l) and weight (in g)
     @staticmethod
@@ -2825,24 +2305,11 @@ class editGraphDlg(ArtisanResizeablDialog):
                     else:
                         le.setText(txt)
         self.calculated_density()
-#PLUS
-        self.populatePlusCoffeeBlendCombos() # update the plus stock popups to display the correct unit
-        try:
-            # weight unit changed, we update the selected blend in plus mode
-            if self.plus_blends_combo.currentIndex() > 0:
-                self.blendSelectionChanged(self.plus_blends_combo.currentIndex())
-        except Exception: # pylint: disable=broad-except
-            pass # self.plus_blends_combo might not be allocated
+        self.populatePlusCoffeeBlendCombos()
         try:
             if self.aw.largeScaleLCDs_dialog is not None:
                 self.aw.largeScaleLCDs_dialog.reLayout()
             self.update_scale_weight()
-        except Exception: # pylint: disable=broad-except
-            pass # self.plus_blends_combo might not be allocated
-        try:
-            if self.aw.schedule_window is not None:
-                # we need to ensure that an open completed item edit is cleared/closed not to use the wrong unit which might have changed here
-                self.aw.schedule_window.cancel_completed_item_edit()
         except Exception: # pylint: disable=broad-except
             pass
 
@@ -4368,9 +3835,7 @@ class editGraphDlg(ArtisanResizeablDialog):
 
     @pyqtSlot(int)
     def labelOriginFlagChanged(self, _:int = 0) -> None:
-        plus.stock.coffee_label_normal_order = self.label_origin_flag.isChecked()
-        plus.stock.clearStockCaches() # we need to clear the stock caches to receive the updated coffee labels
-        self.populatePlusCoffeeBlendCombos()  # update the plus stock popups to display the correct bean label format
+        self.aw.qmc.coffee_label_normal_order = self.label_origin_flag.isChecked()
 
     @pyqtSlot(int)
     def roastpropertiesAutoOpenChanged(self, _:int = 0) -> None:
@@ -5059,14 +4524,7 @@ class editGraphDlg(ArtisanResizeablDialog):
         self.recalc_on_density_in_editing_finished(keep_weight_in=True) # recalc volume_in
         self.modified_density_in_text = keep_modified_density
         self.recentRoastEnabled()
-        if self.aw.plus_account is not None:
-            blend_idx = self.plus_blends_combo.currentIndex()
-            if blend_idx > 0:
-                self.blendSelectionChanged(blend_idx)
-            coffee_idx = self.plus_coffees_combo.currentIndex()
-            if coffee_idx > 0:
-                self.coffeeSelectionChanged(coffee_idx)
-        self.weightinedit.setText(weight_in) # need to set it here again as blendSelectionChanged/coffeeSelectionChanged do update a 0
+        self.weightinedit.setText(weight_in)
         self.checkWeightOut()
 
     def density_percent(self) -> None:
@@ -5491,27 +4949,20 @@ class editGraphDlg(ArtisanResizeablDialog):
         self.aw.qmc.title_show_always = self.titleShowAlwaysFlag.isChecked()
         self.aw.container1_idx = self.tareComboBox.currentIndex() - 3
 
-#PLUS
-        # Update Plus
-        if self.aw.plus_account is not None:
-            self.aw.qmc.plus_default_store = self.plus_default_store
-            if self.user_updated_coffee_or_blend:
-                # only update the plus coffee/blend/store properties if the user changed the selection
-                self.aw.qmc.plus_store = self.plus_store_selected
-                self.aw.qmc.plus_store_label = self.plus_store_selected_label
-                self.aw.qmc.plus_coffee = self.plus_coffee_selected
-                self.aw.qmc.plus_coffee_label = self.plus_coffee_selected_label
-                if self.aw.qmc.plus_coffee is None:
-                    self.aw.qmc.plus_coffee_label = None
-                    self.aw.qmc.plus_blend_label = self.plus_blend_selected_label
-                    self.aw.qmc.plus_blend_spec = self.plus_blend_selected_spec
-                    self.aw.qmc.plus_blend_spec_labels = self.plus_blend_selected_spec_labels
-                else:
-                    self.aw.qmc.plus_blend_label = None
-                    self.aw.qmc.plus_blend_spec =  None
-                    self.aw.qmc.plus_blend_spec_labels = None
-            # always update as a completed items properties might have changed, but also the weight unit
-            self.aw.updateScheduleSignal.emit()
+        self.aw.qmc.plus_default_store = self.plus_default_store
+        self.aw.qmc.plus_store = self.plus_store_selected
+        self.aw.qmc.plus_store_label = self.plus_store_selected_label
+        self.aw.qmc.plus_coffee = self.plus_coffee_selected
+        self.aw.qmc.plus_coffee_label = self.plus_coffee_selected_label
+        if self.aw.qmc.plus_coffee is None:
+            self.aw.qmc.plus_coffee_label = None
+            self.aw.qmc.plus_blend_label = self.plus_blend_selected_label
+            self.aw.qmc.plus_blend_spec = self.plus_blend_selected_spec
+            self.aw.qmc.plus_blend_spec_labels = self.plus_blend_selected_spec_labels
+        else:
+            self.aw.qmc.plus_blend_label = None
+            self.aw.qmc.plus_blend_spec = None
+            self.aw.qmc.plus_blend_spec_labels = None
 
         # Update beans
         self.aw.qmc.beans = self.beansedit.toPlainText()
@@ -5728,14 +5179,6 @@ class editGraphDlg(ArtisanResizeablDialog):
 
         if not self.aw.qmc.flagon:
             self.aw.sendmessage(QApplication.translate('Message','Roast properties updated but profile not saved to disk'))
-        # if recording, dirty and CHARGE and DROP set we send changes to artisan.plus if it is running and we are not in simmulator mode
-        if (self.aw.qmc.flagstart and self.aw.qmc.safesaveflag and self.aw.qmc.timeindex[0] > -1 and self.aw.qmc.timeindex[6] > 0 and
-                self.aw.plus_account is not None and not bool(self.aw.simulator)):
-            try:
-                plus.queue.addRoast()
-            except Exception as e: # pylint: disable=broad-except
-                _log.exception(e)
-
         if redraw:
             self.aw.qmc.redrawKeepViewSignal.emit(
                 False, # recomputeAllDeltas (default: True)
@@ -5748,11 +5191,10 @@ class editGraphDlg(ArtisanResizeablDialog):
         self.clean_up()
 
         if (self.start_recording_on_exit and
-                not self.aw.qmc.flagstart and                        # not yet recording
-                self.aw.plus_account is not None and                 # plus connected
-                not self.aw.qmc.roastpropertiesAutoOpenFlag and      # no "Open on CHARGE"
-                not self.aw.qmc.roastpropertiesAutoOpenDropFlag and  # no "Open on DROP"
-                (self.aw.qmc.plus_coffee is not None or self.aw.qmc.plus_blend_spec is not None or self.aw.qmc.beans != '')): # beans are set
+                not self.aw.qmc.flagstart and
+                not self.aw.qmc.roastpropertiesAutoOpenFlag and
+                not self.aw.qmc.roastpropertiesAutoOpenDropFlag and
+                (self.aw.qmc.plus_coffee is not None or self.aw.qmc.plus_blend_spec is not None or self.aw.qmc.beans != '')):
             # we trigger the START of the recording on leaving this dialog
             self.aw.qmc.toggleRecorderSignal.emit()
 
@@ -5883,8 +5325,8 @@ class CoffeesComboBox(StockComboBox):
 
     @override
     def getItems(self, unit:int) -> list[str]:
-        plus_coffees = plus.stock.getCoffees(unit, self.parentDialog.plus_default_store)
-        return [''] + plus.stock.getCoffeesLabels(plus_coffees)
+        del unit
+        return ['']
 
 class BlendsComboBox(StockComboBox):
     def __init__(self, parent:editGraphDlg, *args:Any, **kwargs:Any) -> None:
@@ -5893,17 +5335,8 @@ class BlendsComboBox(StockComboBox):
 
     @override
     def getItems(self, unit:int) -> list[str]:
-        custom_blend:plus.stock.Blend|None = None
-        if self.parentDialog.aw.qmc.plus_custom_blend is not None and self.parentDialog.aw.qmc.plus_custom_blend.name.strip() != '':
-            coffees = plus.stock.getCoffeeLabels()
-            if len(coffees)>2 and self.parentDialog.aw.qmc.plus_custom_blend.isValid(coffees.values()):
-                custom_blend = plus.stock.Blend(
-                    hr_id = '',
-                    label = self.parentDialog.aw.qmc.plus_custom_blend.name.strip(),
-                    ingredients = [plus.stock.BlendIngredient(ratio = c.ratio, coffee= c.coffee) for c in self.parentDialog.aw.qmc.plus_custom_blend.components])
-        plus_blends = plus.stock.getBlends(unit,self.parentDialog.plus_default_store, custom_blend)
-        blend_items:list[str] = plus.stock.getBlendLabels(plus_blends)
-        return [''] + blend_items
+        del unit
+        return ['']
 
 
 

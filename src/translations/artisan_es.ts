@@ -7104,12 +7104,12 @@ CTRL+F [Windows]</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
+        <source>Open the roast in the browser (cloud web app)</source>
         <translation>Abrir el asado en artesano.plus</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
         <translation>Requiere una cuenta de craft.plus</translation>
     </message>
     <message>
@@ -7196,7 +7196,7 @@ Haga doble clic de nuevo para ampliar a la vista original.</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
+        <source>Sync the roast to the cloud</source>
         <translation>Sincroniza el tueste con craftesano.plus</translation>
     </message>
     <message>
@@ -16084,8 +16084,8 @@ ATENCIÓN: Los datos registrados se borrarán sin confirmación.</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus necesita saber los granos que estás tostando</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope necesita saber los granos que estás tostando</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16493,10 +16493,10 @@ ATENCIÓN: Los datos registrados se borrarán sin confirmación.</translation>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>¡Artisan es de uso gratuito!
 
-Para mantenerlo gratuito y actualizado, apóyanos con tu donación y suscríbete a artisan.plus para suprimir este diálogo.</translation>
+Para mantenerlo gratuito y actualizado, apóyanos con tu donación y suscríbete a Artisan Scope para suprimir este diálogo.</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18173,8 +18173,8 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>Datos actualizados recibidos de artisan.plus</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Datos actualizados recibidos de Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18193,15 +18193,15 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>Conectado a artisan.plus</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Conectado a Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus apagado</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope apagado</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18210,28 +18210,28 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>No se pudo conectar con artisan.plus</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>No se pudo conectar con Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>¿Desconectar artisan.plus?</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>¿Desconectar Artisan Scope?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>Conexión con artisan.plus perdida. Reconectando automáticamente...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Conexión con Artisan Scope perdida. Reconectando automáticamente...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus desconectado</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope desconectado</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus reconectado</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope reconectado</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21444,23 +21444,23 @@ Sin marcar: Ajusta una spline suave para conservar la forma de la curva.</transl
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
+        <source>Syncing with Artisan Scope</source>
         <translation>Sincronización con craft.plus</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
+        <source>Disconnect Artisan Scope</source>
         <translation>Desconectar artesano.plus</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
+        <source>Upload to Artisan Scope</source>
         <translation>Subir a artesano.plus</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
+        <source>Connect Artisan Scope</source>
         <translation>Conectar artesano.plus</translation>
     </message>
     <message>
