@@ -1217,9 +1217,29 @@ class DeviceAssignmentDlg(ArtisanResizeablDialog):
         self.kaleidoSerialFlag = QCheckBox(QApplication.translate('Label','WiFi'))
         self.kaleidoSerialFlag.setChecked(not self.aw.kaleidoSerial)
         self.kaleidoSerialFlag.stateChanged.connect(self.kaleidoSerialStateChanged)
-#        kaleidoPIDLabel = QLabel('PID')
-#        self.kaleidoPIDFlag = QCheckBox()
-#        self.kaleidoPIDFlag.setChecked(self.aw.kaleidoPID)
+        self.kaleidoMachinePIDButton = QRadioButton(QApplication.translate('Radio Button','Machine PID'))
+        self.kaleidoSoftwarePIDButton = QRadioButton(QApplication.translate('Radio Button','Software PID'))
+        self.kaleidoHybridButton = QRadioButton(QApplication.translate('Radio Button','Hybrid Controller'))
+        self.kaleidoHybridButton.setToolTip(
+            QApplication.translate('Tooltip','Coordinated heater (RoR) and fan (ET-BT offset) control. Disables machine PID.'))
+        if self.aw.kaleidoHybridControl:
+            self.kaleidoHybridButton.setChecked(True)
+        elif self.aw.kaleidoPID:
+            self.kaleidoMachinePIDButton.setChecked(True)
+        else:
+            self.kaleidoSoftwarePIDButton.setChecked(True)
+        self.kaleidoControlButtonGroup = QButtonGroup()
+        self.kaleidoControlButtonGroup.addButton(self.kaleidoMachinePIDButton)
+        self.kaleidoControlButtonGroup.addButton(self.kaleidoSoftwarePIDButton)
+        self.kaleidoControlButtonGroup.addButton(self.kaleidoHybridButton)
+        kaleidoControlVBox = QVBoxLayout()
+        kaleidoControlVBox.addWidget(self.kaleidoMachinePIDButton)
+        kaleidoControlVBox.addWidget(self.kaleidoSoftwarePIDButton)
+        kaleidoControlVBox.addWidget(self.kaleidoHybridButton)
+        self.kaleidoControlGroupBox = QGroupBox(QApplication.translate('GroupBox','Kaleido Control'))
+        self.kaleidoControlGroupBox.setLayout(kaleidoControlVBox)
+        self.kaleidoControlGroupBox.setToolTip(
+            QApplication.translate('Tooltip','Select how Artisan controls the Kaleido roaster when PID is ON'))
 
         self.kaleidoEventFlags:list[QCheckBox] = [QCheckBox(l) for l in eventFlagLabels]
         for i, cb in enumerate(self.kaleidoEventFlags):
@@ -1307,8 +1327,6 @@ class DeviceAssignmentDlg(ArtisanResizeablDialog):
         kaleidoNetworkGrid.addWidget(self.kaleidoHost,0,2)
         kaleidoNetworkGrid.addWidget(kaleidoPortLabel,1,1)
         kaleidoNetworkGrid.addWidget(self.kaleidoPort,1,2)
-#        kaleidoNetworkGrid.addWidget(self.kaleidoPIDFlag,2,0)
-#        kaleidoNetworkGrid.addWidget(kaleidoPIDLabel,2,1)
         kaleidoNetworkGrid.setSpacing(20)
         kaleidoHBox = QHBoxLayout()
         kaleidoHBox.addLayout(kaleidoNetworkGrid)
@@ -1501,6 +1519,7 @@ class DeviceAssignmentDlg(ArtisanResizeablDialog):
         buttonLayout.setSpacing(10)
         tab1Layout = QVBoxLayout()
         tab1Layout.addLayout(grid)
+        tab1Layout.addWidget(self.kaleidoControlGroupBox)
         tab1Layout.setContentsMargins(5,5,5,5)
         tab1Layout.addStretch()
         bLayout = QHBoxLayout()
@@ -1984,6 +2003,12 @@ class DeviceAssignmentDlg(ArtisanResizeablDialog):
             C8Widget.setLayout(tab8LayoutOFF)
         self.TabWidget.addTab(C8Widget,QApplication.translate('Tab','Batch Manager'))
         self.TabWidget.currentChanged.connect(self.tabSwitched)
+        self.devicetypeComboBox.currentIndexChanged.connect(self.updateKaleidoControlVisibility)
+        self.nonpidButton.toggled.connect(self.updateKaleidoControlVisibility)
+        self.pidButton.toggled.connect(self.updateKaleidoControlVisibility)
+        self.arduinoButton.toggled.connect(self.updateKaleidoControlVisibility)
+        self.programButton.toggled.connect(self.updateKaleidoControlVisibility)
+        self.updateKaleidoControlVisibility()
         #incorporate layouts
         Mlayout = QVBoxLayout()
         Mlayout.addWidget(self.TabWidget)
@@ -2663,6 +2688,13 @@ class DeviceAssignmentDlg(ArtisanResizeablDialog):
         else:
             self.aw.qmc.Controlbuttonflag = False
         self.aw.showControlButton()
+
+    @pyqtSlot(bool)
+    @pyqtSlot(int)
+    def updateKaleidoControlVisibility(self, *_args:bool|int) -> None:
+        is_kaleido = (self.nonpidButton.isChecked() and
+                      str(self.devicetypeComboBox.currentText()) == 'Kaleido BT/ET')
+        self.kaleidoControlGroupBox.setVisible(is_kaleido)
 
     @staticmethod
     def centeredCheckBox() -> tuple[QWidget, QCheckBox]:
@@ -4867,7 +4899,17 @@ class DeviceAssignmentDlg(ArtisanResizeablDialog):
                 self.aw.kaleidoPort = int(self.kaleidoPort.text())
             except Exception: # pylint: disable=broad-except
                 pass
-#            self.aw.kaleidoPID = self.kaleidoPIDFlag.isChecked()
+            if self.kaleidoHybridButton.isChecked():
+                self.aw.kaleidoHybridControl = True
+                self.aw.kaleidoPID = False
+            elif self.kaleidoMachinePIDButton.isChecked():
+                self.aw.kaleidoHybridControl = False
+                self.aw.kaleidoPID = True
+            else:
+                self.aw.kaleidoHybridControl = False
+                self.aw.kaleidoPID = False
+            from artisanlib.hybrid_controller import HybridController
+            self.aw.hybrid_controller = HybridController(self.aw.buildHybridControllerConfig())
             self.aw.mugmaHost = self.mugmaHost.text().strip()
             try:
                 self.aw.mugmaPort = int(self.mugmaPort.text())

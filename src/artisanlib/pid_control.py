@@ -1276,6 +1276,7 @@ class PIDcontrol:
     #  2: S7
     #  3: TC4
     #  4: Kaleido
+    #  5: Kaleido Hybrid
     def externalPIDControl(self) -> int:
         # TC4 with PID firmware or MODBUS and SV register set or S7 and SV area set
         if self.aw.modbus.PID_device_ID != 0:
@@ -1284,6 +1285,8 @@ class PIDcontrol:
             return 2
         if (self.aw.qmc.device == 19 and self.aw.qmc.PIDbuttonflag):
             return 3
+        if (self.aw.qmc.device == 138 and self.aw.kaleidoHybridControl):
+            return 5
         if (self.aw.qmc.device == 138 and self.aw.kaleidoPID):
             return 4
         return 0
@@ -1513,6 +1516,14 @@ class PIDcontrol:
             self.pidActive = True
             self.aw.qmc.pid.on()
             self.aw.buttonCONTROL.setStyleSheet(self.aw.pushbuttonstyles['PIDactive'])
+        elif self.aw.qmc.Controlbuttonflag and self.externalPIDControl() == 5 and self.aw.kaleido is not None:
+            # Kaleido Hybrid Controller
+            if send_command:
+                self.aw.kaleido.pidOFF()
+                self.aw.hybrid_controller.activate()
+            self.pidActive = True
+            self.aw.buttonCONTROL.setStyleSheet(self.aw.pushbuttonstyles['PIDactive'])
+            self.aw.sendmessage(QApplication.translate('Message','Hybrid Controller ON'))
         elif self.aw.qmc.Controlbuttonflag:
             # software PID
             if not self.pidActive: # only if not yet active!
@@ -1566,6 +1577,11 @@ class PIDcontrol:
                 self.aw.kaleido.pidOFF()
             self.pidActive = False
             self.aw.qmc.pid.off()
+            self.aw.buttonCONTROL.setStyleSheet(self.aw.pushbuttonstyles['PID'])
+        elif self.aw.qmc.Controlbuttonflag and self.aw.kaleidoHybridControl and self.aw.kaleido is not None:
+            # Kaleido Hybrid Controller
+            self.aw.hybrid_controller.reset()
+            self.pidActive = False
             self.aw.buttonCONTROL.setStyleSheet(self.aw.pushbuttonstyles['PID'])
         elif self.aw.qmc.Controlbuttonflag:
             # software PID

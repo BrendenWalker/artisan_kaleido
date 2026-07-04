@@ -155,6 +155,20 @@ class KaleidoPort:
         if self.get_state('TS') != sv:
             self.send_msg('TS', f'{sv:0.1f}'.rstrip('0').rstrip('.'))
 
+    def setHeater(self, pct:int) -> None:
+        pct = max(0, min(100, pct))
+        if self.get_state('HP') != pct:
+            self.send_msg('HP', str(pct))
+
+    def setFan(self, pct:int) -> None:
+        pct = max(0, min(100, pct))
+        if self.get_state('FC') != pct:
+            self.send_msg('FC', str(pct))
+
+    def setHeaterFan(self, hp:int, fc:int) -> None:
+        self.setHeater(hp)
+        self.setFan(fc)
+
 # -- state management
 
 
