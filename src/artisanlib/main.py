@@ -177,6 +177,7 @@ if TYPE_CHECKING:
     from artisanlib.bluedot import BlueDOT # pylint: disable=unused-import
     from artisanlib.mugma import Mugma # pylint: disable=unused-import
     from artisanlib.kaleido import KaleidoPort # pylint: disable=unused-import
+    from artisanlib.hybrid_controller import HybridController, HybridControllerConfig # pylint: disable=unused-import
     from artisanlib.orbiter import Orbiter # pylint: disable=unused-import
     from artisanlib.phases_canvas import tphasescanvas # pylint: disable=unused-import
     try:
@@ -214,6 +215,8 @@ from artisanlib.util import (appFrozen, uchr, decodeLocal, decodeLocalStrict, en
         comma2dot, is_proper_temp, weight_units, volume_units, float2float, float2str,
         convertWeight, convertVolume, rgba_colorname2argb_colorname, render_weight, serialize, deserialize, csv_load, exportProfile2CSV, findTPint,
         eventtime2string, toDim)
+
+from artisanlib.hybrid_controller import HybridController, HybridControllerConfig
 
 from artisanlib.qtsingleapplication import QtSingleApplication
 
@@ -1338,7 +1341,7 @@ class ApplicationWindow(QMainWindow):
         'seriallog', 'ser', 'modbus', 'extraMODBUStemps', 'extraMODBUStx', 's7', 'extraS7tx', 'ws', 'extraser', 'extracomport', 'extrabaudrate',
         'extrabytesize', 'extraparity', 'extrastopbits', 'extratimeout', 'hottop', 'santokerHost', 'santokerPort', 'santokerSerial', 'santokerBLE', 'santokerEventFlags', 'santoker', 'santokerR', 'lebrew_roastseeNEXT', 'thermoworksBlueDOT', 'fujipid', 'dtapid', 'pidcontrol', 'soundflag', 'recentRoasts', 'maxRecentRoasts',
         'mugmaHost','mugmaPort', 'mugma', 'mugma_default_host', 'shelly_3EMPro_host', 'shelly_PlusPlug_host',
-        'kaleido_default_host', 'kaleidoHost', 'kaleidoPort', 'kaleidoSerial', 'kaleidoPID', 'kaleido', 'kaleidoEventFlags', 'colorTrack_mean_window_size', 'colorTrack_median_window_size', 'ikawa',
+        'kaleido_default_host', 'kaleidoHost', 'kaleidoPort', 'kaleidoSerial', 'kaleidoPID', 'kaleidoHybridControl', 'hybrid_controller', 'kaleido', 'kaleidoEventFlags', 'colorTrack_mean_window_size', 'colorTrack_median_window_size', 'ikawa',
         'lcdpaletteB', 'lcdpaletteF', 'extraeventsbuttonsflags', 'extraeventslabels', 'extraeventbuttoncolor', 'extraeventsactionstrings',
         'extraeventbuttonround', 'block_quantification_sampling_ticks', 'sampling_seconds_to_block_quantifiction', 'sampling_ticks_to_block_quantifiction', 'extraeventsactionslastvalue',
         'org_extradevicesettings', 'eventslidervalues', 'eventslidervisibilities', 'eventsliderKeyboardControl', 'eventsliderAlternativeLayout_default',
@@ -1694,8 +1697,22 @@ class ApplicationWindow(QMainWindow):
         self.kaleidoPort:int = 80
         self.kaleidoSerial:bool = False # if True connection is via the main serial port
         self.kaleidoPID:bool = True # if True the external Kaleido PID is operated, otherwise the internal Artisan PID is active
+        self.kaleidoHybridControl:bool = False # if True the Hybrid Heater+Fan controller is active (mutually exclusive with kaleidoPID)
         self.kaleido:KaleidoPort|None = None # holds the Kaleido instance created on connect; reset to None on disconnect
         self.kaleidoEventFlags:list[bool] = [False, False, False, False, False, False, False ] # CHARGE, DRY, FCs, FCe, SCs, SCe, DROP
+
+        # Hybrid Controller settings
+        self.hybridHeaterKp:float = 3.0
+        self.hybridHeaterKi:float = 0.5
+        self.hybridHeaterKd:float = 0.1
+        self.hybridFanKp:float = 2.0
+        self.hybridFanKi:float = 0.3
+        self.hybridFanKd:float = 0.05
+        self.hybridHeaterSlew:float = 5.0
+        self.hybridFanSlew:float = 20.0
+        self.hybridRorAccelGain:float = 2.0
+        self.hybridDefaultRorTarget:float = 10.0
+        self.hybrid_controller:HybridController = HybridController(self.buildHybridControllerConfig())
 
         # Orbiter
         self.orbiter:Orbiter|None = None # holds the Orbiter instance created on connect; reset to None on disconnect
@@ -17292,6 +17309,20 @@ class ApplicationWindow(QMainWindow):
             self.santoker.send_msg(target,value)
 
 
+    def buildHybridControllerConfig(self) -> 'HybridControllerConfig':
+        return HybridControllerConfig(
+            heater_kp=self.hybridHeaterKp,
+            heater_ki=self.hybridHeaterKi,
+            heater_kd=self.hybridHeaterKd,
+            fan_kp=self.hybridFanKp,
+            fan_ki=self.hybridFanKi,
+            fan_kd=self.hybridFanKd,
+            heater_slew_pct_per_sec=self.hybridHeaterSlew,
+            fan_slew_pct_per_sec=self.hybridFanSlew,
+            ror_accel_gain=self.hybridRorAccelGain,
+            default_ror_target=self.hybridDefaultRorTarget,
+        )
+
     # kaleidoSendMessage() just sends out the message to the machine without waiting for a response
     @pyqtSlot(str,str)
     def kaleidoSendMessage(self, target:str, value:str) -> None:
@@ -17604,6 +17635,20 @@ class ApplicationWindow(QMainWindow):
             self.kaleidoPort = toInt(settings.value('kaleidoPort',self.kaleidoPort))
             self.kaleidoSerial = toBool(settings.value('kaleidoSerial',self.kaleidoSerial))
             self.kaleidoPID = toBool(settings.value('kaleidoPID',self.kaleidoPID))
+            self.kaleidoHybridControl = toBool(settings.value('kaleidoHybridControl',self.kaleidoHybridControl))
+            if self.kaleidoHybridControl:
+                self.kaleidoPID = False
+            self.hybridHeaterKp = toFloat(settings.value('hybridHeaterKp',self.hybridHeaterKp))
+            self.hybridHeaterKi = toFloat(settings.value('hybridHeaterKi',self.hybridHeaterKi))
+            self.hybridHeaterKd = toFloat(settings.value('hybridHeaterKd',self.hybridHeaterKd))
+            self.hybridFanKp = toFloat(settings.value('hybridFanKp',self.hybridFanKp))
+            self.hybridFanKi = toFloat(settings.value('hybridFanKi',self.hybridFanKi))
+            self.hybridFanKd = toFloat(settings.value('hybridFanKd',self.hybridFanKd))
+            self.hybridHeaterSlew = toFloat(settings.value('hybridHeaterSlew',self.hybridHeaterSlew))
+            self.hybridFanSlew = toFloat(settings.value('hybridFanSlew',self.hybridFanSlew))
+            self.hybridRorAccelGain = toFloat(settings.value('hybridRorAccelGain',self.hybridRorAccelGain))
+            self.hybridDefaultRorTarget = toFloat(settings.value('hybridDefaultRorTarget',self.hybridDefaultRorTarget))
+            self.hybrid_controller = HybridController(self.buildHybridControllerConfig())
             if settings.contains('kaleidoEventFlags'):
                 self.kaleidoEventFlags = [toBool(x) for x in toList(settings.value('kaleidoEventFlags',self.kaleidoEventFlags))]
             self.mugmaHost = toString(settings.value('mugmaHost',self.mugmaHost))
@@ -19627,6 +19672,17 @@ class ApplicationWindow(QMainWindow):
             self.settingsSetValue(settings, default_settings, 'kaleidoPort',self.kaleidoPort, read_defaults)
             self.settingsSetValue(settings, default_settings, 'kaleidoSerial',self.kaleidoSerial, read_defaults)
             self.settingsSetValue(settings, default_settings, 'kaleidoPID',self.kaleidoPID, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'kaleidoHybridControl',self.kaleidoHybridControl, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridHeaterKp',self.hybridHeaterKp, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridHeaterKi',self.hybridHeaterKi, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridHeaterKd',self.hybridHeaterKd, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridFanKp',self.hybridFanKp, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridFanKi',self.hybridFanKi, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridFanKd',self.hybridFanKd, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridHeaterSlew',self.hybridHeaterSlew, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridFanSlew',self.hybridFanSlew, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridRorAccelGain',self.hybridRorAccelGain, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridDefaultRorTarget',self.hybridDefaultRorTarget, read_defaults)
             self.settingsSetValue(settings, default_settings, 'kaleidoEventFlags',self.kaleidoEventFlags, read_defaults)
             self.settingsSetValue(settings, default_settings, 'mugmaHost',self.mugmaHost, read_defaults)
             self.settingsSetValue(settings, default_settings, 'mugmaPort',self.mugmaPort, read_defaults)

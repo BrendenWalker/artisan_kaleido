@@ -87,7 +87,8 @@ Controlbuttonflag=true
 PIDbuttonflag=true
 id=138
 kaleidoHost=127.0.0.1
-kaleidoPID=true
+kaleidoHybridControl=false
+kaleidoPID=false
 kaleidoPort=80
 kaleidoSerial=true
 

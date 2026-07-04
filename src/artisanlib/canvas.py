@@ -5116,6 +5116,33 @@ class tgraphcanvas(QObject):
                             # after DRY (if FCs event not yet set) check for BT exceeding FC-min as specified in the phases dialog
                             self.markFCsSignal.emit(False) # queued
 
+                    # Kaleido Hybrid Controller: coordinated heater + fan
+                    if (self.Controlbuttonflag and self.aw.pidcontrol.pidActive and
+                            self.aw.pidcontrol.externalPIDControl() == 5 and self.aw.kaleido is not None):
+                        try:
+                            from artisanlib.hybrid_controller import compute_ror_acceleration
+                            roast_t = (tx - self.timex[self.timeindex[0]]) if self.timeindex[0] > -1 else tx
+                            bg_ror:float|None = None
+                            if self.background:
+                                bg_val = self.backgroundDeltaBTat(roast_t, relative=True)
+                                if bg_val >= 0:
+                                    bg_ror = bg_val
+                            ror_accel = 0.0
+                            if len(sample_unfiltereddelta2) >= 2 and len(sample_timex) >= 2:
+                                ror_dt = sample_timex[-1] - sample_timex[-2]
+                                ror_samples = [v for v in sample_unfiltereddelta2[-2:] if v is not None]
+                                if len(ror_samples) >= 2:
+                                    ror_accel = compute_ror_acceleration(ror_samples, ror_dt)
+                            hp, fc = self.aw.hybrid_controller.update(
+                                st2, st1, rateofchange2plot, ror_accel,
+                                self.timeindex, bg_ror, tx)
+                            self.aw.kaleido.setHeaterFan(hp, fc)
+                            # sync Kaleido preset sliders: 0=FC, 3=HP
+                            self.aw.addRawEventSignal.emit(fc, float(fc), 0, False, True, False)
+                            self.aw.addRawEventSignal.emit(hp, float(hp), 3, False, True, False)
+                        except Exception as e: # pylint: disable=broad-except
+                            _log.exception(e)
+
                     #process active quantifiers
                     try:
                         self.aw.process_active_quantifiers()
@@ -17737,6 +17764,15 @@ class tgraphcanvas(QObject):
         else:
             offset = 0
         return self.timetemparray2temp(self.timeB,self.stemp1B,seconds + offset)
+
+    def backgroundDeltaBTat(self, seconds:float, relative:bool = False) -> float:
+        if not self.background or len(self.delta2B) == 0:
+            return -1
+        if self.timeindexB[0] > -1 and relative:
+            offset = self.timeB[self.timeindexB[0]]
+        else:
+            offset = 0
+        return self.timetemparray2temp(self.timeB, self.delta2B, seconds + offset)
 
     # returns the background temperature of extra curve n
     # with n=0 => extra device 1, curve 1; n=1 => extra device 1, curve 2; n=2 => extra device 2, curve 1,....
