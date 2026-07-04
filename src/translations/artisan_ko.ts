@@ -7758,13 +7758,13 @@ CTRL+F [Windows]</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>artisan.plus에서 로스트 열기</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>Artisan Scope에서 로스트 열기</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>artisan.plus 계정이 필요합니다.</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>Artisan Scope 계정이 필요합니다.</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7850,8 +7850,8 @@ Double click again to zoom in to original view</source>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>artisan.plus와 로스트 동기화</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>Artisan Scope와 로스트 동기화</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -17370,8 +17370,8 @@ ATTENTION: Recorded data will get cleared without confirmation</source>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus는 고객님이 로스팅하는 원두의 종류를 알아야 합니다.</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope는 고객님이 로스팅하는 원두의 종류를 알아야 합니다.</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -17779,10 +17779,10 @@ ATTENTION: Recorded data will get cleared without confirmation</source>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Artisan은 무료로 사용할 수 있습니다!
 
-무료로 최신 상태로 유지하려면 기부로 지원하고 artisan.plus를 구독하여 이 대화 상자를 표시하지 마세요!</translation>
+무료로 최신 상태로 유지하려면 기부로 지원하고 Artisan Scope를 구독하여 이 대화 상자를 표시하지 마세요!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -19484,10 +19484,10 @@ Continue?</source>
     <message>
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to supress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to supress this dialog!</source>
         <translation type="vanished">아티산은 무료로 사용할 수 있습니다!
 
-무료로 최신 상태로 유지하려면 기부로 지원하고 artisan.plus를 구독하여 이 대화를 억제하세요!</translation>
+무료로 최신 상태로 유지하려면 기부로 지원하고 Artisan Scope를 구독하여 이 대화를 억제하세요!</translation>
     </message>
     <message>
         <source>Import Aillio RoasTime</source>
@@ -19555,8 +19555,8 @@ To keep it free and current please support us with your donation and subscribe t
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>artisan.plus에서받은 업데이트 된 데이터</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Artisan Scope에서받은 업데이트 된 데이터</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -19575,15 +19575,15 @@ To keep it free and current please support us with your donation and subscribe t
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>artisan.plus에 연결됨</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Artisan Scope에 연결됨</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus 꺼짐</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope 꺼짐</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -19592,27 +19592,27 @@ To keep it free and current please support us with your donation and subscribe t
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>artisan.plus에 연결할 수 없습니다</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>Artisan Scope에 연결할 수 없습니다</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>artisan.plus를 분리 하시겠습니까?</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>Artisan Scope를 분리 하시겠습니까?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>artisan.plus 연결이 끊어졌습니다. 자동으로 다시 연결 중...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Artisan Scope 연결이 끊어졌습니다. 자동으로 다시 연결 중...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus 연결 해제</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope 연결 해제</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
+        <source>Artisan Scope reconnected</source>
         <translation>아티산플러스가 다시 연결되었습니다</translation>
     </message>
     <message>
@@ -19823,8 +19823,8 @@ To keep it free and current please support us with your donation and subscribe t
         <translation>구독이 종료된 날짜</translation>
     </message>
     <message>
-        <source>Queuing roast for upload to artisan.plus</source>
-        <translation type="vanished">artisan.plus에 업로드하기위한 큐잉 로스트</translation>
+        <source>Queuing roast for upload to Artisan Scope</source>
+        <translation type="vanished">Artisan Scope에 업로드하기위한 큐잉 로스트</translation>
     </message>
     <message>
         <source>({} of {} done)</source>
@@ -19835,12 +19835,12 @@ To keep it free and current please support us with your donation and subscribe t
         <translation type="vanished">연결을 끊으시겠습니까?</translation>
     </message>
     <message>
-        <source>artisan.plus debug logging ON.</source>
-        <translation type="vanished">artisan.plus 디버그 로깅 ON.</translation>
+        <source>Artisan Scope debug logging ON.</source>
+        <translation type="vanished">Artisan Scope 디버그 로깅 ON.</translation>
     </message>
     <message>
-        <source>artisan.plus debug logging OFF.</source>
-        <translation type="vanished">artisan.plus 디버그 로깅 사용 중지.</translation>
+        <source>Artisan Scope debug logging OFF.</source>
+        <translation type="vanished">Artisan Scope 디버그 로깅 사용 중지.</translation>
     </message>
 </context><context>
     <name>QDialogButtonBox</name>
@@ -23019,24 +23019,24 @@ Unchecked: Fits a smooth spline to preserve curve shape.</source>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>artisan.plus와 동기화</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>Artisan Scope와 동기화</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>artisan.plus 연결 해제</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>Artisan Scope 연결 해제</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>artisan.plus에 업로드</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>Artisan Scope에 업로드</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>artisan.plus 연결</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>Artisan Scope 연결</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

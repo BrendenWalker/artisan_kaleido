@@ -27,7 +27,7 @@ if qt_needs_restoration:
     # Store modules that should be preserved
     preserved_modules = {}
     for module_name in list(sys.modules.keys()):
-        if not module_name.startswith(('PyQt', 'sip', 'artisanlib.', 'plus.')):
+        if not module_name.startswith(('PyQt', 'sip', 'artisanlib.')):
             preserved_modules[module_name] = sys.modules[module_name]
 
     # Remove all Qt-related and artisanlib modules
@@ -35,7 +35,7 @@ if qt_needs_restoration:
     qt_modules_to_check = {'PyQt6', 'PyQt5', 'sip'}
     for module_name in list(sys.modules.keys()):
         if (
-            module_name.startswith(('PyQt6.', 'PyQt5.', 'artisanlib.', 'plus.'))
+            module_name.startswith(('PyQt6.', 'PyQt5.', 'artisanlib.'))
             or module_name in qt_modules_to_check
         ):
             modules_to_remove.append(module_name)

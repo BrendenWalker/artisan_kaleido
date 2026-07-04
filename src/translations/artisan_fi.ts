@@ -7094,13 +7094,13 @@ CTRL+F [voitto]</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>Avaa paisti artisan.plus:ssa</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>Avaa paisti Artisan Scope:ssa</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>Edellyttää artisan.plus-tiliä</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>Edellyttää Artisan Scope-tiliä</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7186,8 +7186,8 @@ Kaksoisnapsauta uudelleen zoomataksesi alkuperäiseen näkymään</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>Synkronoi paisti artisan.plus:n kanssa</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>Synkronoi paisti Artisan Scope:n kanssa</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16079,8 +16079,8 @@ HUOMIO: Tallennetut tiedot poistetaan ilman vahvistusta.</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus tarvitsee tietää, mitä papuja paahdat</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope tarvitsee tietää, mitä papuja paahdat</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16488,10 +16488,10 @@ HUOMIO: Tallennetut tiedot poistetaan ilman vahvistusta.</translation>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Artisan on ilmainen käyttää!
 
-Pitääksesi sen ilmaisena ja ajan tasalla, tue meitä lahjoituksellasi ja tilaa artisan.plus estääksesi tämän valintaikkunan!</translation>
+Pitääksesi sen ilmaisena ja ajan tasalla, tue meitä lahjoituksellasi ja tilaa Artisan Scope estääksesi tämän valintaikkunan!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18160,8 +18160,8 @@ Jatkaa?</translation>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>Päivitetty artisan.plus-sivustolta saatu data</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Päivitetty Artisan Scope-sivustolta saatu data</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18180,15 +18180,15 @@ Jatkaa?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>Yhdistetty artisan.plus-palveluun</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Yhdistetty Artisan Scope-palveluun</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus sammutettu</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope sammutettu</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18197,28 +18197,28 @@ Jatkaa?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>Ei voitu muodostaa yhteyttä artisan.plus-tiedostoon</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>Ei voitu muodostaa yhteyttä Artisan Scope-tiedostoon</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>Katkaistaanko artisan.plus yhteys?</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>Katkaistaanko Artisan Scope yhteys?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>artisan.plus-yhteys katkesi. Yhdistetään uudelleen automaattisesti...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Artisan Scope-yhteys katkesi. Yhdistetään uudelleen automaattisesti...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus katkaistu</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope katkaistu</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus -yhteys uudelleen</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope -yhteys uudelleen</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21426,24 +21426,24 @@ Valitsematon: Sovittaa tasaisen splinen käyrän muodon säilyttämiseksi.</tran
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>Synkronoidaan artisan.plus:n kanssa</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>Synkronoidaan Artisan Scope:n kanssa</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>Katkaise artisan.plus-yhteys</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>Katkaise Artisan Scope-yhteys</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>Lataa osoitteeseen artisan.plus</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>Lataa osoitteeseen Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>Yhdistä artisan.plus</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>Yhdistä Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

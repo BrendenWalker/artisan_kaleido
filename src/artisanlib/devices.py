@@ -3412,16 +3412,14 @@ class DeviceAssignmentDlg(ArtisanResizeablDialog):
                 self.aw.scale_manager.scale2_weight_changed_signal.disconnect(self.scale2_weight_changed)
             except Exception as e: # pylint: disable=broad-except
                 _log.error(e)
-            if self.aw.schedule_window is None:
-                # in case the scheduler is running, we keep the scales connected as it is using them
-                try:
-                    # disconnect scales if they were not connected before
-                    if not self.scale1_was_connected:
-                        self.aw.scale_manager.disconnect_scale1_signal.emit()
-                    if not self.scale2_was_connected:
-                        self.aw.scale_manager.disconnect_scale2_signal.emit()
-                except Exception as e: # pylint: disable=broad-except
-                    _log.error(e)
+            try:
+                # disconnect scales if they were not connected before
+                if not self.scale1_was_connected:
+                    self.aw.scale_manager.disconnect_scale1_signal.emit()
+                if not self.scale2_was_connected:
+                    self.aw.scale_manager.disconnect_scale2_signal.emit()
+            except Exception as e: # pylint: disable=broad-except
+                _log.error(e)
         return True
 
     @pyqtSlot()

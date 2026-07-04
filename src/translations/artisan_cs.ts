@@ -7072,13 +7072,13 @@ CTRL+F [Win]</source>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>Otevřete pečeně v artisan.plus</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>Otevřete pečeně v Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>Vyžaduje účet artisan.plus</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>Vyžaduje účet Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7164,8 +7164,8 @@ Dvojitým kliknutím přiblížíte původní zobrazení</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>Synchronizujte pečeně s artisan.plus</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>Synchronizujte pečeně s Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16030,8 +16030,8 @@ POZOR: Zaznamenaná data budou vymazána bez potvrzení</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus potřebuje vědět, jaká kávová zrna pražíte</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope potřebuje vědět, jaká kávová zrna pražíte</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16439,10 +16439,10 @@ POZOR: Zaznamenaná data budou vymazána bez potvrzení</translation>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Artisan je k použití zdarma!
 
-Aby byl web zdarma a aktuální, podpořte nás prosím svým darem a přihlaste se k odběru artisan.plus, abyste tento dialog potlačili!</translation>
+Aby byl web zdarma a aktuální, podpořte nás prosím svým darem a přihlaste se k odběru Artisan Scope, abyste tento dialog potlačili!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18103,8 +18103,8 @@ Pokračovat?</translation>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>Aktualizovaná data přijatá z artisan.plus</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Aktualizovaná data přijatá z Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18123,15 +18123,15 @@ Pokračovat?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>Propojeno s artisan.plus</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Propojeno s Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus vypnutý</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope vypnutý</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18140,28 +18140,28 @@ Pokračovat?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>Nepodařilo se mi připojit k artisan.plus</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>Nepodařilo se mi připojit k Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>Odpojit artisan.plus?</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>Odpojit Artisan Scope?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>Spojení s artisan.plus bylo ztraceno. Automatické obnovení připojení...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Spojení s Artisan Scope bylo ztraceno. Automatické obnovení připojení...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus odpojen</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope odpojen</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus se znovu připojil</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope se znovu připojil</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21355,24 +21355,24 @@ Nezaškrtnuto: Vytvoří hladkou spline pro zachování tvaru křivky.</translat
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>Synchronizace s artisan.plus</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>Synchronizace s Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>Odpojit artisan.plus</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>Odpojit Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>Nahrát na artisan.plus</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>Nahrát na Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>Připojte se k artisan.plus</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>Připojte se k Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

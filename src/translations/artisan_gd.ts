@@ -7092,13 +7092,13 @@ CTRL+F [Buann]</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>Fosgail an ròsta ann an artisan.plus</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>Fosgail an ròsta ann an Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>Feumaidh cunntas artisan.plus</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>Feumaidh cunntas Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7184,8 +7184,8 @@ Cliog dùbailte a-rithist gus gluasad a-steach don t-sealladh tùsail</translati
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>Sioncronaich an ròst le artisan.plus</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>Sioncronaich an ròst le Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16066,8 +16066,8 @@ AIRE: Thèid dàta clàraichte a ghlanadh às aonais dearbhaidh</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>Feumaidh fios a bhith aig artisan.plus dè na pònairean a tha thu a’ ròstadh</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Feumaidh fios a bhith aig Artisan Scope dè na pònairean a tha thu a’ ròstadh</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16475,10 +16475,10 @@ AIRE: Thèid dàta clàraichte a ghlanadh às aonais dearbhaidh</translation>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Tha neach-ciùird saor airson a chleachdadh!
 
-Gus a chumail saor agus gnàthach feuch an toir thu taic dhuinn leis an tabhartas agad agus fo-sgrìobh gu artisan.plus gus an còmhradh seo a chumail fodha!</translation>
+Gus a chumail saor agus gnàthach feuch an toir thu taic dhuinn leis an tabhartas agad agus fo-sgrìobh gu Artisan Scope gus an còmhradh seo a chumail fodha!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18155,8 +18155,8 @@ Lean air adhart?</translation>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>Dàta ùraichte a fhuaireadh bho artisan.plus</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Dàta ùraichte a fhuaireadh bho Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18175,15 +18175,15 @@ Lean air adhart?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>Ceangailte ri artisan.plus</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Ceangailte ri Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>thionndaidh artisan.plus dheth</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>thionndaidh Artisan Scope dheth</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18192,28 +18192,28 @@ Lean air adhart?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>Cha b ’urrainn dhuinn ceangal a dhèanamh ri artisan.plus</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>Cha b ’urrainn dhuinn ceangal a dhèanamh ri Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
+        <source>Disconnect Artisan Scope?</source>
         <translation />
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>Ceangal artisan.plus air chall. Ag ath-cheangal gu fèin-ghluasadach...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Ceangal Artisan Scope air chall. Ag ath-cheangal gu fèin-ghluasadach...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus air a dhì-cheangal</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope air a dhì-cheangal</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus air ath-cheangal</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope air ath-cheangal</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21425,24 +21425,24 @@ Unchecked: Fits a smooth spline to preserve curve shape.</source>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>Sioncronadh le artisan.plus</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>Sioncronadh le Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>Dì-cheangail artisan.plus</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>Dì-cheangail Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>Luchdaich suas gu artisan.plus</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>Luchdaich suas gu Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>Ceangail artisan.plus</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>Ceangail Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

@@ -7102,13 +7102,13 @@ CTRL+F [Win]</source>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>在 artisan.plus 中打开烘焙</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>在 Artisan Scope 中打开烘焙</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>需要一个 artisan.plus 帐户</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>需要一个 Artisan Scope 帐户</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7194,8 +7194,8 @@ Double click again to zoom in to original view</source>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>将烘焙与 artisan.plus 同步</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>将烘焙与 Artisan Scope 同步</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16080,8 +16080,8 @@ ATTENTION: Recorded data will get cleared without confirmation</source>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus 需要知道你烘焙的咖啡豆是什么。</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope 需要知道你烘焙的咖啡豆是什么。</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16489,10 +16489,10 @@ ATTENTION: Recorded data will get cleared without confirmation</source>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Artisan 可以免费使用！
 
-为了保持它的免费和最新，请通过您的捐赠支持我们并订阅 artisan.plus 以抑制此对话框！</translation>
+为了保持它的免费和最新，请通过您的捐赠支持我们并订阅 Artisan Scope 以抑制此对话框！</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18163,8 +18163,8 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>来自artisan.plus的更新数据已接收</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>来自Artisan Scope的更新数据已接收</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18183,15 +18183,15 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>已连接到artisan.plus</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>已连接到Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus关闭</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope关闭</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18200,28 +18200,28 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>无法连接到 artisan.plus</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>无法连接到 Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>断开artisan.plus连接？</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>断开Artisan Scope连接？</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>artisan.plus 连接已断开。正在自动重新连接……</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Artisan Scope 连接已断开。正在自动重新连接……</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>已断开artisan.plus连接</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>已断开Artisan Scope连接</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus 重新连接</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope 重新连接</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21439,24 +21439,24 @@ Unchecked: Fits a smooth spline to preserve curve shape.</source>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>同步artisan.plus</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>同步Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>断开artisan.plus</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>断开Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>上传到artisan.plus</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>上传到Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>连接artisan.plus</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>连接Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

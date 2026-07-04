@@ -27,10 +27,6 @@ import datetime
 from enum import Enum, unique
 from artisanlib.util import getResourcePath
 from artisanlib.qtsingleapplication import QtSingleApplication
-import plus.util
-import plus.connection
-import plus.config
-
 from typing import Final
 
 _log: Final[logging.Logger] = logging.getLogger(__name__)
@@ -39,23 +35,7 @@ _log: Final[logging.Logger] = logging.getLogger(__name__)
 class NotificationType(Enum):
     ARTISAN_SYSTEM = 1 # issued by some internal Artisan activity
     ARTISAN_USER = 2   # issues with notify() Artisan Command
-    PLUS_SYSTEM = 3    # an artisan.plus system notification
-    PLUS_REMINDER = 4  # an artisan.plus reminder notification
-    PLUS_ADMIN = 5     # an artisan.plus admin message
-    PLUS_ADVERT = 6    # an artisan.plus advertisement
-
-# maps an artisan.plus notification ntype type string to the corresponding Artisan NotificationType
-def ntype2NotificationType(ntype:str) -> NotificationType:
-    ntype = ntype.upper()
-    if ntype == 'ADMIN':
-        return NotificationType.PLUS_ADMIN
-    if ntype == 'ADVERT':
-        return NotificationType.PLUS_ADVERT
-    if ntype == 'REMINDER':
-        return NotificationType.PLUS_REMINDER
-    return NotificationType.PLUS_SYSTEM
-
-# for notifications received from artisan.plus id is set to the notifications hr_id to be able to confirm its processing on click
+# Cloud notification mapping removed.
 # created is the timestamp as EPOCH indicating when this notification was created
 class Notification:
     def __init__(self, title: str, message: str, notification_type: NotificationType, created: float|None = None, hr_id: str|None = None, link: str|None = None) -> None:
@@ -113,14 +93,7 @@ class Notification:
 
 # data a datetime.datetime object representing the timestamp of the acknowledgement by the user
 def sendPlusNotificationSeen(hr_id:str, date:datetime.datetime) -> None:
-    _log.debug('sendPlusNotificationSeen(%s,%s)', hr_id, date.isoformat())
-    try:
-        plus.connection.sendData(
-            f'{plus.config.notifications_url}/seen/{hr_id}',
-            { 'date' : date.isoformat()},
-            'PUT')
-    except Exception as e: # pylint: disable=broad-except
-        _log.exception(e)
+    del hr_id, date
 
 
 class NotificationManager(QObject):
@@ -205,23 +178,10 @@ class NotificationManager(QObject):
                         if app is not None:
                             assert isinstance(app, QtSingleApplication)
                             app.activateWindow()
-                    elif self.active_notification.type in [NotificationType.PLUS_SYSTEM, NotificationType.PLUS_ADMIN, NotificationType.PLUS_ADVERT]:
-                        if self.active_notification.link is None:
-                            # open artisan.plus
-                            QDesktopServices.openUrl(QUrl(plus.util.plusLink()))
-                        else:
-                            try:
-                                QDesktopServices.openUrl(QUrl(self.active_notification.link))
-                            except Exception:  # pylint: disable=broad-except
-                                # if given link URL is not valid still open artisan.plus
-                                QDesktopServices.openUrl(QUrl(plus.util.plusLink()))
-                    elif self.active_notification.type == NotificationType.PLUS_REMINDER:
-                        # open artisan.plus reminder tab
-                        QDesktopServices.openUrl(QUrl(plus.util.remindersLink()))
                 except Exception:  # pylint: disable=broad-except
                     pass
                 if self.active_notification.id:
-                    n = self.active_notification.id # bind the number here such that is available after clearing active_notification
+                    n = self.active_notification.id
                     QTimer.singleShot(500, lambda : sendPlusNotificationSeen(n, datetime.datetime.now(datetime.UTC)))
                 self.removeNotificationItem(self.active_notification)
                 self.active_notification = None
@@ -321,12 +281,8 @@ class NotificationManager(QObject):
             icon:QIcon|QSystemTrayIcon.MessageIcon = QSystemTrayIcon.MessageIcon.Information # NoIcon, Information, Warning, Critical
             if notification.type in [NotificationType.ARTISAN_SYSTEM, NotificationType.ARTISAN_USER]:
                 icon = self.notificationArtisanIcon()
-            elif notification.type in [
-                    NotificationType.PLUS_SYSTEM,
-                    NotificationType.PLUS_REMINDER,
-                    NotificationType.PLUS_ADMIN,
-                    NotificationType.PLUS_ADMIN]:
-                icon = self.notificationPlusIcon()
+            else:
+                icon = self.notificationArtisanIcon()
             self.tray_icon.showMessage(notification.formatedTitle(), notification.message, icon, self.notification_timeout)
         except Exception as e: # pylint: disable=broad-except
             _log.exception(e)

@@ -7097,13 +7097,13 @@ CTRL+F [Win]</source>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>Откройте обжарку в artisan.plus</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>Откройте обжарку в Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>Требуется учетная запись artisan.plus</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>Требуется учетная запись Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7189,8 +7189,8 @@ Double click again to zoom in to original view</source>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>Синхронизируйте обжарку с artisan.plus</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>Синхронизируйте обжарку с Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16082,8 +16082,8 @@ ATTENTION: Recorded data will get cleared without confirmation</source>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus необходимо знать, какие именно кофейные зерна вы обжариваете.</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope необходимо знать, какие именно кофейные зерна вы обжариваете.</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16491,10 +16491,10 @@ ATTENTION: Recorded data will get cleared without confirmation</source>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Artisan можно использовать бесплатно!
 
-Чтобы он оставался бесплатным и актуальным, поддержите нас своим пожертвованием и подпишитесь на artisan.plus, чтобы скрыть этот диалог!</translation>
+Чтобы он оставался бесплатным и актуальным, поддержите нас своим пожертвованием и подпишитесь на Artisan Scope, чтобы скрыть этот диалог!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18171,8 +18171,8 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>Обновленные данные, полученные от artisan.plus</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Обновленные данные, полученные от Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18191,15 +18191,15 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>Подключено к artisan.plus</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Подключено к Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus выключен</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope выключен</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18208,28 +18208,28 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>Не удалось подключиться к artisan.plus</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>Не удалось подключиться к Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>Отключить artisan.plus?</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>Отключить Artisan Scope?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>Соединение с artisan.plus потеряно. Автоматическое переподключение...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Соединение с Artisan Scope потеряно. Автоматическое переподключение...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus отключен</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope отключен</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus воссоединился</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope воссоединился</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21450,23 +21450,23 @@ Unchecked: Fits a smooth spline to preserve curve shape.</source>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>Синхронизация с artisan.plus</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>Синхронизация с Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
+        <source>Disconnect Artisan Scope</source>
         <translation>Отключить ремесленника.плюс</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>Загрузить на artisan.plus</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>Загрузить на Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
+        <source>Connect Artisan Scope</source>
         <translation>Подключить ремесленник.плюс</translation>
     </message>
     <message>

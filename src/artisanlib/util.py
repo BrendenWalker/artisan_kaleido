@@ -612,11 +612,11 @@ def setDeviceDebugLogLevel(state: bool) -> None:
 def setDebugLogLevel(state: bool) -> None:
     if state:
         # debug logging on
-        setFileLogLevels(logging.DEBUG, ['artisanlib', 'plus'])
+        setFileLogLevels(logging.DEBUG, ['artisanlib'])
         _log.info('debug logging ON')
     else:
         # debug logging off
-        setFileLogLevels(logging.INFO, ['artisanlib', 'plus'])
+        setFileLogLevels(logging.INFO, ['artisanlib'])
         _log.info('debug logging OFF')
 
 def setFileLogLevel(logger: logging.Logger, level:int) -> None:

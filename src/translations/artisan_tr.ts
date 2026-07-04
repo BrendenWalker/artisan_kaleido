@@ -7104,13 +7104,13 @@ CTRL+F [Kazan]</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
+        <source>Open the roast in the browser (cloud web app)</source>
         <translation>Artisan.plus'ta kızartmayı açın</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>artisan.plus hesabı gerektirir</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>Artisan Scope hesabı gerektirir</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7196,8 +7196,8 @@ Orijinal görünüme geri dönmek için tekrar çift tıklayın.</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>Kızartmayı artisan.plus ile senkronize edin</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>Kızartmayı Artisan Scope ile senkronize edin</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16089,8 +16089,8 @@ DİKKAT: Kaydedilen veriler onay alınmadan silinecektir.</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus'ın kavurduğunuz kahve çekirdeklerini bilmesi gerekiyor.</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope'ın kavurduğunuz kahve çekirdeklerini bilmesi gerekiyor.</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16498,10 +16498,10 @@ DİKKAT: Kaydedilen veriler onay alınmadan silinecektir.</translation>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Artisan'ın kullanımı ücretsizdir!
 
-Ücretsiz ve güncel kalması için lütfen bağışlarınızla bizi destekleyin ve bu diyaloğu bastırmak için artisan.plus'a abone olun!</translation>
+Ücretsiz ve güncel kalması için lütfen bağışlarınızla bizi destekleyin ve bu diyaloğu bastırmak için Artisan Scope'a abone olun!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18177,7 +18177,7 @@ Devam et?</translation>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
+        <source>Updated data received from Artisan Scope</source>
         <translation>Artisan.plus'tan alınan güncellenmiş veriler</translation>
     </message>
     <message>
@@ -18197,15 +18197,15 @@ Devam et?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
+        <source>Connected to Artisan Scope</source>
         <translation>Artisan.plus ile bağlantılı</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus kapatıldı</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope kapatıldı</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18214,27 +18214,27 @@ Devam et?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
+        <source>Couldn't connect to Artisan Scope</source>
         <translation>Artisan.plus ile bağlantı kurulamadı</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
+        <source>Disconnect Artisan Scope?</source>
         <translation>Artisan.plus bağlantısı kesilsin mi?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>artisan.plus bağlantısı kesildi. Otomatik olarak yeniden bağlanılıyor...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Artisan Scope bağlantısı kesildi. Otomatik olarak yeniden bağlanılıyor...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus bağlantısı kesildi</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope bağlantısı kesildi</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
+        <source>Artisan Scope reconnected</source>
         <translation>zanaatkar.plus yeniden bağlantı kurdu</translation>
     </message>
     <message>
@@ -21446,24 +21446,24 @@ Unchecked: Fits a smooth spline to preserve curve shape.</source>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>artisan.plus ile senkronizasyon</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>Artisan Scope ile senkronizasyon</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>artisan.plus bağlantısını kesin</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>Artisan Scope bağlantısını kesin</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>artisan.plus'a yükleyin</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>Artisan Scope'a yükleyin</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>artisan.plus'ı bağlayın</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>Artisan Scope'ı bağlayın</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

@@ -7089,13 +7089,13 @@ CTRL+F [Win]</source>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>Öffnen der Röstung in artisan.plus</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>Röstung im Browser öffnen (Cloud-Webapp)</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>Benötigt ein artisan.plus Konto</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>Zum Anzeigen ist eine aktive Cloud-Anmeldung (Plus) nötig</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7172,7 +7172,7 @@ Erneuter Doppelklicken, um zur Originalansicht zurückzukehren</translation>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="65" />
         <source>Toggle connect/disconnect to plus</source>
-        <translation>Verbinden/Trennen der Verbindung zu artisan.plus</translation>
+        <translation>Verbinden/Trennen der Verbindung zu Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
@@ -7181,8 +7181,8 @@ Erneuter Doppelklicken, um zur Originalansicht zurückzukehren</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>Synchronisieren der Röstung mit artisan.plus</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>Röstung mit der Cloud synchronisieren</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -7194,7 +7194,7 @@ STRG-Klick auf Plus Symbol [Win]</translation>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
         <source>When connected to plus, disconnect and clear credentials</source>
-        <translation>Verbindung zu artisan.plus trennen und Anmeldeinformation löschen</translation>
+        <translation>Verbindung zu Artisan Scope trennen und Anmeldeinformation löschen</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="68" />
@@ -16067,8 +16067,8 @@ ACHTUNG: Gespeicherte Daten werden ohne Bestätigung gelöscht</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus muss wissen, welche Rohbohnen geröstet werden</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope muss wissen, welche Rohbohnen geröstet werden</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16476,10 +16476,10 @@ ACHTUNG: Gespeicherte Daten werden ohne Bestätigung gelöscht</translation>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Artisan ist kostenlos!
 
-Unterstützen Sie uns bitte mit einer Spende um es kostenfrei und aktuell zu halten und buchen Sie artisan.plus um diesen Dialog zu unterdrücken!</translation>
+Unterstützen Sie uns bitte mit einer Spende um es kostenfrei und aktuell zu halten und buchen Sie Artisan Scope um diesen Dialog zu unterdrücken!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18161,8 +18161,8 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>Aktualisierte Daten von artisan.plus empfangen</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Aktualisierte Daten von Artisan Scope empfangen</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18181,15 +18181,15 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>Verbunden mit artisan.plus</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Verbunden mit Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus ausgeschaltet</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope ausgeschaltet</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18198,28 +18198,28 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>Verbindung zu artisan.plus konnte nicht hergestellt werden</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>Verbindung zu Artisan Scope konnte nicht hergestellt werden</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>Die Verbindung zu artisan.plus trennen?</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>Die Verbindung zu Artisan Scope trennen?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>Verbindung zu artisan.plus unterbrochen. Automatische Wiederherstellung...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Verbindung zu Artisan Scope unterbrochen. Automatische Wiederherstellung...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>Verbindung zu artisan.plus getrennt</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Verbindung zu Artisan Scope getrennt</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus wieder verbunden</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope wieder verbunden</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21244,7 +21244,7 @@ Deaktiviert: Passt eine glatte Spline an, um die Kurvenform beizubehalten.</tran
     <message>
         <location filename="../artisanlib/main.py" line="746" />
         <source>Connect to plus service</source>
-        <translation>Mit artisan.plus verbinden</translation>
+        <translation>Mit Artisan Scope verbinden</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="747" />
@@ -21434,24 +21434,24 @@ Deaktiviert: Passt eine glatte Spline an, um die Kurvenform beizubehalten.</tran
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>Synchronization mit artisan.plus</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>Synchronization mit Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>Die Verbindung zu artisan.plus wurde getrennt</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>Die Verbindung zu Artisan Scope wurde getrennt</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>Übertragung zu artisan.plus</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>Übertragung zu Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>Mit artisan.plus verbunden</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>Mit Artisan Scope verbunden</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

@@ -7095,13 +7095,13 @@ CTRL+F [ניצחון]</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>פותחים את הצלי ב- artisan.plus</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>פותחים את הצלי ב- Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>דורש חשבון artisan.plus</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>דורש חשבון Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7187,8 +7187,8 @@ Double click again to zoom in to original view</source>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>סנכרן את הצלי עם artisan.plus</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>סנכרן את הצלי עם Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16072,8 +16072,8 @@ ATTENTION: Recorded data will get cleared without confirmation</source>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus צריך לדעת את השעועית שאתם צולים</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope צריך לדעת את השעועית שאתם צולים</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16481,10 +16481,10 @@ ATTENTION: Recorded data will get cleared without confirmation</source>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Artisan חופשי לשימוש!
 
-כדי לשמור את זה בחינם ועדכני אנא תמכו בנו בתרומתכם והירשם ל-artisan.plus כדי לדכא את הדו-שיח הזה!</translation>
+כדי לשמור את זה בחינם ועדכני אנא תמכו בנו בתרומתכם והירשם ל-Artisan Scope כדי לדכא את הדו-שיח הזה!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18160,8 +18160,8 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>נתונים עדכניים שהתקבלו מ- artisan.plus</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>נתונים עדכניים שהתקבלו מ- Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18180,15 +18180,15 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>מחובר ל- artisan.plus</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>מחובר ל- Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus מכובה</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope מכובה</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18197,28 +18197,28 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>לא ניתן היה להתחבר ל- artisan.plus</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>לא ניתן היה להתחבר ל- Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>לנתק את artisan.plus?</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>לנתק את Artisan Scope?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>החיבור ל-artisan.plus אבד. מתחבר מחדש אוטומטית...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>החיבור ל-Artisan Scope אבד. מתחבר מחדש אוטומטית...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus מנותק</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope מנותק</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus התחבר מחדש</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope התחבר מחדש</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21439,24 +21439,24 @@ Unchecked: Fits a smooth spline to preserve curve shape.</source>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>מסתנכרן עם artisan.plus</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>מסתנכרן עם Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>נתק את artisan.plus</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>נתק את Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>העלה ל-artisan.plus</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>העלה ל-Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>חבר את artisan.plus</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>חבר את Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

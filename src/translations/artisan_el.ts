@@ -7084,13 +7084,13 @@ CTRL+F [Νίκη]</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>Ανοίξτε το ψητό στο artisan.plus</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>Ανοίξτε το ψητό στο Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>Απαιτείται λογαριασμός artisan.plus</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>Απαιτείται λογαριασμός Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7176,8 +7176,8 @@ Double click again to zoom in to original view</source>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>Συγχρονίστε το ψητό με το artisan.plus</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>Συγχρονίστε το ψητό με το Artisan Scope</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16070,8 +16070,8 @@ ATTENTION: Recorded data will get cleared without confirmation</source>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>Το artisan.plus πρέπει να γνωρίζει τους κόκκους που ψήνετε</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Το Artisan Scope πρέπει να γνωρίζει τους κόκκους που ψήνετε</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16479,10 +16479,10 @@ ATTENTION: Recorded data will get cleared without confirmation</source>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Η χρήση του Artisan είναι δωρεάν!
 
-Για να το διατηρήσετε δωρεάν και επίκαιρο, υποστηρίξτε μας με τη δωρεά σας και εγγραφείτε στο artisan.plus για να καταργήσετε αυτό το παράθυρο διαλόγου!</translation>
+Για να το διατηρήσετε δωρεάν και επίκαιρο, υποστηρίξτε μας με τη δωρεά σας και εγγραφείτε στο Artisan Scope για να καταργήσετε αυτό το παράθυρο διαλόγου!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18160,8 +18160,8 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>Ενημερωμένα δεδομένα που ελήφθησαν από το artisan.plus</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Ενημερωμένα δεδομένα που ελήφθησαν από το Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18180,15 +18180,15 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>Συνδέθηκε με το artisan.plus</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Συνδέθηκε με το Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>Το artisan.plus απενεργοποιήθηκε</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Το Artisan Scope απενεργοποιήθηκε</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18197,28 +18197,28 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>Δεν ήταν δυνατή η σύνδεση στο artisan.plus</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>Δεν ήταν δυνατή η σύνδεση στο Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>Αποσύνδεση artisan.plus;</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>Αποσύνδεση Artisan Scope;</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>Η σύνδεση artisan.plus χάθηκε. Αυτόματη επανασύνδεση...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Η σύνδεση Artisan Scope χάθηκε. Αυτόματη επανασύνδεση...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>Το artisan.plus αποσυνδέθηκε</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Το Artisan Scope αποσυνδέθηκε</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>Το artisan.plus επανασυνδέθηκε</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Το Artisan Scope επανασυνδέθηκε</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21434,24 +21434,24 @@ Unchecked: Fits a smooth spline to preserve curve shape.</source>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>Συγχρονισμός με artisan.plus</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>Συγχρονισμός με Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>Αποσυνδέστε το artisan.plus</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>Αποσυνδέστε το Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>Μεταφόρτωση στο artisan.plus</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>Μεταφόρτωση στο Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>Συνδέστε το artisan.plus</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>Συνδέστε το Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

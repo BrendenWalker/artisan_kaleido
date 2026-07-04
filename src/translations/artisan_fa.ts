@@ -7093,13 +7093,13 @@ CTRL+F [برد]</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
-        <translation>کباب را در artisan.plus باز کنید</translation>
+        <source>Open the roast in the browser (cloud web app)</source>
+        <translation>کباب را در Artisan Scope باز کنید</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
-        <translation>به یک حساب کاربری artisan.plus نیاز دارد</translation>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
+        <translation>به یک حساب کاربری Artisan Scope نیاز دارد</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="60" />
@@ -7185,8 +7185,8 @@ Double click again to zoom in to original view</source>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
-        <translation>کباب را با artisan.plus همگام کنید</translation>
+        <source>Sync the roast to the cloud</source>
+        <translation>کباب را با Artisan Scope همگام کنید</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="67" />
@@ -16076,8 +16076,8 @@ ATTENTION: Recorded data will get cleared without confirmation</source>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus باید دانه‌هایی را که شما برشته می‌کنید، بشناسد.</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope باید دانه‌هایی را که شما برشته می‌کنید، بشناسد.</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16485,10 +16485,10 @@ ATTENTION: Recorded data will get cleared without confirmation</source>
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>استفاده از Artisan رایگان است!
 
-برای رایگان و به روز نگه داشتن آن، لطفاً با کمک مالی خود از ما حمایت کنید و برای سرکوب این گفتگو در artisan.plus مشترک شوید!</translation>
+برای رایگان و به روز نگه داشتن آن، لطفاً با کمک مالی خود از ما حمایت کنید و برای سرکوب این گفتگو در Artisan Scope مشترک شوید!</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5868" />
@@ -18165,8 +18165,8 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>داده های به روز شده از artisan.plus دریافت شده است</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>داده های به روز شده از Artisan Scope دریافت شده است</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18185,15 +18185,15 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>به artisan.plus متصل شد</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>به Artisan Scope متصل شد</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus خاموش شد</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope خاموش شد</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18202,28 +18202,28 @@ Continue?</source>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>اتصال به artisan.plus امکان پذیر نیست</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>اتصال به Artisan Scope امکان پذیر نیست</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>ارتباط artisan.plus قطع شود؟</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>ارتباط Artisan Scope قطع شود؟</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>اتصال artisan.plus قطع شد. در حال اتصال مجدد خودکار...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>اتصال Artisan Scope قطع شد. در حال اتصال مجدد خودکار...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus قطع شد</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope قطع شد</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus دوباره وصل شد</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope دوباره وصل شد</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21445,24 +21445,24 @@ Unchecked: Fits a smooth spline to preserve curve shape.</source>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
-        <translation>همگام سازی با artisan.plus</translation>
+        <source>Syncing with Artisan Scope</source>
+        <translation>همگام سازی با Artisan Scope</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
-        <translation>artisan.plus را قطع کنید</translation>
+        <source>Disconnect Artisan Scope</source>
+        <translation>Artisan Scope را قطع کنید</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
-        <translation>در artisan.plus بارگذاری کنید</translation>
+        <source>Upload to Artisan Scope</source>
+        <translation>در Artisan Scope بارگذاری کنید</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
-        <translation>artisan.plus را وصل کنید</translation>
+        <source>Connect Artisan Scope</source>
+        <translation>Artisan Scope را وصل کنید</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="8061" />

@@ -23,7 +23,7 @@ from PyQt6.QtCore import QDateTime
 from typing import TypedDict, Required, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from plus.stock import BlendList, Blend
+    from typing import Any as BlendList, Any as Blend  # legacy profile types
 
 class ComputedProfileInformation(TypedDict, total=False):
     CHARGE_ET: float
@@ -150,7 +150,7 @@ class ProfileData(TypedDict, total=False):
     plus_coffee: str
     plus_coffee_label: str
     plus_blend_label: str
-    plus_blend_spec: 'BlendList'
+    plus_blend_spec: object
     plus_blend_spec_labels: list[str]
     beans: str
     weight: list[float|str] # NOTE: internally weight is a typed tuple
@@ -530,7 +530,7 @@ class RecentRoast(TypedDict, total=False):
     plus_coffee:str|None
     plus_coffee_label:str|None
     plus_blend_label:str|None
-    plus_blend_spec:'Blend|None'
+    plus_blend_spec: object
     plus_blend_spec_labels: list[str]|None
 
 class SerialSettings(TypedDict):

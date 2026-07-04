@@ -7096,12 +7096,12 @@ CTRL+F [Windows]</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Open the roast in artisan.plus</source>
+        <source>Open the roast in the browser (cloud web app)</source>
         <translation>Mở món rang trong Artian.plus</translation>
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="59" />
-        <source>Requires an artisan.plus account</source>
+        <source>Requires a logged-in cloud session (Plus) to view</source>
         <translation>Yêu cầu tài khoản Artian.plus</translation>
     </message>
     <message>
@@ -7188,7 +7188,7 @@ Nhấp đúp chuột một lần nữa để phóng to về chế độ xem ban 
     </message>
     <message>
         <location filename="../help/keyboardshortcuts_help.py" line="66" />
-        <source>Sync the roast with artisan.plus</source>
+        <source>Sync the roast to the cloud</source>
         <translation>Đồng bộ hóa món rang với Artian.plus</translation>
     </message>
     <message>
@@ -16079,8 +16079,8 @@ LƯU Ý: Dữ liệu đã lưu sẽ bị xóa mà không cần xác nhận</tran
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="1683" />
-        <source>artisan.plus needs to know the beans you are roasting</source>
-        <translation>artisan.plus cần biết loại hạt cà phê bạn đang rang.</translation>
+        <source>Artisan Scope needs to know the beans you are roasting</source>
+        <translation>Artisan Scope cần biết loại hạt cà phê bạn đang rang.</translation>
     </message>
     <message>
         <location filename="../artisanlib/roast_properties.py" line="3908" />
@@ -16488,7 +16488,7 @@ LƯU Ý: Dữ liệu đã lưu sẽ bị xóa mà không cần xác nhận</tran
         <location filename="../artisanlib/main.py" line="5102" />
         <source>Artisan is free to use!
 
-To keep it free and current please support us with your donation and subscribe to artisan.plus to suppress this dialog!</source>
+To keep it free and current please support us with your donation and subscribe to Artisan Scope to suppress this dialog!</source>
         <translation>Nghệ nhân được sử dụng miễn phí!
 
 Để giữ cho nó miễn phí và cập nhật, vui lòng ủng hộ chúng tôi bằng khoản đóng góp của bạn và đăng ký artist.plus để chặn hộp thoại này!</translation>
@@ -18168,8 +18168,8 @@ Tiếp tục?</translation>
     </message>
     <message>
         <location filename="../plus/sync.py" line="729" />
-        <source>Updated data received from artisan.plus</source>
-        <translation>Dữ liệu cập nhật nhận được từ artisan.plus</translation>
+        <source>Updated data received from Artisan Scope</source>
+        <translation>Dữ liệu cập nhật nhận được từ Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="220" />
@@ -18188,15 +18188,15 @@ Tiếp tục?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="248" />
-        <source>Connected to artisan.plus</source>
-        <translation>Đã kết nối với artisan.plus</translation>
+        <source>Connected to Artisan Scope</source>
+        <translation>Đã kết nối với Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="364" />
         <location filename="../plus/controller.py" line="289" />
         <location filename="../plus/controller.py" line="266" />
-        <source>artisan.plus turned off</source>
-        <translation>artisan.plus đã tắt</translation>
+        <source>Artisan Scope turned off</source>
+        <translation>Artisan Scope đã tắt</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="273" />
@@ -18205,28 +18205,28 @@ Tiếp tục?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="298" />
-        <source>Couldn't connect to artisan.plus</source>
-        <translation>Không thể kết nối với artisan.plus</translation>
+        <source>Couldn't connect to Artisan Scope</source>
+        <translation>Không thể kết nối với Artisan Scope</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="323" />
-        <source>Disconnect artisan.plus?</source>
-        <translation>Ngắt kết nối artisan.plus?</translation>
+        <source>Disconnect Artisan Scope?</source>
+        <translation>Ngắt kết nối Artisan Scope?</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="373" />
-        <source>artisan.plus connection lost. Reconnecting automatically...</source>
-        <translation>Kết nối artisan.plus bị mất. Đang tự động kết nối lại...</translation>
+        <source>Artisan Scope connection lost. Reconnecting automatically...</source>
+        <translation>Kết nối Artisan Scope bị mất. Đang tự động kết nối lại...</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="377" />
-        <source>artisan.plus disconnected</source>
-        <translation>artisan.plus bị ngắt kết nối</translation>
+        <source>Artisan Scope disconnected</source>
+        <translation>Artisan Scope bị ngắt kết nối</translation>
     </message>
     <message>
         <location filename="../plus/controller.py" line="410" />
-        <source>artisan.plus reconnected</source>
-        <translation>artisan.plus đã kết nối lại</translation>
+        <source>Artisan Scope reconnected</source>
+        <translation>Artisan Scope đã kết nối lại</translation>
     </message>
     <message>
         <location filename="../plus/stock.py" line="470" />
@@ -21453,23 +21453,23 @@ Không chọn: Phù hợp với đường cong trơn tru để giữ nguyên hì
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5372" />
-        <source>Syncing with artisan.plus</source>
+        <source>Syncing with Artisan Scope</source>
         <translation>Đồng bộ hóa với Artian.plus</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5409" />
         <location filename="../artisanlib/main.py" line="5375" />
-        <source>Disconnect artisan.plus</source>
+        <source>Disconnect Artisan Scope</source>
         <translation>Ngắt kết nối Artian.plus</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5378" />
-        <source>Upload to artisan.plus</source>
+        <source>Upload to Artisan Scope</source>
         <translation>Tải lên Artian.plus</translation>
     </message>
     <message>
         <location filename="../artisanlib/main.py" line="5412" />
-        <source>Connect artisan.plus</source>
+        <source>Connect Artisan Scope</source>
         <translation>Kết nối Artian.plus</translation>
     </message>
     <message>
