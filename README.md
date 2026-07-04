@@ -117,7 +117,7 @@ pytest src/test/unitary/artisanlib/test_kaleido.py -v
 
 ## Roadmap
 
-- Model Predictive Control (MPC) with thermal prediction horizon
+- [Model Predictive Control (MPC)](docs/kaleido_mpc_spec.md) — design spec and phased implementation plan
 - Full schedule editor UI in PID dialog
 - Live diagnostic curves (commanded HP/FC, phase, ET−BT error)
 - Drum speed (RC) coordination
