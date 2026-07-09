@@ -210,7 +210,8 @@ from artisanlib.util import (appFrozen, uchr, decodeLocal, decodeLocalStrict, en
         fromFtoCstrict, fromCtoFstrict, RoRfromFtoCstrict, RoRfromCtoFstrict,
         convertRoR, convertRoRstrict, convertTemp, path2url, toInt, toString, toList, toFloat,
         toBool, toStringList, removeAll, application_name, application_viewer_name, application_organization_name,
-        application_organization_domain, application_desktop_file_name, getDataDirectory, getDocumentsDirectory, getAppPath, getResourcePath, debugLogLevelToggle,
+        application_organization_domain, official_application_organization_name, official_application_organization_domain,
+        application_desktop_file_name, getDataDirectory, getDocumentsDirectory, getAppPath, getResourcePath, debugLogLevelToggle,
         debugLogLevelActive, setDebugLogLevel, createGradient, natsort, setDeviceDebugLogLevel,
         comma2dot, is_proper_temp, weight_units, volume_units, float2float, float2str,
         convertWeight, convertVolume, rgba_colorname2argb_colorname, render_weight, serialize, deserialize, csv_load, exportProfile2CSV, findTPint,
@@ -535,10 +536,14 @@ if sys.platform.startswith('linux'):
 app = Artisan(app_args)
 
 
-# On the first run if there are legacy settings under "YourQuest" but no new settings under "artisan-scope" then the legacy settings
-# will be copied to the new settings location. Once settings exist under "artisan-scope" the legacy settings under "YourQuest" will
-# no longer be read or saved.  At start-up, versions of Artisan before to v2.0 will no longer share settings with versions v2.0 and after.
-# Settings can be shared among all versions of Artisan by explicitly saving and loading them using Help>Save/Load Settings.
+# On the first run if there are legacy settings under "YourQuest" but no new settings under "artisan-kaleido" then the legacy settings
+# will be copied to the new settings location. Once settings exist under "artisan-kaleido" the legacy settings under "YourQuest" will
+# no longer be read or saved.
+#
+# If no settings exist under "artisan-kaleido" but settings exist under official upstream "artisan-scope", those settings are copied
+# once on first start. After that this build only reads and writes "artisan-kaleido" settings so Kaleido-specific keys
+# (e.g. kaleidoHybridControl) are not written to official Artisan when switching versions.
+# Settings can be shared explicitly using Help>Save/Load Settings.
 
 settingsRelocated:bool = False
 try:
@@ -572,6 +577,43 @@ try:
             newsettings.setValue(key,legacysettings.value(key))
     del legacysettings   #free up memory?
     del newsettings      #free up memory?
+except Exception: # pylint: disable=broad-except
+    pass
+
+try:
+    def _copy_qsettings(source:QSettings, dest:QSettings) -> None:
+        for key in source.allKeys():
+            dest.setValue(key, source.value(key))
+
+    def _open_qsettings(org:str, domain:str, app_name:str) -> QSettings:
+        saved_app_name = app.applicationName()
+        saved_org = app.organizationName()
+        saved_domain = app.organizationDomain()
+        app.setOrganizationName(org)
+        app.setOrganizationDomain(domain)
+        app.setApplicationName(app_name)
+        settings = QSettings()
+        app.setApplicationName(saved_app_name)
+        app.setOrganizationName(saved_org)
+        app.setOrganizationDomain(saved_domain)
+        return settings
+
+    kaleido_settings = _open_qsettings(application_organization_name, application_organization_domain, application_name)
+    official_settings = _open_qsettings(official_application_organization_name, official_application_organization_domain, application_name)
+
+    if not kaleido_settings.contains('Mode') and official_settings.contains('Mode'):
+        settingsRelocated = True
+        _copy_qsettings(official_settings, kaleido_settings)
+
+    kaleido_viewer_settings = _open_qsettings(application_organization_name, application_organization_domain, application_viewer_name)
+    official_viewer_settings = _open_qsettings(official_application_organization_name, official_application_organization_domain, application_viewer_name)
+    if not kaleido_viewer_settings.contains('Mode') and official_viewer_settings.contains('Mode'):
+        _copy_qsettings(official_viewer_settings, kaleido_viewer_settings)
+
+    del kaleido_settings
+    del official_settings
+    del kaleido_viewer_settings
+    del official_viewer_settings
 except Exception: # pylint: disable=broad-except
     pass
 
@@ -3974,12 +4016,11 @@ class ApplicationWindow(QMainWindow):
 #        # provide information message to user about sharing settings at start-up
         if settingsRelocated:
             string =  QApplication.translate('Message','Welcome to version {0} of Artisan!').format(__version__) + '\n\n'
-            string += QApplication.translate('Message','This is a one time message to inform you about a change in Artisan.') + '\n\n'
-            string += QApplication.translate('Message','If you never run older versions of Artisan you can skip this message, the change does not affect you.') + '  '
-            string += QApplication.translate('Message','Artisan preserves all your configuration settings when you exit so they will automatically be available the next time you start Artisan.') + '  '
-            string += QApplication.translate('Message','Beginning with release v2.0, settings will no longer be automatically shared at start-up with versions before v2.0.') + '\n\n'
-            string += QApplication.translate('Message','Do not worry. Since this is the first time you opened this new version Artisan has already loaded your last used settings.') + '\n\n'
-            string += QApplication.translate('Message',"To share settings between this version and Artisan versions before v2.0 use 'Help>Save Settings' and 'Help>Load Settings'.") + '\n\n'
+            string += QApplication.translate('Message','This is a one time message to inform you about a change in Artisan Kaleido.') + '\n\n'
+            string += QApplication.translate('Message','Artisan Kaleido stores settings separately from official Artisan so Kaleido-specific options do not affect upstream Artisan when switching between versions.') + '  '
+            string += QApplication.translate('Message','Artisan preserves all your configuration settings when you exit so they will automatically be available the next time you start Artisan.') + '\n\n'
+            string += QApplication.translate('Message','Do not worry. Since this is the first time you opened Artisan Kaleido it has already loaded your last used settings from official Artisan.') + '\n\n'
+            string += QApplication.translate('Message',"To share settings between Artisan Kaleido and official Artisan use 'Help>Save Settings' and 'Help>Load Settings'.") + '\n\n'
             string += QApplication.translate('Message','Enjoy using Artisan, The Artisan Team')
             QMessageBox.information(self, QApplication.translate('Message','One time message about loading settings at start-up'),string)
 
