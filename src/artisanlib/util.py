@@ -45,9 +45,13 @@ _log: Final[logging.Logger] = logging.getLogger(__name__)
 
 application_name: Final[str] = 'Artisan'
 application_viewer_name: Final[str] = 'ArtisanViewer'
-application_organization_name: Final[str] = 'artisan-scope'
-application_organization_domain: Final[str] = 'artisan-scope.org'
+application_organization_name: Final[str] = 'artisan-kaleido'
+application_organization_domain: Final[str] = 'artisan-kaleido.org'
 application_desktop_file_name: Final[str] = 'org.artisan_scope.artisan'
+
+# Official upstream Artisan QSettings location (one-time migration source only)
+official_application_organization_name: Final[str] = 'artisan-scope'
+official_application_organization_domain: Final[str] = 'artisan-scope.org'
 
 
 from PyQt6.QtCore import QStandardPaths, QCoreApplication, QTime, QDate, QDateTime
@@ -395,10 +399,10 @@ def replace_duplicates(data:list[float]) -> list[float]:
 # for the platform
 # note that the path is based on the ApplicationName and OrganizationName
 # setting of the app
-# eg. ~/Library/Application Support/artisan-scope/Artisan (macOS)
-#     C:\Users\<USER>\AppData\Local\artisan-scope\Artisan (Windows)
-#     ~/.local/share/artisan-scope/Artisan (Linux)
-#     ~/.var/app/org.artisan_scope.artisan/data/artisan-scope/Artisan/artisan.log (Linux if installed via Flatpack)
+# eg. ~/Library/Application Support/artisan-kaleido/Artisan (macOS)
+#     C:\Users\<USER>\AppData\Local\artisan-kaleido\Artisan (Windows)
+#     ~/.local/share/artisan-kaleido/Artisan (Linux)
+#     ~/.var/app/org.artisan_scope.artisan/data/artisan-kaleido/Artisan/artisan.log (Linux if installed via Flatpack)
 
 # getDataDirectory() returns the Artisan data directory
 # if app is not yet initialized None is returned
