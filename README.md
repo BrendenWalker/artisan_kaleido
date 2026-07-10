@@ -56,9 +56,21 @@ Configure under **Config → Device** (Ctrl+D):
 
 Network host/port settings remain on the **Networks** tab in the Kaleido group box.
 
-4. Load a **background profile** with a desired RoR curve (ΔBT).
-5. Start sampling and press **PID ON** — Artisan disables machine PID (`AH=0`) and drives **HP** + **FC** directly.
-6. With PID off, use event sliders for manual control (FC = slider 1, HP = slider 4 in the Kaleido preset).
+### Hybrid roast flow (recommended)
+
+With **Hybrid Controller** selected:
+
+1. Optionally load a **background profile** with a desired RoR curve (ΔBT).
+2. Press **ON** — monitoring starts; set **SV** for warmup temperature.
+3. Press **Start Heating** — heaters on (`HS`) and Machine PID warmup (`AH=1`, SV→`TS`).
+4. Press **START** — recording only; roaster control is unchanged.
+5. Press **CHARGE** (or auto-detect):
+   - **Background loaded** → switch to Hybrid (`AH=0`, drive HP + FC).
+   - **No background** → manual control (PID off; use event sliders).
+
+CONTROL / PIDon before CHARGE also uses Machine PID warmup (same as Start Heating). After CHARGE, CONTROL / PIDon activates Hybrid.
+
+With PID off, use event sliders for manual control (FC = slider 1, HP = slider 4 in the Kaleido preset).
 
 ### How It Works
 
@@ -113,6 +125,7 @@ src/artisanlib/
 ```bash
 pytest src/test/unitary/artisanlib/test_hybrid_controller.py -v
 pytest src/test/unitary/artisanlib/test_kaleido.py -v
+pytest src/test/unitary/artisanlib/test_pid_control.py -v -k kaleido
 ```
 
 ## Roadmap

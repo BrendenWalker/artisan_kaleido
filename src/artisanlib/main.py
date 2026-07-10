@@ -17442,6 +17442,9 @@ class ApplicationWindow(QMainWindow):
                                     self.setExtraEventButtonStyleSignal.emit(lastbuttonpressed, 'pressed')
                                 else:
                                     self.setExtraEventButtonStyleSignal.emit(lastbuttonpressed, 'normal')
+                                # Start Heating (HS ON): enable Machine PID warmup in Hybrid pre-CHARGE phase
+                                if target == 'HS':
+                                    self.kaleidoStartHeating(bv)
                         elif etype>-1:
                             new_value = int(round(float(res)))
                             self.addEventSignal.emit(new_value, etype, True, False, False)
@@ -17451,6 +17454,17 @@ class ApplicationWindow(QMainWindow):
                 if etype == -1 and len(self.buttonlist)>lastbuttonpressed > -1:
                     # we unblock all signals emitted from this button until we received a response
                     self.buttonlist[lastbuttonpressed].blockSignals(False)
+
+    # When Start Heating turns ON during Hybrid pre-CHARGE, enable Machine PID warmup (SV→TS).
+    # Turning heating OFF does not change PID state (avoids surprising the operator mid-warmup).
+    def kaleidoStartHeating(self, on:bool) -> None:
+        if not on:
+            return
+        if (self.kaleidoHybridControl and self.qmc.Controlbuttonflag
+                and self.kaleido is not None
+                and self.pidcontrol.kaleidoInWarmupPhase()
+                and not self.pidcontrol.pidActive):
+            self.pidcontrol.pidOn()
 
     # removes window geometry and splitter settings from the given settings
     @staticmethod

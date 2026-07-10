@@ -1291,6 +1291,21 @@ class PIDcontrol:
             return 4
         return 0
 
+    # Hybrid mode uses Machine PID (AH/TS) for warmup until CHARGE is marked
+    def kaleidoInWarmupPhase(self) -> bool:
+        return self.externalPIDControl() == 5 and self.aw.qmc.timeindex[0] == -1
+
+    # After CHARGE with a background loaded: leave Machine PID and activate Hybrid
+    def kaleidoEnterHybridOnCharge(self) -> None:
+        if self.aw.kaleido is None or not self.aw.qmc.Controlbuttonflag:
+            return
+        self.aw.kaleido.pidOFF()
+        self.aw.qmc.pid.off()
+        self.aw.hybrid_controller.activate()
+        self.pidActive = True
+        self.aw.buttonCONTROL.setStyleSheet(self.aw.pushbuttonstyles['PIDactive'])
+        self.aw.sendmessage(QApplication.translate('Message','Hybrid Controller ON'))
+
     # v is from [-min,max]
     def setEnergy(self, v:float) -> None:
         try:
@@ -1517,13 +1532,23 @@ class PIDcontrol:
             self.aw.qmc.pid.on()
             self.aw.buttonCONTROL.setStyleSheet(self.aw.pushbuttonstyles['PIDactive'])
         elif self.aw.qmc.Controlbuttonflag and self.externalPIDControl() == 5 and self.aw.kaleido is not None:
-            # Kaleido Hybrid Controller
-            if send_command:
-                self.aw.kaleido.pidOFF()
-                self.aw.hybrid_controller.activate()
-            self.pidActive = True
-            self.aw.buttonCONTROL.setStyleSheet(self.aw.pushbuttonstyles['PIDactive'])
-            self.aw.sendmessage(QApplication.translate('Message','Hybrid Controller ON'))
+            # Kaleido Hybrid Controller: Machine PID warmup until CHARGE, then Hybrid
+            if self.kaleidoInWarmupPhase():
+                if send_command:
+                    self.aw.hybrid_controller.reset()
+                    self.aw.kaleido.pidON()
+                self.pidActive = True
+                self.aw.qmc.pid.on()
+                self.aw.buttonCONTROL.setStyleSheet(self.aw.pushbuttonstyles['PIDactive'])
+                self.aw.sendmessage(QApplication.translate('Message','Machine PID warmup ON'))
+            else:
+                if send_command:
+                    self.aw.kaleido.pidOFF()
+                    self.aw.qmc.pid.off()
+                    self.aw.hybrid_controller.activate()
+                self.pidActive = True
+                self.aw.buttonCONTROL.setStyleSheet(self.aw.pushbuttonstyles['PIDactive'])
+                self.aw.sendmessage(QApplication.translate('Message','Hybrid Controller ON'))
         elif self.aw.qmc.Controlbuttonflag:
             # software PID
             if not self.pidActive: # only if not yet active!
@@ -1579,9 +1604,12 @@ class PIDcontrol:
             self.aw.qmc.pid.off()
             self.aw.buttonCONTROL.setStyleSheet(self.aw.pushbuttonstyles['PID'])
         elif self.aw.qmc.Controlbuttonflag and self.aw.kaleidoHybridControl and self.aw.kaleido is not None:
-            # Kaleido Hybrid Controller
+            # Kaleido Hybrid Controller (warmup uses Machine PID; post-CHARGE uses Hybrid)
+            if send_command:
+                self.aw.kaleido.pidOFF()
             self.aw.hybrid_controller.reset()
             self.pidActive = False
+            self.aw.qmc.pid.off()
             self.aw.buttonCONTROL.setStyleSheet(self.aw.pushbuttonstyles['PID'])
         elif self.aw.qmc.Controlbuttonflag:
             # software PID
@@ -1778,6 +1806,13 @@ class PIDcontrol:
                 self.aw.moveSVslider(sv,setValue=True)
             self.aw.kaleido.setSV(sv)
             self.sv = sv # remember last sv
+        elif self.externalPIDControl() == 5 and self.aw.kaleido is not None and self.kaleidoInWarmupPhase():
+            # Hybrid warmup: SV drives Machine PID target (TS)
+            if move and self.svSlider:
+                self.aw.moveSVslider(sv,setValue=True)
+            self.aw.kaleido.setSV(sv)
+            self.sv = sv # remember last sv
+            self.svValue = sv
         elif self.aw.qmc.Controlbuttonflag:
             # in all other cases if the "Control" flag is ticked: software PID
             if move and self.svSlider:
