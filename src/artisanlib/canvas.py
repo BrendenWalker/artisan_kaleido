@@ -5116,9 +5116,10 @@ class tgraphcanvas(QObject):
                             # after DRY (if FCs event not yet set) check for BT exceeding FC-min as specified in the phases dialog
                             self.markFCsSignal.emit(False) # queued
 
-                    # Kaleido Hybrid Controller: coordinated heater + fan
+                    # Kaleido Hybrid Controller: coordinated heater + fan (only after CHARGE)
                     if (self.Controlbuttonflag and self.aw.pidcontrol.pidActive and
-                            self.aw.pidcontrol.externalPIDControl() == 5 and self.aw.kaleido is not None):
+                            self.aw.pidcontrol.externalPIDControl() == 5 and self.aw.kaleido is not None and
+                            self.timeindex[0] > -1):
                         try:
                             from artisanlib.hybrid_controller import compute_ror_acceleration
                             roast_t = (tx - self.timex[self.timeindex[0]]) if self.timeindex[0] > -1 else tx
@@ -14556,7 +14557,14 @@ class tgraphcanvas(QObject):
                                 message = QApplication.translate('Message','Not enough data collected yet. Try again in a few seconds')
                                 self.aw.sendmessage(message)
                                 return
-                            if self.aw.pidcontrol.pidOnCHARGE and not self.aw.pidcontrol.pidActive: # Arduino/TC4, Hottop, MODBUS
+                            if (self.aw.kaleidoHybridControl and self.aw.kaleido is not None
+                                    and self.Controlbuttonflag):
+                                # Hybrid mode: CHARGE enters Hybrid if background loaded, else manual
+                                if self.background:
+                                    self.aw.pidcontrol.kaleidoEnterHybridOnCharge()
+                                else:
+                                    self.aw.pidcontrol.pidOff()
+                            elif self.aw.pidcontrol.pidOnCHARGE and not self.aw.pidcontrol.pidActive: # Arduino/TC4, Hottop, MODBUS
                                 self.aw.pidcontrol.pidOn()
                         if self.chargeTimerPeriod > 0:
                             self.aw.setTimerColor('timer')

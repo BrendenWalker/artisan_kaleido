@@ -301,3 +301,156 @@ class TestPIDControlStaticMethods:
 
             assert hasattr(DtaPID, 'DTACalcChecksum')
             assert callable(DtaPID.DTACalcChecksum)
+
+
+def _make_hybrid_aw() -> Mock:
+    aw = Mock()
+    aw.qmc = Mock()
+    aw.qmc.mode = 'C'
+    aw.qmc.device = 138
+    aw.qmc.Controlbuttonflag = True
+    aw.qmc.PIDbuttonflag = False
+    aw.qmc.flagon = True
+    aw.qmc.flagstart = False
+    aw.qmc.timeindex = [-1, 0, 0, 0, 0, 0, 0, 0]
+    aw.qmc.timex = []
+    aw.qmc.on_timex = []
+    aw.qmc.temp1 = []
+    aw.qmc.temp2 = []
+    aw.qmc.pid = Mock()
+    aw.modbus = Mock()
+    aw.modbus.PID_device_ID = 0
+    aw.s7 = Mock()
+    aw.s7.PID_area = 0
+    aw.kaleidoHybridControl = True
+    aw.kaleidoPID = False
+    aw.kaleido = Mock()
+    aw.hybrid_controller = Mock()
+    aw.pushbuttonstyles = {'PID': 'pid', 'PIDactive': 'active'}
+    aw.buttonCONTROL = Mock()
+    aw.sendmessage = Mock()
+    aw.setTimerColor = Mock()
+    aw.HottopControlActive = False
+    aw.sliderSV = Mock()
+    return aw
+
+
+class TestKaleidoHybridPhaseControl:
+    """Phase-aware Hybrid: Machine PID warmup until CHARGE, then Hybrid."""
+
+    def test_kaleido_in_warmup_phase_before_charge(self) -> None:
+        aw = _make_hybrid_aw()
+        with patch('artisanlib.util.fromCtoFstrict'), \
+             patch('artisanlib.util.fromFtoCstrict'), \
+             patch('artisanlib.util.hex2int'), \
+             patch('artisanlib.util.str2cmd'), \
+             patch('artisanlib.util.stringfromseconds'), \
+             patch('artisanlib.util.cmd2str'), \
+             patch('artisanlib.util.float2float'), \
+             patch('PyQt6.QtWidgets.QApplication'), \
+             patch('PyQt6.QtCore.pyqtSlot'):
+            from artisanlib.pid_control import PIDcontrol
+            pc = PIDcontrol(aw)
+            assert pc.externalPIDControl() == 5
+            assert pc.kaleidoInWarmupPhase() is True
+            aw.qmc.timeindex[0] = 10
+            assert pc.kaleidoInWarmupPhase() is False
+
+    def test_pid_on_warmup_uses_machine_pid(self) -> None:
+        aw = _make_hybrid_aw()
+        with patch('artisanlib.util.fromCtoFstrict'), \
+             patch('artisanlib.util.fromFtoCstrict'), \
+             patch('artisanlib.util.hex2int'), \
+             patch('artisanlib.util.str2cmd'), \
+             patch('artisanlib.util.stringfromseconds'), \
+             patch('artisanlib.util.cmd2str'), \
+             patch('artisanlib.util.float2float'), \
+             patch('PyQt6.QtWidgets.QApplication'), \
+             patch('PyQt6.QtCore.pyqtSlot'):
+            from artisanlib.pid_control import PIDcontrol
+            pc = PIDcontrol(aw)
+            pc.svMode = 0
+            pc.svValue = 200.0
+            pc.pidOn()
+            aw.kaleido.pidON.assert_called_once()
+            aw.hybrid_controller.activate.assert_not_called()
+            aw.qmc.pid.on.assert_called()
+            assert pc.pidActive is True
+
+    def test_pid_on_after_charge_activates_hybrid(self) -> None:
+        aw = _make_hybrid_aw()
+        aw.qmc.timeindex[0] = 5
+        with patch('artisanlib.util.fromCtoFstrict'), \
+             patch('artisanlib.util.fromFtoCstrict'), \
+             patch('artisanlib.util.hex2int'), \
+             patch('artisanlib.util.str2cmd'), \
+             patch('artisanlib.util.stringfromseconds'), \
+             patch('artisanlib.util.cmd2str'), \
+             patch('artisanlib.util.float2float'), \
+             patch('PyQt6.QtWidgets.QApplication'), \
+             patch('PyQt6.QtCore.pyqtSlot'):
+            from artisanlib.pid_control import PIDcontrol
+            pc = PIDcontrol(aw)
+            pc.svMode = 0
+            pc.pidOn()
+            aw.kaleido.pidOFF.assert_called()
+            aw.hybrid_controller.activate.assert_called_once()
+            assert pc.pidActive is True
+
+    def test_set_sv_warmup_writes_kaleido_ts(self) -> None:
+        aw = _make_hybrid_aw()
+        with patch('artisanlib.util.fromCtoFstrict'), \
+             patch('artisanlib.util.fromFtoCstrict'), \
+             patch('artisanlib.util.hex2int'), \
+             patch('artisanlib.util.str2cmd'), \
+             patch('artisanlib.util.stringfromseconds'), \
+             patch('artisanlib.util.cmd2str'), \
+             patch('artisanlib.util.float2float'), \
+             patch('PyQt6.QtWidgets.QApplication'), \
+             patch('PyQt6.QtCore.pyqtSlot'):
+            from artisanlib.pid_control import PIDcontrol
+            pc = PIDcontrol(aw)
+            pc.svSlider = False
+            pc.setSV(195.0, move=False)
+            aw.kaleido.setSV.assert_called_once_with(195.0)
+            assert pc.sv == 195.0
+
+    def test_enter_hybrid_on_charge(self) -> None:
+        aw = _make_hybrid_aw()
+        aw.qmc.timeindex[0] = 3
+        with patch('artisanlib.util.fromCtoFstrict'), \
+             patch('artisanlib.util.fromFtoCstrict'), \
+             patch('artisanlib.util.hex2int'), \
+             patch('artisanlib.util.str2cmd'), \
+             patch('artisanlib.util.stringfromseconds'), \
+             patch('artisanlib.util.cmd2str'), \
+             patch('artisanlib.util.float2float'), \
+             patch('PyQt6.QtWidgets.QApplication'), \
+             patch('PyQt6.QtCore.pyqtSlot'):
+            from artisanlib.pid_control import PIDcontrol
+            pc = PIDcontrol(aw)
+            pc.pidActive = True
+            pc.kaleidoEnterHybridOnCharge()
+            aw.kaleido.pidOFF.assert_called_once()
+            aw.qmc.pid.off.assert_called()
+            aw.hybrid_controller.activate.assert_called_once()
+            assert pc.pidActive is True
+
+    def test_pid_off_warmup_turns_off_machine_pid(self) -> None:
+        aw = _make_hybrid_aw()
+        with patch('artisanlib.util.fromCtoFstrict'), \
+             patch('artisanlib.util.fromFtoCstrict'), \
+             patch('artisanlib.util.hex2int'), \
+             patch('artisanlib.util.str2cmd'), \
+             patch('artisanlib.util.stringfromseconds'), \
+             patch('artisanlib.util.cmd2str'), \
+             patch('artisanlib.util.float2float'), \
+             patch('PyQt6.QtWidgets.QApplication'), \
+             patch('PyQt6.QtCore.pyqtSlot'):
+            from artisanlib.pid_control import PIDcontrol
+            pc = PIDcontrol(aw)
+            pc.pidActive = True
+            pc.pidOff()
+            aw.kaleido.pidOFF.assert_called_once()
+            aw.hybrid_controller.reset.assert_called_once()
+            assert pc.pidActive is False
