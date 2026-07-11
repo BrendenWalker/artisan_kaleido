@@ -10,7 +10,7 @@ types-requests>=2.33.0.20260327
 types-setuptools>=82.0.0.20260210
 types-urllib3>=1.26.25.14
 types-docutils>=0.22.3.20260322
-types-xlrd>=2.0.0.20251020
+types-xlrd>=2.0.0.20260518
 types-qrcode>=8.2.0.20260322
 lxml-stubs>=0.5.1
 mypy==1.19.1
