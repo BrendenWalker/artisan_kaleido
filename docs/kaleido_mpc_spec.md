@@ -169,8 +169,18 @@ comparison / timing alignment** only.
 
 ### CHARGE / mode gating
 
-- Warmup uses Machine PID until CHARGE (unchanged).
+Hybrid is intentionally **phased** so Machine PID owns drum warmup and Hybrid owns the roast after beans drop:
+
+| Stage | Control | Protocol |
+|-------|---------|----------|
+| ON / set SV | Monitoring only | Operator sets warmup temperature |
+| Start Heating (or CONTROL / PIDon pre-CHARGE) | **Machine PID warmup** | Heaters on (`HS`); `AH=1`, SV → `TS` |
+| START | Recording only | Roaster control unchanged (still Machine PID if already warming) |
+| CHARGE (or auto-detect) | **Hybrid** | `AH=0`; drive HP + FC from the M6 RoR-shape plan + Energy layer (+ twin) |
+| CONTROL / PIDon after CHARGE | Hybrid | Same Hybrid path as CHARGE entry |
+
 - With Hybrid mode selected, **CHARGE always enters Hybrid** (no loaded background required).
+- Background profiles remain optional for **visual comparison / timing alignment** only.
 - Manual remains available when Hybrid mode is off, Control is off, or the user calls `pidOff`.
 
 ### Implementation map
