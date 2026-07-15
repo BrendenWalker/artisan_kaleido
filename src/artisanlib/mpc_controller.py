@@ -58,6 +58,37 @@ def _clip(x: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, x))
 
 
+def predict_horizon_phase(
+    timeindex: list[int],
+    bt: float,
+    phase0: RoastPhase,
+    config: HybridControllerConfig,
+) -> RoastPhase:
+    """Event-aware phase over the horizon: never regress; events + BT fallbacks."""
+    phase_evt = detect_roast_phase(timeindex, bt, config)
+    phase_bt = detect_roast_phase([0] * 8, bt, config)
+    phase = phase0
+    if phase_evt.value > phase.value:
+        phase = phase_evt
+    if phase_bt.value > phase.value:
+        phase = phase_bt
+    return phase
+
+
+def phase_cost_scales(phase: RoastPhase, config: HybridControllerConfig) -> tuple[float, float, float]:
+    """Return (w_accel, w_dhp, w_dfc) scales favoring air after first crack."""
+    heater_w = config.phase_heater_weight.get(phase, 0.5)
+    air_w = max(0.0, 1.0 - heater_w)
+    # Accel & FC movement matter more late; HP movement penalized more late
+    w_accel = 1.0 + 1.2 * air_w
+    w_dhp = 1.0 + 1.5 * air_w
+    w_dfc = 1.0 + 0.35 * air_w
+    if phase in (RoastPhase.FirstCrack, RoastPhase.Development):
+        w_accel *= 1.35
+        w_dfc *= 1.25
+    return w_accel, w_dhp, w_dfc
+
+
 def _expand_blocked(values: np.ndarray, horizon: int, block: int) -> np.ndarray:
     """Expand low-rate decision coeffs to per-step sequence of length horizon."""
     out = np.zeros(horizon, dtype=float)
@@ -138,7 +169,7 @@ class MPCBackend:
         x0 = estimate_state(bt, et, self._last_hp, self.mpc.model, self._e_element)
         self._e_element = float(x0[2])
 
-        solved = self._solve(x0, phase, dt)
+        solved = self._solve(x0, phase, timeindex, dt)
         if solved is None:
             self._fallback_count += 1
             _log.warning('MPC fallback to Energy (count=%s)', self._fallback_count)
@@ -166,7 +197,14 @@ class MPCBackend:
         fc_seq = _expand_blocked(z[n_hp:n_hp + n_fc], self.mpc.horizon, self.mpc.fc_block)
         return hp_seq, fc_seq
 
-    def _simulate_cost(self, z: np.ndarray, x0: np.ndarray, phase0: RoastPhase, dt: float) -> float:
+    def _simulate_cost(
+        self,
+        z: np.ndarray,
+        x0: np.ndarray,
+        phase0: RoastPhase,
+        timeindex: list[int],
+        dt: float,
+    ) -> float:
         cfg = self.config
         mpc = self.mpc
         hp_seq, fc_seq = self._pack_u(z)
@@ -183,11 +221,12 @@ class MPCBackend:
             t_bean = float(x_next[0])
             t_chamber = float(x_next[1])
             ror = ror_c_per_min(t_bean_prev, t_bean, dt)
-            # BT-threshold phase (never regress relative to measured phase0)
-            phase_bt = detect_roast_phase([0] * 8, t_bean, cfg)
-            phase = phase0 if phase0.value >= phase_bt.value else phase_bt
+            phase = predict_horizon_phase(timeindex, t_bean, phase0, cfg)
             ror_ref = interpolate_ror_target(t_bean, phase, cfg)
             offset_ref = cfg.et_bt_offsets.get(phase, 45.0)
+            base_fc = cfg.baseline_fan.get(phase, 50.0)
+            base_hp = cfg.baseline_heater.get(phase, 70.0)
+            scale_accel, scale_dhp, scale_dfc = phase_cost_scales(phase, cfg)
 
             d_ror = ror - prev_ror if k > 0 else 0.0
             d_hp = hp_seq[k] - prev_hp
@@ -195,13 +234,18 @@ class MPCBackend:
             offset_err = (t_chamber - t_bean) - offset_ref
 
             cost += mpc.w_ror * (ror - ror_ref) ** 2
-            cost += mpc.w_accel * d_ror ** 2
-            cost += mpc.w_dhp * d_hp ** 2
-            cost += mpc.w_dfc * d_fc ** 2
+            cost += mpc.w_accel * scale_accel * d_ror ** 2
+            cost += mpc.w_dhp * scale_dhp * d_hp ** 2
+            cost += mpc.w_dfc * scale_dfc * d_fc ** 2
             cost += mpc.w_offset * offset_err ** 2
+            # Soft pull toward phase baselines (playbook bias)
+            cost += 0.015 * (hp_seq[k] - base_hp) ** 2
+            cost += 0.025 * (fc_seq[k] - base_fc) ** 2
 
             # Soft slew penalties (hard constraints enforced via bounds expansion)
             hp_slew = cfg.heater_slew_pct_per_sec * dt
+            if phase in (RoastPhase.FirstCrack, RoastPhase.Development):
+                hp_slew = min(hp_slew, 3.0 * dt)
             fc_slew = cfg.fan_slew_pct_per_sec * dt
             if abs(d_hp) > hp_slew:
                 cost += 20.0 * (abs(d_hp) - hp_slew) ** 2
@@ -220,6 +264,7 @@ class MPCBackend:
         self,
         x0: np.ndarray,
         phase: RoastPhase,
+        timeindex: list[int],
         dt: float,
     ) -> tuple[int, int] | None:
         mpc = self.mpc
@@ -271,7 +316,7 @@ class MPCBackend:
             if (time.perf_counter() - t0) > timeout_s:
                 timed_out = True
                 return 1e12
-            return self._simulate_cost(z, x0, phase, mpc.dt)
+            return self._simulate_cost(z, x0, phase, timeindex, mpc.dt)
 
         try:
             result = minimize(

@@ -13,7 +13,8 @@ Status:
   [`kaleido_model_fit.py`](../src/artisanlib/kaleido_model_fit.py),
   [`scripts/fit_kaleido_model.py`](../scripts/fit_kaleido_model.py),
   fitted priors in [`docs/roasts/kaleido_model_m6.json`](roasts/kaleido_model_m6.json)
-- **Phases D–E (event-aware horizon, diagnostics/field):** planned
+- **Phase D (event-aware horizon):** done — phase propagation + FC air-first cost scales in `MPCBackend`
+- **Phase E (diagnostics/field):** planned
 
 This is the **canonical** architecture and control-design document for Kaleido hybrid control in the
 `artisan_kaleido` fork. It consolidates the M6 RoR-shape Hybrid playbook, the two-level energy
@@ -845,9 +846,9 @@ Not part of initial MPC implementation; specified for Phase C.
 | **A** — `ControllerBackend` protocol; MPC stub delegates to Energy | **Done** |
 | **B** — Lite MPC + sim plant + unit tests | **Done** |
 | **C** — Model calibration from logs | **Done** (23× `.alog`; see `kaleido_model_m6.json`) |
+| **D** — Event-aware horizon reference polish | **Done** |
 | Machine profile YAML / UI presets (M1–M10) | Planned |
 | Twin Tier 2 + shared Lite MPC plant | Planned |
-| **D** — Event-aware horizon reference polish | Planned (3–5 days) |
 | **E** — Diagnostics UI + field A/B tuning | Planned (1–2 weeks) |
 | Learned thermal response / auto gains | Future |
 | Historical-roast ML optimization | Future |
@@ -858,7 +859,7 @@ Not part of initial MPC implementation; specified for Phase C.
 | **A** | Backend protocol; stub → Energy | **Done** — `create_controller_backend` / `hybridControlBackend` |
 | **B** | Lite MPC + sim plant | **Done** — sim criterion + Energy timeout fallback |
 | **C** | Calibration from logs | **Done** — corpus fit; ET 15s RMSE 11.4→2.3 °C |
-| **D** | Event-aware horizon | RoR tracking on variable-length roasts |
+| **D** | Event-aware horizon | **Done** — event+BT phase; FC air-first weights |
 | **E** | Diagnostics + field A/B | MPC validated on real roasts |
 
 ---

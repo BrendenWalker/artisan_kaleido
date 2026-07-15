@@ -140,11 +140,10 @@ pytest src/test/unitary/artisanlib/test_pid_control.py -v -k kaleido
 **Done**
 
 - Hybrid Controller (Machine PID warmup → CHARGE → coordinated HP/FC RoR shape)
-- MPC Phases A–C (backend protocol, Lite MPC, M6 log calibration; Energy still default)
+- MPC Phases A–D (backend, Lite MPC, M6 calibration, event-aware horizon; Energy still default)
 
-**Next** — [MPC Phases D–E](docs/kaleido_mpc_spec.md#18-roadmap)
+**Next** — [MPC Phase E](docs/kaleido_mpc_spec.md#18-roadmap)
 
-- **D** — Event-aware horizon references
 - **E** — Diagnostics UI + field A/B (Energy vs MPC)
 
 **Later**

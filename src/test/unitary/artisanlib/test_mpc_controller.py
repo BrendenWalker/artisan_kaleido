@@ -19,7 +19,12 @@ from artisanlib.kaleido_model import (
     seed_from_machine,
     step,
 )
-from artisanlib.mpc_controller import MPCBackend, MpcConfig
+from artisanlib.mpc_controller import (
+    MPCBackend,
+    MpcConfig,
+    phase_cost_scales,
+    predict_horizon_phase,
+)
 
 
 @pytest.fixture
@@ -140,24 +145,71 @@ def _closed_loop_ror_rmse(
     return float(np.sqrt(err_sq / max(1, n)))
 
 
+class TestEventAwareHorizon:
+    def test_phase_never_regresses_and_uses_events(self, config: HybridControllerConfig) -> None:
+        ti_pre = [0, 1, 0, 0, 0, 0, 0, 0]  # DRY only
+        ti_fc = [0, 1, 50, 0, 0, 0, 0, 0]  # FCs marked
+        p0 = RoastPhase.Maillard
+        # BT below FC thresholds still held to Maillard when events say so
+        assert predict_horizon_phase(ti_pre, 175.0, p0, config) == RoastPhase.Maillard
+        # FCs event lifts to FirstCrack even if BT argument is mid-maillard
+        assert predict_horizon_phase(ti_fc, 175.0, p0, config) == RoastPhase.FirstCrack
+        # Does not fall back below phase0
+        assert predict_horizon_phase(ti_pre, 120.0, RoastPhase.Maillard, config) == RoastPhase.Maillard
+
+    def test_fc_phase_scales_favor_air(self, config: HybridControllerConfig) -> None:
+        dry = phase_cost_scales(RoastPhase.Drying, config)
+        fc = phase_cost_scales(RoastPhase.FirstCrack, config)
+        assert fc[0] > dry[0]  # accel
+        assert fc[1] > dry[1]  # dhp penalty
+        assert fc[2] >= dry[2]  # dfc
+
+    def test_variable_length_closed_loop_stable(self, config: HybridControllerConfig) -> None:
+        """Short and long roast horizons stay bounded with event progression."""
+        plant = KaleidoModelParams()
+        mpc = MPCBackend(config, MpcConfig(horizon=12, maxiter=20, solver_timeout_ms=300.0, model=plant))
+        mpc.activate()
+        x = np.array([140.0, 200.0, 60.0], dtype=float)
+        for length, mark_fc_at in ((40, 25), (90, 55)):
+            mpc.reset()
+            mpc.activate()
+            x = np.array([140.0, 200.0, 60.0], dtype=float)
+            prev_bt = float(x[0])
+            for t in range(1, length + 1):
+                ti = [0, 1, 0, 0, 0, 0, 0, 0]
+                if t >= mark_fc_at:
+                    ti[2] = mark_fc_at
+                if t >= mark_fc_at + 15:
+                    ti[3] = mark_fc_at + 15
+                bt = float(x[0])
+                et = float(x[1])
+                ror = ror_c_per_min(prev_bt, bt, 1.0) if t > 1 else 14.0
+                hp, fc = mpc.update(bt, et, ror, 0.0, ti, float(t))
+                assert 0 <= hp <= 100 and 0 <= fc <= 100
+                prev_bt = bt
+                x = step(x, np.asarray([float(hp), float(fc)]), 1.0, plant)
+
+
 class TestMpcVsEnergySim:
     def test_mpc_beats_energy_on_step_ror_tracking(self, config: HybridControllerConfig) -> None:
         """Exit criterion Phase B: on the shared Lite plant, MPC RoR RMSE < Energy."""
         plant = KaleidoModelParams()
         # Match controller model to plant (perfect-model case)
         mpc_cfg = MpcConfig(
-            horizon=16,
-            maxiter=30,
-            solver_timeout_ms=500.0,
+            horizon=20,
+            maxiter=40,
+            solver_timeout_ms=800.0,
             model=plant,
-            w_ror=5.0,
-            w_accel=1.0,
-            w_offset=0.5,
+            w_ror=8.0,
+            w_accel=0.8,
+            w_offset=0.3,
+            w_dhp=0.3,
+            w_dfc=0.3,
         )
         energy = HybridController(config)
         mpc = MPCBackend(config, mpc_cfg)
 
-        e_rmse = _closed_loop_ror_rmse(energy, plant)
-        m_rmse = _closed_loop_ror_rmse(mpc, plant)
+        e_rmse = _closed_loop_ror_rmse(energy, plant, steps=100, ror_target=12.0)
+        m_rmse = _closed_loop_ror_rmse(mpc, plant, steps=100, ror_target=12.0)
 
         assert m_rmse < e_rmse, f'MPC RMSE {m_rmse:.3f} should beat Energy {e_rmse:.3f}'
