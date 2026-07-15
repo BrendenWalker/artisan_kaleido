@@ -72,30 +72,23 @@ With PID off, use event sliders for manual control (FC = slider 1, HP = slider 4
 
 ### How It Works
 
-Hybrid uses a two-level architecture ([AI Controller design](docs/ai_controller_design.md)):
-
-1. **Roast Planner** — declining RoR shape by phase (M6 600g medium/light defaults); machine-independent.
-2. **Energy Controller** — coordinated HP + FC from RoR error/trend, short-horizon RoR prediction, and **Energy Bias** (estimated stored heat). Phase mix favors heater early and airflow after first crack.
+Hybrid tracks a built-in declining **RoR shape** by roast phase and drives **heater + fan together** to follow it. After first crack it prefers airflow (damping) over hard power cuts.
 
 ```
-Phase + BT ──► Planner (target RoR)
-                    │
-                    ▼
-  Energy Controller ──► HP baseline + phase-weighted trim
-                     ──► FC baseline + air trim + crash/flick + energy bias
+Phase + BT → target RoR → Energy Controller → HP% + FC%
 ```
 
-After first crack the controller prefers **airflow** (damping) over hard power cuts.
+Full architecture (planner, thermal twin, MPC roadmap): [kaleido_mpc_spec.md](docs/kaleido_mpc_spec.md).
 
 **Default M6 shape plan (600g medium/light):**
 
-| Phase | RoR target (°C/min) | HP baseline | FC baseline |
-|-------|---------------------|-------------|-------------|
-| Drying | 22 → 16 | 85% | 30% |
-| Yellow | 16 → 14 | 80% | 40% |
-| Maillard | 12 → 10 | 70% | 55% |
-| First crack | ~8.5 | 60% | 65% |
-| Development | 8 → 5.5 | 50% | 75% |
+| Phase | RoR (°C/min) | HP % | FC % |
+|-------|--------------|------|------|
+| Drying | 22 → 15.5 | 90 | 30 |
+| Yellow | 15 → 14 | 85 | 35 |
+| Maillard | 14 → 10 | 80 | 40 |
+| First crack | 11 → 9 | 50 | 50 |
+| Development | 9 → 5.5 | 40 | 55 |
 
 Phases are detected from roast events (DRY, FCs, FCe) with BT fallbacks when events are not marked.
 
@@ -114,13 +107,19 @@ Settings persist in Artisan's QSettings / machine `.aset` files:
 | `hybridCrashRorMargin` | 1.5 °C/min | Under-target margin before crash FC boost |
 | `hybridCrashFcGain` | 4.0 | FC % per °C/min under RoR target |
 
+RoR shape schedule and related priors are baked-in M6 defaults (not editable in the Device dialog yet).
+Hybrid control backend defaults to `energy` (`hybridControlBackend`). Set `hybridControlBackend=mpc`
+in QSettings to try Lite MPC (no Device dialog radio yet; falls back to Energy on solver timeout).
+
 ## Development
 
 ### Project layout
 
 ```
 src/artisanlib/
-  hybrid_controller.py   # Dual-actuator controller logic
+  hybrid_controller.py   # Dual-actuator Energy controller + backend factory
+  kaleido_model.py       # Lite 3-state thermal plant (MPC)
+  mpc_controller.py      # Lite MPC backend (hybridControlBackend=mpc)
   kaleido.py             # Kaleido WebSocket/serial protocol
   pid_control.py         # PID mode routing (incl. hybrid mode 5)
   canvas.py              # Sample loop integration
@@ -130,14 +129,26 @@ src/artisanlib/
 
 ```bash
 pytest src/test/unitary/artisanlib/test_hybrid_controller.py -v
+pytest src/test/unitary/artisanlib/test_mpc_controller.py -v
 pytest src/test/unitary/artisanlib/test_kaleido.py -v
 pytest src/test/unitary/artisanlib/test_pid_control.py -v -k kaleido
 ```
 
 ## Roadmap
 
-- [AI Controller design](docs/ai_controller_design.md) — Planner + Energy Controller + Energy Bias (implemented MVP)
-- [Model Predictive Control (MPC)](docs/kaleido_mpc_spec.md) — design spec and phased implementation plan
+**Done**
+
+- Hybrid Controller (Machine PID warmup → CHARGE → coordinated HP/FC RoR shape)
+- MPC Phases A–B (backend protocol + Lite MPC; Energy still default)
+
+**Next** — [MPC Phases C–E](docs/kaleido_mpc_spec.md#18-roadmap)
+
+- **C** — Model calibration from roast logs
+- **D** — Event-aware horizon references
+- **E** — Diagnostics UI + field A/B (Energy vs MPC)
+
+**Later**
+
 - Machine profile presets (M1–M10) and schedule editor UI
 - Live diagnostic curves (commanded HP/FC, phase, Energy Bias, predicted RoR)
 - Drum speed (RC) coordination

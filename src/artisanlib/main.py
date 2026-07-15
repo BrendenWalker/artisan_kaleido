@@ -177,7 +177,7 @@ if TYPE_CHECKING:
     from artisanlib.bluedot import BlueDOT # pylint: disable=unused-import
     from artisanlib.mugma import Mugma # pylint: disable=unused-import
     from artisanlib.kaleido import KaleidoPort # pylint: disable=unused-import
-    from artisanlib.hybrid_controller import HybridController, HybridControllerConfig # pylint: disable=unused-import
+    from artisanlib.hybrid_controller import HybridController, HybridControllerConfig, create_controller_backend # pylint: disable=unused-import
     from artisanlib.orbiter import Orbiter # pylint: disable=unused-import
     from artisanlib.phases_canvas import tphasescanvas # pylint: disable=unused-import
     try:
@@ -217,7 +217,13 @@ from artisanlib.util import (appFrozen, uchr, decodeLocal, decodeLocalStrict, en
         convertWeight, convertVolume, rgba_colorname2argb_colorname, render_weight, serialize, deserialize, csv_load, exportProfile2CSV, findTPint,
         eventtime2string, toDim)
 
-from artisanlib.hybrid_controller import HybridController, HybridControllerConfig
+from artisanlib.hybrid_controller import (
+    DEFAULT_CONTROL_BACKEND,
+    HybridController,
+    HybridControllerConfig,
+    create_controller_backend,
+    normalize_control_backend,
+)
 
 from artisanlib.qtsingleapplication import QtSingleApplication
 
@@ -1384,7 +1390,7 @@ class ApplicationWindow(QMainWindow):
         'extrabytesize', 'extraparity', 'extrastopbits', 'extratimeout', 'hottop', 'santokerHost', 'santokerPort', 'santokerSerial', 'santokerBLE', 'santokerEventFlags', 'santoker', 'santokerR', 'lebrew_roastseeNEXT', 'thermoworksBlueDOT', 'fujipid', 'dtapid', 'pidcontrol', 'soundflag', 'recentRoasts', 'maxRecentRoasts',
         'mugmaHost','mugmaPort', 'mugma', 'mugma_default_host', 'shelly_3EMPro_host', 'shelly_PlusPlug_host',
         'kaleido_default_host', 'kaleidoHost', 'kaleidoPort', 'kaleidoSerial', 'kaleidoPID', 'kaleidoHybridControl',
-        'hybridHeaterKp', 'hybridHeaterKi', 'hybridHeaterKd', 'hybridFanKp', 'hybridFanKi', 'hybridFanKd',
+        'hybridControlBackend', 'hybridHeaterKp', 'hybridHeaterKi', 'hybridHeaterKd', 'hybridFanKp', 'hybridFanKi', 'hybridFanKd',
         'hybridHeaterSlew', 'hybridFanSlew', 'hybridRorAccelGain', 'hybridHeaterTrimLimit', 'hybridCrashRorMargin', 'hybridCrashFcGain',
         'hybrid_controller', 'kaleido', 'kaleidoEventFlags', 'colorTrack_mean_window_size', 'colorTrack_median_window_size', 'ikawa',
         'lcdpaletteB', 'lcdpaletteF', 'extraeventsbuttonsflags', 'extraeventslabels', 'extraeventbuttoncolor', 'extraeventsactionstrings',
@@ -1747,6 +1753,7 @@ class ApplicationWindow(QMainWindow):
         self.kaleidoEventFlags:list[bool] = [False, False, False, False, False, False, False ] # CHARGE, DRY, FCs, FCe, SCs, SCe, DROP
 
         # Hybrid Controller settings
+        self.hybridControlBackend:str = DEFAULT_CONTROL_BACKEND  # "energy" | "mpc"
         self.hybridHeaterKp:float = 3.0
         self.hybridHeaterKi:float = 0.5
         self.hybridHeaterKd:float = 0.1
@@ -1759,7 +1766,8 @@ class ApplicationWindow(QMainWindow):
         self.hybridHeaterTrimLimit:float = 20.0
         self.hybridCrashRorMargin:float = 1.5
         self.hybridCrashFcGain:float = 4.0
-        self.hybrid_controller:HybridController = HybridController(self.buildHybridControllerConfig())
+        self.hybrid_controller:HybridController = create_controller_backend(
+            self.hybridControlBackend, self.buildHybridControllerConfig())
 
         # Orbiter
         self.orbiter:Orbiter|None = None # holds the Orbiter instance created on connect; reset to None on disconnect
@@ -17700,6 +17708,8 @@ class ApplicationWindow(QMainWindow):
             self.kaleidoHybridControl = toBool(settings.value('kaleidoHybridControl',self.kaleidoHybridControl))
             if self.kaleidoHybridControl:
                 self.kaleidoPID = False
+            self.hybridControlBackend = normalize_control_backend(
+                toString(settings.value('hybridControlBackend', self.hybridControlBackend)))
             self.hybridHeaterKp = toFloat(settings.value('hybridHeaterKp',self.hybridHeaterKp))
             self.hybridHeaterKi = toFloat(settings.value('hybridHeaterKi',self.hybridHeaterKi))
             self.hybridHeaterKd = toFloat(settings.value('hybridHeaterKd',self.hybridHeaterKd))
@@ -17712,7 +17722,8 @@ class ApplicationWindow(QMainWindow):
             self.hybridHeaterTrimLimit = toFloat(settings.value('hybridHeaterTrimLimit',self.hybridHeaterTrimLimit))
             self.hybridCrashRorMargin = toFloat(settings.value('hybridCrashRorMargin',self.hybridCrashRorMargin))
             self.hybridCrashFcGain = toFloat(settings.value('hybridCrashFcGain',self.hybridCrashFcGain))
-            self.hybrid_controller = HybridController(self.buildHybridControllerConfig())
+            self.hybrid_controller = create_controller_backend(
+                self.hybridControlBackend, self.buildHybridControllerConfig())
             if settings.contains('kaleidoEventFlags'):
                 self.kaleidoEventFlags = [toBool(x) for x in toList(settings.value('kaleidoEventFlags',self.kaleidoEventFlags))]
             self.mugmaHost = toString(settings.value('mugmaHost',self.mugmaHost))
@@ -19737,6 +19748,7 @@ class ApplicationWindow(QMainWindow):
             self.settingsSetValue(settings, default_settings, 'kaleidoSerial',self.kaleidoSerial, read_defaults)
             self.settingsSetValue(settings, default_settings, 'kaleidoPID',self.kaleidoPID, read_defaults)
             self.settingsSetValue(settings, default_settings, 'kaleidoHybridControl',self.kaleidoHybridControl, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridControlBackend',self.hybridControlBackend, read_defaults)
             self.settingsSetValue(settings, default_settings, 'hybridHeaterKp',self.hybridHeaterKp, read_defaults)
             self.settingsSetValue(settings, default_settings, 'hybridHeaterKi',self.hybridHeaterKi, read_defaults)
             self.settingsSetValue(settings, default_settings, 'hybridHeaterKd',self.hybridHeaterKd, read_defaults)

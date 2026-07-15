@@ -4908,8 +4908,9 @@ class DeviceAssignmentDlg(ArtisanResizeablDialog):
             else:
                 self.aw.kaleidoHybridControl = False
                 self.aw.kaleidoPID = False
-            from artisanlib.hybrid_controller import HybridController
-            self.aw.hybrid_controller = HybridController(self.aw.buildHybridControllerConfig())
+            from artisanlib.hybrid_controller import create_controller_backend
+            self.aw.hybrid_controller = create_controller_backend(
+                self.aw.hybridControlBackend, self.aw.buildHybridControllerConfig())
             self.aw.mugmaHost = self.mugmaHost.text().strip()
             try:
                 self.aw.mugmaPort = int(self.mugmaPort.text())

@@ -11,6 +11,7 @@ import pytest
 from artisanlib.hybrid_controller import (
     DEFAULT_BASELINE_FAN,
     DEFAULT_BASELINE_HEATER,
+    DEFAULT_CONTROL_BACKEND,
     DEFAULT_ET_BT_OFFSETS,
     DEFAULT_ROR_SHAPE,
     EnergyBiasEstimator,
@@ -22,8 +23,10 @@ from artisanlib.hybrid_controller import (
     ThermalStateEstimator,
     apply_slew,
     compute_ror_acceleration,
+    create_controller_backend,
     detect_roast_phase,
     interpolate_ror_target,
+    normalize_control_backend,
     predict_ror,
 )
 
@@ -250,6 +253,25 @@ class TestHybridController:
     def test_layered_facade_has_planner_and_energy(self, controller: HybridController) -> None:
         assert isinstance(controller.planner, RoastPlanner)
         assert isinstance(controller.energy, EnergyController)
+
+
+class TestControllerBackend:
+    def test_default_backend_is_energy(self) -> None:
+        ctrl = create_controller_backend()
+        assert ctrl.backend_name == DEFAULT_CONTROL_BACKEND
+        assert normalize_control_backend(None) == 'energy'
+        assert normalize_control_backend('ENERGY') == 'energy'
+
+    def test_mpc_request_returns_mpc_backend(self) -> None:
+        from artisanlib.mpc_controller import MPCBackend
+        ctrl = create_controller_backend('mpc')
+        assert isinstance(ctrl, MPCBackend)
+        assert ctrl.backend_name == 'mpc'
+
+    def test_unknown_backend_falls_back_to_energy(self) -> None:
+        assert normalize_control_backend('not-a-backend') == 'energy'
+        ctrl = create_controller_backend('not-a-backend')
+        assert ctrl.backend_name == 'energy'
 
 
 def _ror_series(timex: list[float], temp: list[float], window_s: float = 30.0) -> list[float]:

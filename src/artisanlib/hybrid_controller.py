@@ -3,9 +3,9 @@
 # Hybrid Heater + Airflow Controller for Kaleido roasters
 #
 # Architecture (see docs/kaleido_mpc_spec.md):
-#   Layer 1   — RoastPlanner: machine-independent target RoR from phase + shape
-#   Layer 1.5 — ThermalStateEstimator: digital twin (air/drum/beans/moisture)
-#   Layer 2   — EnergyController: HP/FC from RoR error/trend, twin, prediction
+#   Layer 1   - RoastPlanner: machine-independent target RoR from phase + shape
+#   Layer 1.5 - ThermalStateEstimator: digital twin (air/drum/beans/moisture)
+#   Layer 2   - EnergyController: HP/FC from RoR error/trend, twin, prediction
 #
 # Bean temperature is used for phase detection; RoR is the primary feedback variable.
 
@@ -21,9 +21,13 @@ import logging
 import math
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import Final
+from typing import Final, Protocol
 
 _log: Final[logging.Logger] = logging.getLogger(__name__)
+
+# Supported Hybrid Layer-2 / Layer-3 backend names (QSetting hybridControlBackend)
+VALID_CONTROL_BACKENDS: Final[frozenset[str]] = frozenset({'energy', 'mpc'})
+DEFAULT_CONTROL_BACKEND: Final[str] = 'energy'
 
 
 class RoastPhase(IntEnum):
@@ -36,7 +40,7 @@ class RoastPhase(IntEnum):
     Cooling = 6
 
 
-# Log-refined M6 600g medium/light defaults (docs/kaleido_mpc_spec.md §6)
+# Log-refined M6 600g medium/light defaults (docs/kaleido_mpc_spec.md sec 6)
 DEFAULT_ET_BT_OFFSETS: Final[dict[RoastPhase, float]] = {
     RoastPhase.Charge: 85.0,
     RoastPhase.Drying: 85.0,
@@ -97,7 +101,7 @@ DEFAULT_PHASE_HEATER_WEIGHT: Final[dict[RoastPhase, float]] = {
     RoastPhase.Cooling: 0.0,
 }
 
-# Soften ET−BT PID early when hot-drum charge makes huge offsets normal
+# Soften ET?BT PID early when hot-drum charge makes huge offsets normal
 DEFAULT_PHASE_OFFSET_WEIGHT: Final[dict[RoastPhase, float]] = {
     RoastPhase.Charge: 0.15,
     RoastPhase.Drying: 0.20,
@@ -266,7 +270,7 @@ def _clip(x: float, lo: float, hi: float) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Layer 1 — Roast Planner
+# Layer 1 - Roast Planner
 # ---------------------------------------------------------------------------
 
 class RoastPlanner:
@@ -282,7 +286,7 @@ class RoastPlanner:
 
 
 # ---------------------------------------------------------------------------
-# Layer 1.5 — Thermal Digital Twin
+# Layer 1.5 - Thermal Digital Twin
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -407,7 +411,7 @@ class EnergyBiasEstimator:
 
 
 # ---------------------------------------------------------------------------
-# Layer 2 — Energy Controller
+# Layer 2 - Energy Controller
 # ---------------------------------------------------------------------------
 
 class EnergyController:
@@ -552,13 +556,39 @@ class EnergyController:
 
 
 # ---------------------------------------------------------------------------
-# Facade — HybridController (Artisan sample-loop API)
+# Backend protocol + Energy facade (Artisan sample-loop API)
 # ---------------------------------------------------------------------------
 
-class HybridController:
-    """Facade composing RoastPlanner + EnergyController for the Artisan sample loop."""
+class ControllerBackend(Protocol):
+    """Sample-loop interface for Hybrid Energy or future MPC backends."""
 
-    __slots__ = ('config', 'planner', 'energy', '_last_update_time', 'active', '_last_hp', '_last_fc')
+    active: bool
+    backend_name: str
+
+    def reset(self) -> None: ...
+    def activate(self) -> None: ...
+    def update(
+        self,
+        bt: float,
+        et: float,
+        ror: float | None,
+        ror_accel: float,
+        timeindex: list[int],
+        now: float,
+        et_ror: float | None = None,
+    ) -> tuple[int, int]: ...
+
+
+class HybridController:
+    """Energy backend: RoastPlanner + EnergyController for the Artisan sample loop.
+
+    Satisfies ControllerBackend. Future MPC backends share this interface.
+    """
+
+    __slots__ = (
+        'config', 'planner', 'energy', '_last_update_time', 'active',
+        '_last_hp', '_last_fc', 'backend_name',
+    )
 
     def __init__(self, config: HybridControllerConfig | None = None) -> None:
         self.config = config or HybridControllerConfig()
@@ -568,6 +598,7 @@ class HybridController:
         self._last_hp = 0.0
         self._last_fc = 0.0
         self.active = False
+        self.backend_name = DEFAULT_CONTROL_BACKEND
 
     def reset(self) -> None:
         self.energy.reset()
@@ -611,3 +642,30 @@ class HybridController:
         self._last_hp = float(hp)
         self._last_fc = float(fc)
         return hp, fc
+
+
+# Alias: HybridController is the shipped Energy-layer backend
+EnergyBackend = HybridController
+
+
+def normalize_control_backend(backend: str | None) -> str:
+    """Return a valid backend name; unknown values fall back to energy."""
+    name = (backend or DEFAULT_CONTROL_BACKEND).strip().lower()
+    if name not in VALID_CONTROL_BACKENDS:
+        _log.warning('Unknown hybridControlBackend %r; using %s', backend, DEFAULT_CONTROL_BACKEND)
+        return DEFAULT_CONTROL_BACKEND
+    return name
+
+
+def create_controller_backend(
+    backend: str = DEFAULT_CONTROL_BACKEND,
+    config: HybridControllerConfig | None = None,
+) -> HybridController:
+    """Factory for Hybrid sample-loop backends (Energy default; MPC when requested)."""
+    name = normalize_control_backend(backend)
+    if name == 'mpc':
+        from artisanlib.mpc_controller import MPCBackend
+        return MPCBackend(config)  # type: ignore[return-value]
+    ctrl = HybridController(config)
+    ctrl.backend_name = name
+    return ctrl

@@ -4,7 +4,12 @@ Status:
 
 - **Layer 1 (Roast Planner) + Layer 1.5 (Thermal Twin) + Layer 2 (Energy Controller):** shipped in
   [`src/artisanlib/hybrid_controller.py`](../src/artisanlib/hybrid_controller.py)
-- **MPC (horizon optimizer / Layer 3 backend):** design / planning — not yet implemented
+- **Phase A (`ControllerBackend` / `hybridControlBackend`):** done — Energy default
+- **Phase B (Lite MPC):** done —
+  [`kaleido_model.py`](../src/artisanlib/kaleido_model.py),
+  [`mpc_controller.py`](../src/artisanlib/mpc_controller.py)
+  (enable via QSetting `hybridControlBackend=mpc`; Energy remains default + fallback)
+- **Phases C–E (calibration, event-aware horizon, diagnostics/field):** planned
 
 This is the **canonical** architecture and control-design document for Kaleido hybrid control in the
 `artisan_kaleido` fork. It consolidates the M6 RoR-shape Hybrid playbook, the two-level energy
@@ -22,11 +27,14 @@ architecture, and the longer-term Model Predictive Control (MPC) backend.
 | File | Role |
 |------|------|
 | `src/artisanlib/hybrid_controller.py` | `RoastPlanner`, `EnergyController`, `HybridController` facade |
+| `src/artisanlib/kaleido_model.py` | Lite 3-state plant (`KaleidoModelParams`, `step`, `linearize`) |
+| `src/artisanlib/mpc_controller.py` | `MPCBackend` horizon optimizer + Energy fallback |
 | `src/artisanlib/canvas.py` | Sample-loop hook; CHARGE → Hybrid entry |
 | `src/artisanlib/pid_control.py` | Hybrid mode (`externalPIDControl() == 5`) |
 | `src/artisanlib/main.py` | `buildHybridControllerConfig` / QSettings |
 | `src/artisanlib/kaleido.py` | HP/FC actuators via WebSocket/serial |
 | `src/test/unitary/artisanlib/test_hybrid_controller.py` | Unit tests for planner / energy law |
+| `src/test/unitary/artisanlib/test_mpc_controller.py` | Lite MPC plant + constraint + sim vs Energy |
 | `docs/roasts/*.alog` | Operator corpus used to refine schedules / τ priors |
 
 ---
@@ -690,6 +698,16 @@ indefinitely.
 
 ### 15.1 Backend protocol
 
+**Phase A status: done.** `ControllerBackend` Protocol, `create_controller_backend()`, and
+QSetting `hybridControlBackend` (`"energy"` default) are in
+[`hybrid_controller.py`](../src/artisanlib/hybrid_controller.py) / `main.py`.
+
+**Phase B status: done.** Lite plant
+[`kaleido_model.py`](../src/artisanlib/kaleido_model.py) and
+[`mpc_controller.py`](../src/artisanlib/mpc_controller.py) (`MPCBackend`).
+Requesting `"mpc"` returns the horizon optimizer; solver timeout/failure falls back to Energy
+for that tick. Sample loop still calls `hybrid_controller.update(...)`.
+
 Refactor without breaking the sample-loop call site:
 
 ```python
@@ -820,10 +838,10 @@ Not part of initial MPC implementation; specified for Phase C.
 | Apply log-refined defaults + heater delay in code / tests | **Done** |
 | Thermal digital twin Layer 1.5 (Tier 1 heuristics) | **Done** |
 | Twin replay gate + raise `twin_pred_blend` | **Done** (corpus RMSE gate in tests) |
+| **A** — `ControllerBackend` protocol; MPC stub delegates to Energy | **Done** |
+| **B** — Lite MPC + sim plant + unit tests | **Done** |
 | Machine profile YAML / UI presets (M1–M10) | Planned |
 | Twin Tier 2 + shared Lite MPC plant | Planned |
-| **A** — `ControllerBackend` protocol; MPC stub delegates to Energy | Planned (~1 day) |
-| **B** — Lite MPC + sim plant + unit tests | Planned (1–2 weeks) |
 | **C** — Model calibration from logs | Planned (3–5 days) |
 | **D** — Event-aware horizon reference polish | Planned (3–5 days) |
 | **E** — Diagnostics UI + field A/B tuning | Planned (1–2 weeks) |
@@ -833,8 +851,8 @@ Not part of initial MPC implementation; specified for Phase C.
 | MPC phase | Scope | Exit criteria |
 |-----------|-------|---------------|
 | **0** | Spec consolidated + log-refined | Doc reviewed; schedule numbers trusted (§6) |
-| **A** | Backend protocol; stub → Energy | All tests pass; no behavior change |
-| **B** | Lite MPC + sim plant | Sim: MPC beats Energy on step tracking |
+| **A** | Backend protocol; stub → Energy | **Done** — `create_controller_backend` / `hybridControlBackend` |
+| **B** | Lite MPC + sim plant | **Done** — sim criterion + Energy timeout fallback |
 | **C** | Calibration from logs | Params fit to one machine |
 | **D** | Event-aware horizon | RoR tracking on variable-length roasts |
 | **E** | Diagnostics + field A/B | MPC validated on real roasts |
@@ -852,12 +870,14 @@ Not part of initial MPC implementation; specified for Phase C.
 - Crash path increases FC when RoR undershoots post-FC
 - Update path does not depend on background RoR
 
-### 19.2 MPC unit tests (`test_mpc_controller.py`, future)
+### 19.2 MPC unit tests (`test_mpc_controller.py`)
 
-- Simulated plant: known `A`, `B`; verify MPC reaches setpoint
+[`test_mpc_controller.py`](../src/test/unitary/artisanlib/test_mpc_controller.py):
+
+- Simulated plant: model step / transfer directionality
 - Constraints: output never exceeds 0–100; slew limits respected
 - Solver timeout: verify fallback to Energy backend
-- Cost: verify lower cost for optimal vs random `U`
+- Closed-loop: MPC RoR RMSE beats Energy on the shared Lite plant
 
 ### 19.3 Replay tests
 
