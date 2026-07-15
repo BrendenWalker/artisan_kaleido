@@ -5116,18 +5116,12 @@ class tgraphcanvas(QObject):
                             # after DRY (if FCs event not yet set) check for BT exceeding FC-min as specified in the phases dialog
                             self.markFCsSignal.emit(False) # queued
 
-                    # Kaleido Hybrid Controller: coordinated heater + fan (only after CHARGE)
+                    # Kaleido Hybrid Controller: M6 RoR-shape + thermal twin + phase HP/FC (after CHARGE)
                     if (self.Controlbuttonflag and self.aw.pidcontrol.pidActive and
                             self.aw.pidcontrol.externalPIDControl() == 5 and self.aw.kaleido is not None and
                             self.timeindex[0] > -1):
                         try:
                             from artisanlib.hybrid_controller import compute_ror_acceleration
-                            roast_t = (tx - self.timex[self.timeindex[0]]) if self.timeindex[0] > -1 else tx
-                            bg_ror:float|None = None
-                            if self.background:
-                                bg_val = self.backgroundDeltaBTat(roast_t, relative=True)
-                                if bg_val >= 0:
-                                    bg_ror = bg_val
                             ror_accel = 0.0
                             if len(sample_unfiltereddelta2) >= 2 and len(sample_timex) >= 2:
                                 ror_dt = sample_timex[-1] - sample_timex[-2]
@@ -5136,7 +5130,8 @@ class tgraphcanvas(QObject):
                                     ror_accel = compute_ror_acceleration(ror_samples, ror_dt)
                             hp, fc = self.aw.hybrid_controller.update(
                                 st2, st1, rateofchange2plot, ror_accel,
-                                self.timeindex, bg_ror, tx)
+                                self.timeindex, tx,
+                                et_ror=rateofchange1plot if rateofchange1plot is not None else 0.0)
                             self.aw.kaleido.setHeaterFan(hp, fc)
                             # sync Kaleido preset sliders: 0=FC, 3=HP
                             self.aw.addRawEventSignal.emit(fc, float(fc), 0, False, True, False)
@@ -14559,11 +14554,8 @@ class tgraphcanvas(QObject):
                                 return
                             if (self.aw.kaleidoHybridControl and self.aw.kaleido is not None
                                     and self.Controlbuttonflag):
-                                # Hybrid mode: CHARGE enters Hybrid if background loaded, else manual
-                                if self.background:
-                                    self.aw.pidcontrol.kaleidoEnterHybridOnCharge()
-                                else:
-                                    self.aw.pidcontrol.pidOff()
+                                # Hybrid mode: CHARGE always enters M6 RoR-shape Hybrid control
+                                self.aw.pidcontrol.kaleidoEnterHybridOnCharge()
                             elif self.aw.pidcontrol.pidOnCHARGE and not self.aw.pidcontrol.pidActive: # Arduino/TC4, Hottop, MODBUS
                                 self.aw.pidcontrol.pidOn()
                         if self.chargeTimerPeriod > 0:

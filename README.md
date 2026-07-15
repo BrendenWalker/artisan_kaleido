@@ -60,13 +60,11 @@ Network host/port settings remain on the **Networks** tab in the Kaleido group b
 
 With **Hybrid Controller** selected:
 
-1. Optionally load a **background profile** with a desired RoR curve (ΔBT).
+1. Optionally load a **background profile** for visual comparison (Hybrid does **not** follow background RoR).
 2. Press **ON** — monitoring starts; set **SV** for warmup temperature.
 3. Press **Start Heating** — heaters on (`HS`) and Machine PID warmup (`AH=1`, SV→`TS`).
 4. Press **START** — recording only; roaster control is unchanged.
-5. Press **CHARGE** (or auto-detect):
-   - **Background loaded** → switch to Hybrid (`AH=0`, drive HP + FC).
-   - **No background** → manual control (PID off; use event sliders).
+5. Press **CHARGE** (or auto-detect) — switch to Hybrid (`AH=0`, drive HP + FC from the M6 RoR-shape plan).
 
 CONTROL / PIDon before CHARGE also uses Machine PID warmup (same as Start Heating). After CHARGE, CONTROL / PIDon activates Hybrid.
 
@@ -74,24 +72,30 @@ With PID off, use event sliders for manual control (FC = slider 1, HP = slider 4
 
 ### How It Works
 
+Hybrid uses a two-level architecture ([AI Controller design](docs/ai_controller_design.md)):
+
+1. **Roast Planner** — declining RoR shape by phase (M6 600g medium/light defaults); machine-independent.
+2. **Energy Controller** — coordinated HP + FC from RoR error/trend, short-horizon RoR prediction, and **Energy Bias** (estimated stored heat). Phase mix favors heater early and airflow after first crack.
+
 ```
-Desired RoR (background ΔBT)
-         │
-         ▼
-  Heater Controller ──► HP (slow, RoR PID)
-
-ET − BT offset schedule ──► Fan Controller ──► FC (fast, offset PID + baseline + RoR accel trim)
+Phase + BT ──► Planner (target RoR)
+                    │
+                    ▼
+  Energy Controller ──► HP baseline + phase-weighted trim
+                     ──► FC baseline + air trim + crash/flick + energy bias
 ```
 
-**Phase schedules** (defaults):
+After first crack the controller prefers **airflow** (damping) over hard power cuts.
 
-| Phase | ET−BT offset | Baseline fan |
-|-------|--------------|--------------|
-| Drying | 60°C | 30% |
-| Yellow | 50°C | 40% |
-| Maillard | 45°C | 50% |
-| First crack | 35°C | 70% |
-| Development | 25°C | 80% |
+**Default M6 shape plan (600g medium/light):**
+
+| Phase | RoR target (°C/min) | HP baseline | FC baseline |
+|-------|---------------------|-------------|-------------|
+| Drying | 22 → 16 | 85% | 30% |
+| Yellow | 16 → 14 | 80% | 40% |
+| Maillard | 12 → 10 | 70% | 55% |
+| First crack | ~8.5 | 60% | 65% |
+| Development | 8 → 5.5 | 50% | 75% |
 
 Phases are detected from roast events (DRY, FCs, FCe) with BT fallbacks when events are not marked.
 
@@ -101,12 +105,14 @@ Settings persist in Artisan's QSettings / machine `.aset` files:
 
 | Key | Default | Purpose |
 |-----|---------|---------|
-| `hybridHeaterKp/Ki/Kd` | 3.0 / 0.5 / 0.1 | Slow RoR PID |
-| `hybridFanKp/Ki/Kd` | 2.0 / 0.3 / 0.05 | Fast offset PID |
-| `hybridHeaterSlew` | 5 %/s | Max heater change rate |
+| `hybridHeaterKp/Ki/Kd` | 3.0 / 0.5 / 0.1 | RoR PID trim around HP baseline |
+| `hybridFanKp/Ki/Kd` | 2.0 / 0.3 / 0.05 | Fast ET−BT offset PID |
+| `hybridHeaterSlew` | 5 %/s | Max heater change rate (≤3 %/s post-FC) |
 | `hybridFanSlew` | 20 %/s | Max fan change rate |
-| `hybridRorAccelGain` | 2.0 | Predictive fan boost on RoR acceleration |
-| `hybridDefaultRorTarget` | 10.0 | Fallback RoR when no background loaded |
+| `hybridRorAccelGain` | 2.0 | Fan boost on RoR acceleration (flick) |
+| `hybridHeaterTrimLimit` | ±20 % | Cap RoR PID trim around HP baseline |
+| `hybridCrashRorMargin` | 1.5 °C/min | Under-target margin before crash FC boost |
+| `hybridCrashFcGain` | 4.0 | FC % per °C/min under RoR target |
 
 ## Development
 
@@ -130,9 +136,10 @@ pytest src/test/unitary/artisanlib/test_pid_control.py -v -k kaleido
 
 ## Roadmap
 
+- [AI Controller design](docs/ai_controller_design.md) — Planner + Energy Controller + Energy Bias (implemented MVP)
 - [Model Predictive Control (MPC)](docs/kaleido_mpc_spec.md) — design spec and phased implementation plan
-- Full schedule editor UI in PID dialog
-- Live diagnostic curves (commanded HP/FC, phase, ET−BT error)
+- Machine profile presets (M1–M10) and schedule editor UI
+- Live diagnostic curves (commanded HP/FC, phase, Energy Bias, predicted RoR)
 - Drum speed (RC) coordination
 
 ## License

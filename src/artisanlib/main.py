@@ -1383,7 +1383,10 @@ class ApplicationWindow(QMainWindow):
         'seriallog', 'ser', 'modbus', 'extraMODBUStemps', 'extraMODBUStx', 's7', 'extraS7tx', 'ws', 'extraser', 'extracomport', 'extrabaudrate',
         'extrabytesize', 'extraparity', 'extrastopbits', 'extratimeout', 'hottop', 'santokerHost', 'santokerPort', 'santokerSerial', 'santokerBLE', 'santokerEventFlags', 'santoker', 'santokerR', 'lebrew_roastseeNEXT', 'thermoworksBlueDOT', 'fujipid', 'dtapid', 'pidcontrol', 'soundflag', 'recentRoasts', 'maxRecentRoasts',
         'mugmaHost','mugmaPort', 'mugma', 'mugma_default_host', 'shelly_3EMPro_host', 'shelly_PlusPlug_host',
-        'kaleido_default_host', 'kaleidoHost', 'kaleidoPort', 'kaleidoSerial', 'kaleidoPID', 'kaleidoHybridControl', 'hybrid_controller', 'kaleido', 'kaleidoEventFlags', 'colorTrack_mean_window_size', 'colorTrack_median_window_size', 'ikawa',
+        'kaleido_default_host', 'kaleidoHost', 'kaleidoPort', 'kaleidoSerial', 'kaleidoPID', 'kaleidoHybridControl',
+        'hybridHeaterKp', 'hybridHeaterKi', 'hybridHeaterKd', 'hybridFanKp', 'hybridFanKi', 'hybridFanKd',
+        'hybridHeaterSlew', 'hybridFanSlew', 'hybridRorAccelGain', 'hybridHeaterTrimLimit', 'hybridCrashRorMargin', 'hybridCrashFcGain',
+        'hybrid_controller', 'kaleido', 'kaleidoEventFlags', 'colorTrack_mean_window_size', 'colorTrack_median_window_size', 'ikawa',
         'lcdpaletteB', 'lcdpaletteF', 'extraeventsbuttonsflags', 'extraeventslabels', 'extraeventbuttoncolor', 'extraeventsactionstrings',
         'extraeventbuttonround', 'block_quantification_sampling_ticks', 'sampling_seconds_to_block_quantifiction', 'sampling_ticks_to_block_quantifiction', 'extraeventsactionslastvalue',
         'org_extradevicesettings', 'eventslidervalues', 'eventslidervisibilities', 'eventsliderKeyboardControl', 'eventsliderAlternativeLayout_default',
@@ -1753,7 +1756,9 @@ class ApplicationWindow(QMainWindow):
         self.hybridHeaterSlew:float = 5.0
         self.hybridFanSlew:float = 20.0
         self.hybridRorAccelGain:float = 2.0
-        self.hybridDefaultRorTarget:float = 10.0
+        self.hybridHeaterTrimLimit:float = 20.0
+        self.hybridCrashRorMargin:float = 1.5
+        self.hybridCrashFcGain:float = 4.0
         self.hybrid_controller:HybridController = HybridController(self.buildHybridControllerConfig())
 
         # Orbiter
@@ -17361,7 +17366,9 @@ class ApplicationWindow(QMainWindow):
             heater_slew_pct_per_sec=self.hybridHeaterSlew,
             fan_slew_pct_per_sec=self.hybridFanSlew,
             ror_accel_gain=self.hybridRorAccelGain,
-            default_ror_target=self.hybridDefaultRorTarget,
+            heater_trim_limit=self.hybridHeaterTrimLimit,
+            crash_ror_margin=self.hybridCrashRorMargin,
+            crash_fc_gain=self.hybridCrashFcGain,
         )
 
     # kaleidoSendMessage() just sends out the message to the machine without waiting for a response
@@ -17702,7 +17709,9 @@ class ApplicationWindow(QMainWindow):
             self.hybridHeaterSlew = toFloat(settings.value('hybridHeaterSlew',self.hybridHeaterSlew))
             self.hybridFanSlew = toFloat(settings.value('hybridFanSlew',self.hybridFanSlew))
             self.hybridRorAccelGain = toFloat(settings.value('hybridRorAccelGain',self.hybridRorAccelGain))
-            self.hybridDefaultRorTarget = toFloat(settings.value('hybridDefaultRorTarget',self.hybridDefaultRorTarget))
+            self.hybridHeaterTrimLimit = toFloat(settings.value('hybridHeaterTrimLimit',self.hybridHeaterTrimLimit))
+            self.hybridCrashRorMargin = toFloat(settings.value('hybridCrashRorMargin',self.hybridCrashRorMargin))
+            self.hybridCrashFcGain = toFloat(settings.value('hybridCrashFcGain',self.hybridCrashFcGain))
             self.hybrid_controller = HybridController(self.buildHybridControllerConfig())
             if settings.contains('kaleidoEventFlags'):
                 self.kaleidoEventFlags = [toBool(x) for x in toList(settings.value('kaleidoEventFlags',self.kaleidoEventFlags))]
@@ -19737,7 +19746,9 @@ class ApplicationWindow(QMainWindow):
             self.settingsSetValue(settings, default_settings, 'hybridHeaterSlew',self.hybridHeaterSlew, read_defaults)
             self.settingsSetValue(settings, default_settings, 'hybridFanSlew',self.hybridFanSlew, read_defaults)
             self.settingsSetValue(settings, default_settings, 'hybridRorAccelGain',self.hybridRorAccelGain, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'hybridDefaultRorTarget',self.hybridDefaultRorTarget, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridHeaterTrimLimit',self.hybridHeaterTrimLimit, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridCrashRorMargin',self.hybridCrashRorMargin, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'hybridCrashFcGain',self.hybridCrashFcGain, read_defaults)
             self.settingsSetValue(settings, default_settings, 'kaleidoEventFlags',self.kaleidoEventFlags, read_defaults)
             self.settingsSetValue(settings, default_settings, 'mugmaHost',self.mugmaHost, read_defaults)
             self.settingsSetValue(settings, default_settings, 'mugmaPort',self.mugmaPort, read_defaults)
