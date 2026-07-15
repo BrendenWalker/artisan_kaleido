@@ -119,6 +119,7 @@ in QSettings to try Lite MPC (no Device dialog radio yet; falls back to Energy o
 src/artisanlib/
   hybrid_controller.py   # Dual-actuator Energy controller + backend factory
   kaleido_model.py       # Lite 3-state thermal plant (MPC)
+  kaleido_model_fit.py   # Offline fit / replay RMSE from .alog
   mpc_controller.py      # Lite MPC backend (hybridControlBackend=mpc)
   kaleido.py             # Kaleido WebSocket/serial protocol
   pid_control.py         # PID mode routing (incl. hybrid mode 5)
@@ -139,11 +140,10 @@ pytest src/test/unitary/artisanlib/test_pid_control.py -v -k kaleido
 **Done**
 
 - Hybrid Controller (Machine PID warmup → CHARGE → coordinated HP/FC RoR shape)
-- MPC Phases A–B (backend protocol + Lite MPC; Energy still default)
+- MPC Phases A–C (backend protocol, Lite MPC, M6 log calibration; Energy still default)
 
-**Next** — [MPC Phases C–E](docs/kaleido_mpc_spec.md#18-roadmap)
+**Next** — [MPC Phases D–E](docs/kaleido_mpc_spec.md#18-roadmap)
 
-- **C** — Model calibration from roast logs
 - **D** — Event-aware horizon references
 - **E** — Diagnostics UI + field A/B (Energy vs MPC)
 

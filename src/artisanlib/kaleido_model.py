@@ -24,17 +24,17 @@ _INPUT_DIM: Final[int] = 2
 
 @dataclass
 class KaleidoModelParams:
-    """Placeholder defaults until Phase C calibration from M6 logs / step tests."""
+    """Lite plant params; defaults are M6-corpus fitted (docs/roasts/kaleido_model_m6.json)."""
 
     tau_element: float = 15.0  # s; log-prior ~12-20 (heater delay)
     tau_chamber: float = 25.0
     tau_bean: float = 120.0
     K_hp: float = 1.0
-    K_ec: float = 0.35  # degC/s per unit E (E ~ 0-100)
-    K_loss: float = 0.02
-    k_fc0: float = 0.015
-    k_fc1: float = 0.05
-    K_beans: float = 0.008
+    K_ec: float = 0.397  # degC/s per unit E (E ~ 0-100); corpus-fitted
+    K_loss: float = 0.124
+    k_fc0: float = 0.08
+    k_fc1: float = 0.08
+    K_beans: float = 0.05
     T_amb: float = 25.0
 
 
