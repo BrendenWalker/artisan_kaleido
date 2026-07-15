@@ -115,6 +115,20 @@ class TestMpcConstraints:
         assert isinstance(ctrl, MPCBackend)
         assert ctrl.backend_name == 'mpc'
 
+    def test_diagnostics_populated(self, config: HybridControllerConfig) -> None:
+        energy = HybridController(config)
+        energy.activate()
+        energy.update(170.0, 220.0, 12.0, 0.0, [0, 1, 0, 0, 0, 0, 0, 0], 1.0)
+        assert energy.diagnostics.hp >= 0
+        assert energy.diagnostics.backend == 'energy'
+        assert energy.diagnostics.target_ror > 0
+
+        mpc = MPCBackend(config, MpcConfig(horizon=10, maxiter=15, solver_timeout_ms=200.0))
+        mpc.activate()
+        mpc.update(170.0, 220.0, 12.0, 0.0, [0, 1, 0, 0, 0, 0, 0, 0], 1.0)
+        assert mpc.diagnostics.backend == 'mpc'
+        assert isinstance(mpc.diagnostics.pred_ror, float)
+
 
 def _closed_loop_ror_rmse(
     backend: HybridController | MPCBackend,

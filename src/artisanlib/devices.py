@@ -1232,10 +1232,28 @@ class DeviceAssignmentDlg(ArtisanResizeablDialog):
         self.kaleidoControlButtonGroup.addButton(self.kaleidoMachinePIDButton)
         self.kaleidoControlButtonGroup.addButton(self.kaleidoSoftwarePIDButton)
         self.kaleidoControlButtonGroup.addButton(self.kaleidoHybridButton)
+        hybridBackendLabel = QLabel(QApplication.translate('Label','Hybrid backend'))
+        self.hybridBackendCombo = QComboBox()
+        self.hybridBackendCombo.addItem(QApplication.translate('ComboBox','Energy'), 'energy')
+        self.hybridBackendCombo.addItem(QApplication.translate('ComboBox','MPC'), 'mpc')
+        backend_idx = self.hybridBackendCombo.findData(self.aw.hybridControlBackend)
+        self.hybridBackendCombo.setCurrentIndex(backend_idx if backend_idx >= 0 else 0)
+        self.hybridBackendCombo.setToolTip(
+            QApplication.translate(
+                'Tooltip',
+                'Energy: shipped Layer-2 controller. MPC: horizon optimizer (falls back to Energy on timeout).'))
+        self.hybridBackendCombo.setEnabled(self.aw.kaleidoHybridControl)
+        self.kaleidoHybridButton.toggled.connect(self.hybridBackendCombo.setEnabled)
+        hybridBackendRow = QHBoxLayout()
+        hybridBackendRow.addSpacing(20)
+        hybridBackendRow.addWidget(hybridBackendLabel)
+        hybridBackendRow.addWidget(self.hybridBackendCombo)
+        hybridBackendRow.addStretch()
         kaleidoControlVBox = QVBoxLayout()
         kaleidoControlVBox.addWidget(self.kaleidoMachinePIDButton)
         kaleidoControlVBox.addWidget(self.kaleidoSoftwarePIDButton)
         kaleidoControlVBox.addWidget(self.kaleidoHybridButton)
+        kaleidoControlVBox.addLayout(hybridBackendRow)
         self.kaleidoControlGroupBox = QGroupBox(QApplication.translate('GroupBox','Kaleido Control'))
         self.kaleidoControlGroupBox.setLayout(kaleidoControlVBox)
         self.kaleidoControlGroupBox.setToolTip(
@@ -4902,6 +4920,10 @@ class DeviceAssignmentDlg(ArtisanResizeablDialog):
             if self.kaleidoHybridButton.isChecked():
                 self.aw.kaleidoHybridControl = True
                 self.aw.kaleidoPID = False
+                backend = self.hybridBackendCombo.currentData()
+                from artisanlib.hybrid_controller import normalize_control_backend
+                self.aw.hybridControlBackend = normalize_control_backend(
+                    str(backend) if backend is not None else 'energy')
             elif self.kaleidoMachinePIDButton.isChecked():
                 self.aw.kaleidoHybridControl = False
                 self.aw.kaleidoPID = True

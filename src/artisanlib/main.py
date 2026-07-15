@@ -1768,6 +1768,7 @@ class ApplicationWindow(QMainWindow):
         self.hybridCrashFcGain:float = 4.0
         self.hybrid_controller:HybridController = create_controller_backend(
             self.hybridControlBackend, self.buildHybridControllerConfig())
+        self.hybridDiagnostics:object|None = None  # latest HybridDiagnostics from sample loop
 
         # Orbiter
         self.orbiter:Orbiter|None = None # holds the Orbiter instance created on connect; reset to None on disconnect

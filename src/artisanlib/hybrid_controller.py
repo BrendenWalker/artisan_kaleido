@@ -555,6 +555,21 @@ class EnergyController:
         return self._twin
 
 
+@dataclass
+class HybridDiagnostics:
+    """Live Hybrid/MPC sample diagnostics for UI and A/B review."""
+
+    hp: int = 0
+    fc: int = 0
+    phase: int = 0
+    target_ror: float = 0.0
+    current_ror: float = 0.0
+    pred_ror: float = 0.0
+    energy_bias: float = 0.0
+    backend: str = DEFAULT_CONTROL_BACKEND
+    fallback: bool = False
+
+
 # ---------------------------------------------------------------------------
 # Backend protocol + Energy facade (Artisan sample-loop API)
 # ---------------------------------------------------------------------------
@@ -587,7 +602,7 @@ class HybridController:
 
     __slots__ = (
         'config', 'planner', 'energy', '_last_update_time', 'active',
-        '_last_hp', '_last_fc', 'backend_name',
+        '_last_hp', '_last_fc', 'backend_name', 'diagnostics',
     )
 
     def __init__(self, config: HybridControllerConfig | None = None) -> None:
@@ -599,6 +614,7 @@ class HybridController:
         self._last_fc = 0.0
         self.active = False
         self.backend_name = DEFAULT_CONTROL_BACKEND
+        self.diagnostics = HybridDiagnostics(backend=DEFAULT_CONTROL_BACKEND)
 
     def reset(self) -> None:
         self.energy.reset()
@@ -606,6 +622,7 @@ class HybridController:
         self._last_hp = 0.0
         self._last_fc = 0.0
         self.active = False
+        self.diagnostics = HybridDiagnostics(backend=self.backend_name)
 
     def activate(self) -> None:
         self.reset()
@@ -641,6 +658,18 @@ class HybridController:
             bt, et, current_ror, target_ror, ror_accel, phase, dt, et_ror=et_ror_v)
         self._last_hp = float(hp)
         self._last_fc = float(fc)
+        twin = self.energy.thermal_state
+        self.diagnostics = HybridDiagnostics(
+            hp=hp,
+            fc=fc,
+            phase=int(phase),
+            target_ror=target_ror,
+            current_ror=current_ror,
+            pred_ror=float(twin.pred_ror),
+            energy_bias=float(twin.energy_bias),
+            backend=self.backend_name,
+            fallback=False,
+        )
         return hp, fc
 
 

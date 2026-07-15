@@ -5133,6 +5133,12 @@ class tgraphcanvas(QObject):
                                 self.timeindex, tx,
                                 et_ror=rateofchange1plot if rateofchange1plot is not None else 0.0)
                             self.aw.kaleido.setHeaterFan(hp, fc)
+                            # Live diagnostics for Hybrid/MPC (status + field A/B tools)
+                            try:
+                                self.aw.hybridDiagnostics = getattr(
+                                    self.aw.hybrid_controller, 'diagnostics', None)
+                            except Exception:  # pylint: disable=broad-except
+                                self.aw.hybridDiagnostics = None
                             # sync Kaleido preset sliders: 0=FC, 3=HP
                             self.aw.addRawEventSignal.emit(fc, float(fc), 0, False, True, False)
                             self.aw.addRawEventSignal.emit(hp, float(hp), 3, False, True, False)

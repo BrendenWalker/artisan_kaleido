@@ -1,0 +1,43 @@
+{
+  "n_traces": 2,
+  "energy_ror_rmse_mean": 62.05782852049555,
+  "mpc_ror_rmse_mean": 62.05782852049555,
+  "rows": [
+    {
+      "path": "Honduras Edwin Ever Sabilon Parainema_25-10-03_1524.alog",
+      "energy": {
+        "ror_rmse": 63.534984060667874,
+        "max_abs_ror": 548.00884117277,
+        "hp_travel": 1736.0,
+        "fc_travel": 2544.0,
+        "n": 397.0
+      },
+      "mpc": {
+        "ror_rmse": 63.534984060667874,
+        "max_abs_ror": 548.00884117277,
+        "hp_travel": 352.0,
+        "fc_travel": 324.0,
+        "n": 397.0
+      },
+      "ror_rmse_delta": 0.0
+    },
+    {
+      "path": "Honduras Edwin Ever Sabilon Parainema_25-11-14_1536.alog",
+      "energy": {
+        "ror_rmse": 60.58067298032323,
+        "max_abs_ror": 572.0066733730561,
+        "hp_travel": 1477.0,
+        "fc_travel": 2464.0,
+        "n": 416.0
+      },
+      "mpc": {
+        "ror_rmse": 60.58067298032323,
+        "max_abs_ror": 572.0066733730561,
+        "hp_travel": 318.0,
+        "fc_travel": 350.0,
+        "n": 416.0
+      },
+      "ror_rmse_delta": 0.0
+    }
+  ]
+}

@@ -23,6 +23,7 @@ from scipy.optimize import minimize
 from artisanlib.hybrid_controller import (
     HybridController,
     HybridControllerConfig,
+    HybridDiagnostics,
     RoastPhase,
     detect_roast_phase,
     interpolate_ror_target,
@@ -101,7 +102,7 @@ class MPCBackend:
     """Horizon optimizer satisfying ControllerBackend; Energy fallback on failure."""
 
     __slots__ = (
-        'config', 'mpc', 'energy', 'backend_name', 'active',
+        'config', 'mpc', 'energy', 'backend_name', 'active', 'diagnostics',
         '_last_update_time', '_last_hp', '_last_fc', '_e_element',
         '_u_warm', '_fallback_count',
     )
@@ -117,6 +118,7 @@ class MPCBackend:
         self.energy = HybridController(self.config)
         self.backend_name = 'mpc'
         self.active = False
+        self.diagnostics = HybridDiagnostics(backend='mpc')
         self._last_update_time: float | None = None
         self._last_hp = 0.0
         self._last_fc = 0.0
@@ -133,6 +135,7 @@ class MPCBackend:
         self._u_warm = None
         self._fallback_count = 0
         self.active = False
+        self.diagnostics = HybridDiagnostics(backend='mpc')
 
     def activate(self) -> None:
         self.reset()
@@ -166,16 +169,25 @@ class MPCBackend:
             bt, et, ror, ror_accel, timeindex, now, et_ror=et_ror)
 
         phase = detect_roast_phase(timeindex, bt, self.config)
+        target_ror = interpolate_ror_target(bt, phase, self.config)
+        current_ror = ror if ror is not None else 0.0
         x0 = estimate_state(bt, et, self._last_hp, self.mpc.model, self._e_element)
         self._e_element = float(x0[2])
 
         solved = self._solve(x0, phase, timeindex, dt)
-        if solved is None:
+        used_fallback = solved is None
+        if used_fallback:
             self._fallback_count += 1
             _log.warning('MPC fallback to Energy (count=%s)', self._fallback_count)
-            self._last_hp = float(energy_hp)
-            self._last_fc = float(energy_fc)
-            return energy_hp, energy_fc
+            hp, fc = energy_hp, energy_fc
+            self._last_hp = float(hp)
+            self._last_fc = float(fc)
+            twin = self.energy.energy.thermal_state
+            self.diagnostics = HybridDiagnostics(
+                hp=hp, fc=fc, phase=int(phase), target_ror=target_ror,
+                current_ror=current_ror, pred_ror=float(twin.pred_ror),
+                energy_bias=float(twin.energy_bias), backend='mpc', fallback=True)
+            return hp, fc
 
         hp, fc = solved
         self._last_hp = float(hp)
@@ -183,6 +195,11 @@ class MPCBackend:
         # Soft-update energy filter state toward commanded HP
         alpha = dt / (self.mpc.model.tau_element + dt)
         self._e_element = (1.0 - alpha) * self._e_element + alpha * self.mpc.model.K_hp * hp
+        twin = self.energy.energy.thermal_state
+        self.diagnostics = HybridDiagnostics(
+            hp=hp, fc=fc, phase=int(phase), target_ror=target_ror,
+            current_ror=current_ror, pred_ror=float(twin.pred_ror),
+            energy_bias=float(twin.energy_bias), backend='mpc', fallback=False)
         return hp, fc
 
     def _decision_dims(self) -> tuple[int, int]:

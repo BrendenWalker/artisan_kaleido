@@ -1304,7 +1304,9 @@ class PIDcontrol:
         self.aw.hybrid_controller.activate()
         self.pidActive = True
         self.aw.buttonCONTROL.setStyleSheet(self.aw.pushbuttonstyles['PIDactive'])
-        self.aw.sendmessage(QApplication.translate('Message','Hybrid Controller ON'))
+        backend = getattr(self.aw.hybrid_controller, 'backend_name', self.aw.hybridControlBackend)
+        self.aw.sendmessage(
+            QApplication.translate('Message','Hybrid Controller ON ({})').format(backend))
 
     # v is from [-min,max]
     def setEnergy(self, v:float) -> None:
@@ -1548,7 +1550,9 @@ class PIDcontrol:
                     self.aw.hybrid_controller.activate()
                 self.pidActive = True
                 self.aw.buttonCONTROL.setStyleSheet(self.aw.pushbuttonstyles['PIDactive'])
-                self.aw.sendmessage(QApplication.translate('Message','Hybrid Controller ON'))
+                backend = getattr(self.aw.hybrid_controller, 'backend_name', self.aw.hybridControlBackend)
+                self.aw.sendmessage(
+                    QApplication.translate('Message','Hybrid Controller ON ({})').format(backend))
         elif self.aw.qmc.Controlbuttonflag:
             # software PID
             if not self.pidActive: # only if not yet active!

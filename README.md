@@ -53,6 +53,7 @@ Configure under **Config → Device** (Ctrl+D):
    - **Machine PID** — roaster-native PID via `AH`/`TS`
    - **Software PID** — single Artisan PID slider
    - **Hybrid Controller** — coordinated HP + FC (recommended)
+     - Sub-option **Hybrid backend**: Energy (default) or MPC
 
 Network host/port settings remain on the **Networks** tab in the Kaleido group box.
 
@@ -108,8 +109,8 @@ Settings persist in Artisan's QSettings / machine `.aset` files:
 | `hybridCrashFcGain` | 4.0 | FC % per °C/min under RoR target |
 
 RoR shape schedule and related priors are baked-in M6 defaults (not editable in the Device dialog yet).
-Hybrid control backend defaults to `energy` (`hybridControlBackend`). Set `hybridControlBackend=mpc`
-in QSettings to try Lite MPC (no Device dialog radio yet; falls back to Energy on solver timeout).
+Hybrid backend is chosen under **Config → Device → Kaleido Control → Hybrid backend**
+(Energy default; MPC optional with Energy timeout fallback).
 
 ## Development
 
@@ -140,11 +141,7 @@ pytest src/test/unitary/artisanlib/test_pid_control.py -v -k kaleido
 **Done**
 
 - Hybrid Controller (Machine PID warmup → CHARGE → coordinated HP/FC RoR shape)
-- MPC Phases A–D (backend, Lite MPC, M6 calibration, event-aware horizon; Energy still default)
-
-**Next** — [MPC Phase E](docs/kaleido_mpc_spec.md#18-roadmap)
-
-- **E** — Diagnostics UI + field A/B (Energy vs MPC)
+- MPC Phases A–E (backend, Lite MPC, calibration, event-aware horizon, diagnostics/A/B UI)
 
 **Later**
 
