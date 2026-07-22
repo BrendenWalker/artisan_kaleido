@@ -1300,6 +1300,8 @@ class PIDcontrol:
         if self.aw.kaleido is None or not self.aw.qmc.Controlbuttonflag:
             return
         self.aw.kaleido.pidOFF()
+        # Hybrid will command HP; ensure heaters are enabled regardless of Start Heating UI state
+        self.aw.kaleido.ensureHeating(True)
         self.aw.qmc.pid.off()
         self.aw.hybrid_controller.activate()
         self.pidActive = True

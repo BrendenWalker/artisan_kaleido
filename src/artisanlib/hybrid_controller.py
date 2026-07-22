@@ -56,8 +56,9 @@ DEFAULT_BASELINE_FAN: Final[dict[RoastPhase, float]] = {
     RoastPhase.Drying: 30.0,
     RoastPhase.Yellow: 35.0,
     RoastPhase.Maillard: 40.0,
-    RoastPhase.FirstCrack: 50.0,
-    RoastPhase.Development: 55.0,
+    # Post-FC: higher air baseline so RoR can keep declining into development
+    RoastPhase.FirstCrack: 60.0,
+    RoastPhase.Development: 70.0,
     RoastPhase.Cooling: 80.0,
 }
 
@@ -66,8 +67,9 @@ DEFAULT_BASELINE_HEATER: Final[dict[RoastPhase, float]] = {
     RoastPhase.Drying: 90.0,
     RoastPhase.Yellow: 85.0,
     RoastPhase.Maillard: 80.0,
-    RoastPhase.FirstCrack: 50.0,
-    RoastPhase.Development: 40.0,
+    # Post-FC: cut HP harder so stored drum energy does not flatten RoR
+    RoastPhase.FirstCrack: 40.0,
+    RoastPhase.Development: 25.0,
     RoastPhase.Cooling: 0.0,
 }
 
@@ -76,8 +78,9 @@ DEFAULT_ROR_SHAPE: Final[dict[RoastPhase, tuple[float, float]]] = {
     RoastPhase.Drying: (22.0, 15.5),
     RoastPhase.Yellow: (15.0, 14.0),
     RoastPhase.Maillard: (14.0, 10.0),
-    RoastPhase.FirstCrack: (11.0, 9.0),
-    RoastPhase.Development: (9.0, 5.5),
+    # Steeper post-FC decline so development time is not compressed
+    RoastPhase.FirstCrack: (10.0, 7.0),
+    RoastPhase.Development: (7.0, 3.5),
     RoastPhase.Cooling: (0.0, 0.0),
 }
 
@@ -86,7 +89,8 @@ DEFAULT_ROR_BT_BOUNDS: Final[dict[RoastPhase, tuple[float, float]]] = {
     RoastPhase.Drying: (100.0, 150.0),
     RoastPhase.Yellow: (150.0, 170.0),
     RoastPhase.Maillard: (170.0, 195.0),
-    RoastPhase.FirstCrack: (180.0, 205.0),
+    # Shorter FC BT span so target keeps falling after FCs (even without FCe)
+    RoastPhase.FirstCrack: (180.0, 195.0),
     RoastPhase.Development: (190.0, 210.0),
     RoastPhase.Cooling: (100.0, 100.0),
 }
@@ -146,6 +150,12 @@ class HybridControllerConfig:
     predict_blend: float = 0.55  # weight on predicted vs current RoR error
     twin_pred_blend: float = 0.65  # weight on twin pred vs accel-only pred
     declining_error_scale: float = 0.35
+    # Post-FC soft-brake when measured RoR sits above the declining target
+    soft_brake_ror_margin: float = 0.5
+    soft_brake_fc_gain: float = 6.0
+    soft_brake_hp_gain: float = 2.5
+    # Require at least this RoR accel (°C/min per s) before muting an overshoot
+    min_decline_accel: float = -0.4
     # Legacy energy bias weights (fallback / EnergyBiasEstimator)
     energy_heater_weight: float = 0.02
     energy_air_weight: float = 0.015
@@ -211,12 +221,21 @@ class SimplePID:
 
 
 def detect_roast_phase(timeindex: list[int], bt: float, config: HybridControllerConfig) -> RoastPhase:
-    """Derive roast phase from Artisan event indices with BT fallbacks."""
+    """Derive roast phase from Artisan event indices with BT fallbacks.
+
+    After FCs, auto-advance into Development once BT reaches the Development
+    schedule start even if FCe was never marked — otherwise RoR targets stall
+    near the FirstCrack end value and development time collapses.
+    """
     if len(timeindex) > 6 and timeindex[6] > 0:
         return RoastPhase.Cooling
     if len(timeindex) > 3 and timeindex[3] > 0:
         return RoastPhase.Development
     if len(timeindex) > 2 and timeindex[2] > 0:
+        dev_bt_lo, _ = config.ror_bt_bounds.get(
+            RoastPhase.Development, DEFAULT_ROR_BT_BOUNDS[RoastPhase.Development])
+        if bt >= dev_bt_lo:
+            return RoastPhase.Development
         return RoastPhase.FirstCrack
     if len(timeindex) > 1 and timeindex[1] > 0:
         if bt >= config.maillard_bt:
@@ -444,16 +463,27 @@ class EnergyController:
         hp = self.config.baseline_heater.get(phase, DEFAULT_BASELINE_HEATER.get(phase, 70.0))
         return offset, fc, hp
 
-    def _trend_scale(self, ror_error: float, ror_accel: float) -> float:
-        """Mute corrections when RoR is already declining toward the target."""
-        if ror_error < -0.3 and ror_accel < -0.05:
-            return self.config.declining_error_scale
-        if ror_error > 0.3 and ror_accel > 0.05:
-            return self.config.declining_error_scale
-        if ror_error < -0.3 and ror_accel > self.config.ror_accel_threshold:
-            return 1.35
-        if ror_error > 0.3 and ror_accel < -self.config.ror_accel_threshold:
-            return 1.35
+    def _trend_scale(self, ror_error: float, ror_accel: float, phase: RoastPhase) -> float:
+        """Mute corrections when RoR is already moving toward the target.
+
+        Post-FC overshoots only mute when RoR is declining fast enough; a slow
+        drift above target must keep soft-brake authority or development shortens.
+        """
+        post_fc = phase in (RoastPhase.FirstCrack, RoastPhase.Development)
+        if ror_error < -0.3:
+            # Above target
+            if post_fc and ror_accel > self.config.min_decline_accel:
+                return 1.45  # not declining fast enough after FC
+            if ror_accel < -0.05:
+                return self.config.declining_error_scale
+            if ror_accel > self.config.ror_accel_threshold:
+                return 1.35
+        if ror_error > 0.3:
+            # Below target
+            if ror_accel > 0.05:
+                return self.config.declining_error_scale
+            if ror_accel < -self.config.ror_accel_threshold:
+                return 1.35
         return 1.0
 
     def update(
@@ -484,7 +514,7 @@ class EnergyController:
         effective_ror = (1.0 - blend) * current_ror + blend * predicted
 
         ror_error = target_ror - effective_ror
-        trend_scale = self._trend_scale(target_ror - current_ror, ror_accel)
+        trend_scale = self._trend_scale(target_ror - current_ror, ror_accel, phase)
 
         hp_trim_raw = self._heater_pid.update(target_ror, effective_ror, dt) * trend_scale
         heater_w = self.config.phase_heater_weight.get(
@@ -515,17 +545,35 @@ class EnergyController:
                 accel_trim *= 1.5
 
         crash_trim = 0.0
+        soft_brake_fc = 0.0
+        soft_brake_hp = 0.0
         if phase in (RoastPhase.FirstCrack, RoastPhase.Development):
             under = (target_ror - self.config.crash_ror_margin) - current_ror
             if under > 0.0:
                 crash_trim = self.config.crash_fc_gain * under
+            over = current_ror - (target_ror + self.config.soft_brake_ror_margin)
+            if over > 0.0:
+                soft_brake_fc = self.config.soft_brake_fc_gain * over
+                soft_brake_hp = -self.config.soft_brake_hp_gain * over
 
         bias_air = 0.0
         if phase in (RoastPhase.Maillard, RoastPhase.FirstCrack, RoastPhase.Development) and bias > 0.2:
             bias_air = bias * self.config.energy_bias_fc_gain
 
-        hp_raw = baseline_heater + hp_trim
-        fc_raw = baseline_fan + fan_offset_corr + air_ror_trim + accel_trim + crash_trim + bias_air
+        hp_raw = baseline_heater + hp_trim + soft_brake_hp
+        fc_raw = (
+            baseline_fan + fan_offset_corr + air_ror_trim
+            + accel_trim + crash_trim + bias_air + soft_brake_fc
+        )
+
+        # DROP / Cooling: cut heater immediately (no slew). Fan may still ramp to cooling air.
+        if phase == RoastPhase.Cooling:
+            hp = 0
+            fc_slewed = apply_slew(self._last_fc, fc_raw, self.config.fan_slew_pct_per_sec, dt)
+            fc = int(round(_clip(fc_slewed, 0.0, 100.0)))
+            self._last_hp = 0.0
+            self._last_fc = float(fc)
+            return hp, fc
 
         heater_slew = self.config.heater_slew_pct_per_sec
         if phase in (RoastPhase.FirstCrack, RoastPhase.Development):

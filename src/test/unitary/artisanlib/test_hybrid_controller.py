@@ -54,9 +54,14 @@ class TestRoastPhaseDetection:
         timeindex = [10, 100, 0, 0, 0, 0, 0, 0]
         assert detect_roast_phase(timeindex, 120.0, config) == RoastPhase.Drying
 
-    def test_maillard_after_fcs(self, config: HybridControllerConfig) -> None:
+    def test_first_crack_early_after_fcs(self, config: HybridControllerConfig) -> None:
         timeindex = [10, 100, 500, 0, 0, 0, 0, 0]
-        assert detect_roast_phase(timeindex, 200.0, config) == RoastPhase.FirstCrack
+        assert detect_roast_phase(timeindex, 185.0, config) == RoastPhase.FirstCrack
+
+    def test_auto_development_after_fcs_without_fce(self, config: HybridControllerConfig) -> None:
+        """Without FCe, BT past Development schedule start still enters Development."""
+        timeindex = [10, 100, 500, 0, 0, 0, 0, 0]
+        assert detect_roast_phase(timeindex, 200.0, config) == RoastPhase.Development
 
     def test_development_after_fce(self, config: HybridControllerConfig) -> None:
         timeindex = [10, 100, 500, 600, 0, 0, 0, 0]
@@ -78,12 +83,12 @@ class TestRorShape:
     def test_ror_maillard_to_development(self, config: HybridControllerConfig) -> None:
         maillard_start = interpolate_ror_target(170.0, RoastPhase.Maillard, config)
         fc_start = interpolate_ror_target(180.0, RoastPhase.FirstCrack, config)
-        fc_end = interpolate_ror_target(205.0, RoastPhase.FirstCrack, config)
+        fc_end = interpolate_ror_target(195.0, RoastPhase.FirstCrack, config)
         dev_end = interpolate_ror_target(210.0, RoastPhase.Development, config)
         assert maillard_start == pytest.approx(14.0)
-        assert fc_start == pytest.approx(11.0)
-        assert fc_end == pytest.approx(9.0)
-        assert dev_end == pytest.approx(5.5)
+        assert fc_start == pytest.approx(10.0)
+        assert fc_end == pytest.approx(7.0)
+        assert dev_end == pytest.approx(3.5)
         assert maillard_start > fc_end > dev_end
 
     def test_planner_matches_interpolate(self, config: HybridControllerConfig) -> None:
@@ -93,11 +98,15 @@ class TestRorShape:
 
     def test_log_refined_schedule_defaults(self) -> None:
         assert DEFAULT_BASELINE_HEATER[RoastPhase.Drying] == 90.0
-        assert DEFAULT_BASELINE_HEATER[RoastPhase.FirstCrack] == 50.0
+        assert DEFAULT_BASELINE_HEATER[RoastPhase.FirstCrack] == 40.0
+        assert DEFAULT_BASELINE_HEATER[RoastPhase.Development] == 25.0
         assert DEFAULT_BASELINE_FAN[RoastPhase.Maillard] == 40.0
-        assert DEFAULT_BASELINE_FAN[RoastPhase.Development] == 55.0
+        assert DEFAULT_BASELINE_FAN[RoastPhase.FirstCrack] == 60.0
+        assert DEFAULT_BASELINE_FAN[RoastPhase.Development] == 70.0
         assert DEFAULT_ET_BT_OFFSETS[RoastPhase.Development] == 10.0
         assert DEFAULT_ROR_SHAPE[RoastPhase.Maillard] == (14.0, 10.0)
+        assert DEFAULT_ROR_SHAPE[RoastPhase.FirstCrack] == (10.0, 7.0)
+        assert DEFAULT_ROR_SHAPE[RoastPhase.Development] == (7.0, 3.5)
 
 
 class TestSlewLimiter:
@@ -212,31 +221,68 @@ class TestHybridController:
         config.fan_slew_pct_per_sec = 100.0
         hc = HybridController(config)
         hc.activate()
+        # Early FirstCrack BT (before auto-Development at 190)
         timeindex = [0, 100, 500, 0, 0, 0, 0, 0]
-        _, fc_low = hc.update(200.0, 240.0, 8.0, 0.0, timeindex, 1.0)
+        _, fc_low = hc.update(185.0, 220.0, 8.0, 0.0, timeindex, 1.0)
         hc.reset()
         hc.activate()
-        _, fc_high = hc.update(200.0, 240.0, 8.0, 3.0, timeindex, 1.0)
+        _, fc_high = hc.update(185.0, 220.0, 8.0, 3.0, timeindex, 1.0)
         assert fc_high >= fc_low
 
     def test_crash_increases_fan_when_ror_undershoots(self, config: HybridControllerConfig) -> None:
         config.fan_slew_pct_per_sec = 100.0
         config.crash_ror_margin = 1.5
         config.crash_fc_gain = 4.0
+        config.soft_brake_fc_gain = 0.0  # isolate crash path from soft-brake
         hc = HybridController(config)
         hc.activate()
         timeindex = [0, 100, 500, 0, 0, 0, 0, 0]
-        _, fc_ok = hc.update(200.0, 235.0, 9.0, 0.0, timeindex, 1.0)
+        # Target near ~9 at BT 185 in FirstCrack; 9.0 on target, 4.0 crashes
+        _, fc_ok = hc.update(185.0, 220.0, 9.0, 0.0, timeindex, 1.0)
         hc.reset()
         hc.activate()
-        _, fc_crash = hc.update(200.0, 235.0, 4.0, 0.0, timeindex, 1.0)
+        _, fc_crash = hc.update(185.0, 220.0, 4.0, 0.0, timeindex, 1.0)
         assert fc_crash > fc_ok
 
     def test_schedule_lookup(self, controller: HybridController) -> None:
         offset, fc, hp = controller.get_schedule(RoastPhase.FirstCrack)
         assert offset == 30.0
-        assert fc == 50.0
-        assert hp == 50.0
+        assert fc == 60.0
+        assert hp == 40.0
+
+    def test_soft_brake_increases_fan_when_ror_overshoots(self, config: HybridControllerConfig) -> None:
+        config.fan_slew_pct_per_sec = 100.0
+        config.heater_slew_pct_per_sec = 100.0
+        config.soft_brake_ror_margin = 0.5
+        config.soft_brake_fc_gain = 6.0
+        config.soft_brake_hp_gain = 2.5
+        ec = EnergyController(config)
+        # On target → mild fan
+        _, fc_ok = ec.update(192.0, 220.0, 7.0, 7.0, -0.2, RoastPhase.Development, 1.0)
+        ec.reset()
+        # Well above target → soft-brake air up / HP down
+        hp_hi, fc_hi = ec.update(192.0, 220.0, 12.0, 7.0, 0.0, RoastPhase.Development, 1.0)
+        assert fc_hi > fc_ok
+        assert hp_hi < 40
+
+    def test_drop_cuts_heater_immediately(self, config: HybridControllerConfig) -> None:
+        """After DROP, HP must snap to 0 even with a slow heater slew."""
+        config.heater_slew_pct_per_sec = 100.0
+        config.fan_slew_pct_per_sec = 100.0
+        hc = HybridController(config)
+        hc.activate()
+        # Build some heater command during development
+        timeindex = [0, 100, 500, 600, 0, 0, 0, 0]
+        hp_pre = 0
+        for t in range(5):
+            hp_pre, _ = hc.update(200.0, 220.0, 6.0, 0.0, timeindex, float(t + 1))
+        assert hp_pre > 0
+        # Slow slew would leave residual HP without the Cooling snap
+        config.heater_slew_pct_per_sec = 1.0
+        timeindex_drop = [0, 100, 500, 600, 0, 0, 800, 0]
+        hp_drop, fc_drop = hc.update(200.0, 220.0, 0.0, 0.0, timeindex_drop, 10.0)
+        assert hp_drop == 0
+        assert fc_drop > 0
 
     def test_no_background_ror_argument(self, controller: HybridController) -> None:
         timeindex = [0, 0, 0, 0, 0, 0, 0, 0]

@@ -171,6 +171,19 @@ class MPCBackend:
         phase = detect_roast_phase(timeindex, bt, self.config)
         target_ror = interpolate_ror_target(bt, phase, self.config)
         current_ror = ror if ror is not None else 0.0
+
+        # DROP / Cooling: heater off immediately; reuse Energy cooling fan command
+        if phase == RoastPhase.Cooling:
+            hp, fc = 0, energy_fc
+            self._last_hp = 0.0
+            self._last_fc = float(fc)
+            twin = self.energy.energy.thermal_state
+            self.diagnostics = HybridDiagnostics(
+                hp=hp, fc=fc, phase=int(phase), target_ror=target_ror,
+                current_ror=current_ror, pred_ror=float(twin.pred_ror),
+                energy_bias=float(twin.energy_bias), backend='mpc', fallback=False)
+            return hp, fc
+
         x0 = estimate_state(bt, et, self._last_hp, self.mpc.model, self._e_element)
         self._e_element = float(x0[2])
 

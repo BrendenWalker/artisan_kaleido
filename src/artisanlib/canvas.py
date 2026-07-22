@@ -5116,8 +5116,16 @@ class tgraphcanvas(QObject):
                             # after DRY (if FCs event not yet set) check for BT exceeding FC-min as specified in the phases dialog
                             self.markFCsSignal.emit(False) # queued
 
+                    # Kaleido idle cooldown (ON, not recording): air 100% / drum 10% until BT < 50°C
+                    if self.aw.kaleidoCooldownActive and self.aw.kaleido is not None:
+                        try:
+                            self.aw.tickKaleidoCooldown(st2)
+                        except Exception as e: # pylint: disable=broad-except
+                            _log.exception(e)
+
                     # Kaleido Hybrid Controller: M6 RoR-shape + thermal twin + phase HP/FC (after CHARGE)
-                    if (self.Controlbuttonflag and self.aw.pidcontrol.pidActive and
+                    if (not self.aw.kaleidoCooldownActive and self.Controlbuttonflag
+                            and self.aw.pidcontrol.pidActive and
                             self.aw.pidcontrol.externalPIDControl() == 5 and self.aw.kaleido is not None and
                             self.timeindex[0] > -1):
                         try:
@@ -13547,6 +13555,7 @@ class tgraphcanvas(QObject):
             self.aw.updateControlsVisibility()
             self.aw.update_extraeventbuttons_visibility()
             self.aw.updateExtraButtonsVisibility()
+            self.aw.updateKaleidoCooldownButton()
             self.aw.updateSlidersVisibility() # update visibility of sliders based on the users preference
             self.aw.update_minieventline_visibility()
             self.aw.pidcontrol.activateONOFFeasySV(self.aw.pidcontrol.svButtons and self.aw.buttonONOFF.isVisible())
@@ -13711,6 +13720,10 @@ class tgraphcanvas(QObject):
             self.aw.updateSlidersVisibility() # update visibility of sliders based on the users preference
             self.aw.update_minieventline_visibility()
             self.aw.updateExtraButtonsVisibility()
+            if self.aw.kaleidoCooldownActive:
+                self.aw.stopKaleidoCooldown(turn_off=True)
+            else:
+                self.aw.updateKaleidoCooldownButton()
             self.aw.pidcontrol.activateONOFFeasySV(False)
             self.StopAsyncSamplingAction()
             self.aw.enableEditMenus()
@@ -14343,6 +14356,11 @@ class tgraphcanvas(QObject):
 
             self.aw.update_extraeventbuttons_visibility()
             self.aw.updateExtraButtonsVisibility()
+            # Cooldown is idle-only; cancel if recording starts
+            if self.aw.kaleidoCooldownActive:
+                self.aw.stopKaleidoCooldown(turn_off=False)
+            else:
+                self.aw.updateKaleidoCooldownButton()
 
             if self.buttonvisibility[0]: # if CHARGE button is visible we let it blink on START
                 self.aw.buttonCHARGE.startAnimation()
@@ -14390,6 +14408,7 @@ class tgraphcanvas(QObject):
             self.aw.enableSaveActions()
             self.aw.resetCurveVisibilities()
             self.flagstart = False
+            self.aw.updateKaleidoCooldownButton()
             if self.aw.simulator:
                 self.aw.buttonSTARTSTOP.setStyleSheet(self.aw.pushbuttonstyles_simulator['STOP'])
             else:

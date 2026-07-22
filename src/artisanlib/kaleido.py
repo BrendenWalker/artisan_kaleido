@@ -141,6 +141,8 @@ class KaleidoPort:
 
     def pidON(self) -> None:
         _log.debug('Kaleido PID ON')
+        # Machine PID implies heating — force HS so automation is not blocked by the UI toggle
+        self.ensureHeating(True)
         if not self.get_state('AH'):
             # only if the state changed we issue the command
             self.send_msg('AH', '1') # AH message can also be send via an ON IO Command action
@@ -150,6 +152,17 @@ class KaleidoPort:
         if self.get_state('AH'):
             self.send_msg('AH', '0') # AH message can also be send via an ON IO Command action
 
+    def ensureHeating(self, on: bool = True) -> None:
+        """Force Kaleido heating enable (HS). Automation must not depend on the UI Start Heating button."""
+        hs = self.get_state('HS')
+        if on:
+            if hs != 1:
+                _log.debug('Kaleido ensureHeating ON')
+                self.send_msg('HS', '1')
+        elif hs == 1:
+            _log.debug('Kaleido ensureHeating OFF')
+            self.send_msg('HS', '0')
+
     def setSV(self, sv:float) -> None:
         _log.debug('setSV(%s)',sv)
         if self.get_state('TS') != sv:
@@ -157,6 +170,9 @@ class KaleidoPort:
 
     def setHeater(self, pct:int) -> None:
         pct = max(0, min(100, pct))
+        if pct > 0:
+            # Commanded heat requires HS; otherwise HP% is a no-op on the plant
+            self.ensureHeating(True)
         if self.get_state('HP') != pct:
             self.send_msg('HP', str(pct))
 
@@ -165,9 +181,30 @@ class KaleidoPort:
         if self.get_state('FC') != pct:
             self.send_msg('FC', str(pct))
 
+    def setDrum(self, pct:int) -> None:
+        pct = max(0, min(100, pct))
+        if self.get_state('RC') != pct:
+            self.send_msg('RC', str(pct))
+
     def setHeaterFan(self, hp:int, fc:int) -> None:
         self.setHeater(hp)
         self.setFan(fc)
+
+    def applyCooldownActuators(self) -> None:
+        """Air 100%, drum 10%, heat off — used while cooling beans after a roast."""
+        self.ensureHeating(False)
+        self.pidOFF()
+        self.setHeater(0)
+        self.setFan(100)
+        self.setDrum(10)
+
+    def allControlsOff(self) -> None:
+        """Turn off heater, fan, drum, heating enable, and machine PID."""
+        self.ensureHeating(False)
+        self.pidOFF()
+        self.setHeater(0)
+        self.setFan(0)
+        self.setDrum(0)
 
 # -- state management
 

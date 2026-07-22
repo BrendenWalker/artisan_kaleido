@@ -1417,8 +1417,8 @@ class ApplicationWindow(QMainWindow):
         'button_font_size_tiny', 'button_font_size_micro',
         'pushbuttonstyles_simulator', 'pushbuttonstyles', 'standard_button_tiny_height', 'standard_button_small_height', 'standard_button_height',
         'buttonONOFF', 'buttonSTARTSTOP', 'buttonFCs', 'buttonFCe', 'buttonSCs', 'buttonSCe', 'buttonRESET', 'buttonCHARGE', 'buttonDROP',
-        'buttonCONTROL', 'buttonEVENT', 'buttonSVp5', 'buttonSVp10', 'buttonSVp20', 'buttonSVm20', 'buttonSVm10', 'buttonSVm5', 'buttonDRY',
-        'buttonCOOL', 'lcd1', 'lcd2', 'lcd3', 'lcd4', 'lcd5',
+        'buttonCONTROL', 'buttonCOOLDOWN', 'buttonEVENT', 'buttonSVp5', 'buttonSVp10', 'buttonSVp20', 'buttonSVm20', 'buttonSVm10', 'buttonSVm5', 'buttonDRY',
+        'buttonCOOL', 'lcd1', 'lcd2', 'lcd3', 'lcd4', 'lcd5', 'kaleidoCooldownActive',
         'lcd6', 'lcd7', 'label2', 'label3', 'label4', 'label5', 'label6', 'label7', 'extraLCD1', 'extraLCD2', 'extraLCDlabel1', 'extraLCDlabel2',
         'extraLCDframe1', 'extraLCDframe2', 'extraLCDvisibility1', 'extraLCDvisibility2', 'extraCurveVisibility1', 'extraCurveVisibility2',
         'extraDelta1', 'extraDelta2', 'extraFill1', 'extraFill2', 'channel_tare_values', 'messagehist', 'eventlabel', 'eNumberSpinBox',
@@ -1751,6 +1751,7 @@ class ApplicationWindow(QMainWindow):
         self.kaleidoHybridControl:bool = False # if True the Hybrid Heater+Fan controller is active (mutually exclusive with kaleidoPID)
         self.kaleido:KaleidoPort|None = None # holds the Kaleido instance created on connect; reset to None on disconnect
         self.kaleidoEventFlags:list[bool] = [False, False, False, False, False, False, False ] # CHARGE, DRY, FCs, FCe, SCs, SCe, DROP
+        self.kaleidoCooldownActive:bool = False # idle air/drum cooldown until BT < 50°C
 
         # Hybrid Controller settings
         self.hybridControlBackend:str = DEFAULT_CONTROL_BACKEND  # "energy" | "mpc"
@@ -3073,6 +3074,18 @@ class ApplicationWindow(QMainWindow):
         if self.app.artisanviewerMode:
             self.buttonCONTROL.setVisible(False)
 
+        # Kaleido idle cooldown (visible only when ON + not recording)
+        self.buttonCOOLDOWN: QPushButton = QPushButton(QApplication.translate('Button', 'COOLDOWN'))
+        self.buttonCOOLDOWN.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.buttonCOOLDOWN.setStyleSheet(self.pushbuttonstyles['PID'])
+        self.buttonCOOLDOWN.setGraphicsEffect(self.makeShadow())
+        self.buttonCOOLDOWN.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.buttonCOOLDOWN.setMinimumHeight(self.standard_button_height)
+        self.buttonCOOLDOWN.setToolTip(QApplication.translate(
+            'Tooltip', 'Cool beans: air 100%, drum 10% until BT < 50°C, then all off'))
+        self.buttonCOOLDOWN.clicked.connect(self.toggleKaleidoCooldown)
+        self.buttonCOOLDOWN.setVisible(False)
+
         #create EVENT record button
         self.buttonEVENT: AuxEventPushButton = AuxEventPushButton(QApplication.translate('Button', 'EVENT'))
         self.buttonEVENT.setToolTip(QApplication.translate('Tooltip', 'Event'))
@@ -3727,6 +3740,8 @@ class ApplicationWindow(QMainWindow):
         self.level1layout.addWidget(self.buttonSTARTSTOP)
         self.level1layout.addSpacing(15)
         self.level1layout.addWidget(self.buttonCONTROL)
+        self.level1layout.addSpacing(10)
+        self.level1layout.addWidget(self.buttonCOOLDOWN)
         self.level1layout.addSpacing(10)
         self.level1layout.addWidget(self.lcd1)
         self.level1layout.setSpacing(0)
@@ -17476,11 +17491,103 @@ class ApplicationWindow(QMainWindow):
     def kaleidoStartHeating(self, on:bool) -> None:
         if not on:
             return
+        if self.kaleido is not None:
+            # Keep HS latched when automation believes heating should be on
+            self.kaleido.ensureHeating(True)
         if (self.kaleidoHybridControl and self.qmc.Controlbuttonflag
                 and self.kaleido is not None
                 and self.pidcontrol.kaleidoInWarmupPhase()
                 and not self.pidcontrol.pidActive):
             self.pidcontrol.pidOn()
+
+    # --- Kaleido idle cooldown (air 100% / drum 10% until BT < 50°C) ---
+
+    def kaleidoCooldownAvailable(self) -> bool:
+        """True when Kaleido is connected/monitoring but not recording a profile."""
+        return (
+            self.qmc.device == 138
+            and self.kaleido is not None
+            and self.qmc.flagon
+            and not self.qmc.flagstart
+        )
+
+    def updateKaleidoCooldownButton(self) -> None:
+        if self.app.artisanviewerMode:
+            self.buttonCOOLDOWN.setVisible(False)
+            return
+        show = self.kaleidoCooldownAvailable() or self.kaleidoCooldownActive
+        self.buttonCOOLDOWN.setVisible(show)
+        if self.kaleidoCooldownActive:
+            self.buttonCOOLDOWN.setStyleSheet(self.pushbuttonstyles['PIDactive'])
+            self.buttonCOOLDOWN.setText(QApplication.translate('Button', 'COOLING…'))
+        else:
+            self.buttonCOOLDOWN.setStyleSheet(self.pushbuttonstyles['PID'])
+            self.buttonCOOLDOWN.setText(QApplication.translate('Button', 'COOLDOWN'))
+
+    @pyqtSlot(bool)
+    @pyqtSlot()
+    def toggleKaleidoCooldown(self, _:bool = False) -> None:
+        if self.kaleidoCooldownActive:
+            self.stopKaleidoCooldown(turn_off=True)
+            self.sendmessage(QApplication.translate('Message', 'Kaleido cooldown cancelled — controls off'))
+            return
+        if not self.kaleidoCooldownAvailable():
+            self.sendmessage(QApplication.translate(
+                'Message', 'Cooldown available only while connected and idle (ON, not recording)'))
+            return
+        self.startKaleidoCooldown()
+
+    def startKaleidoCooldown(self) -> None:
+        if self.kaleido is None:
+            return
+        # Leave any active PID/Hybrid control before commanding cooldown actuators
+        try:
+            if self.pidcontrol.pidActive:
+                self.pidcontrol.pidOff()
+        except Exception as e:  # pylint: disable=broad-except
+            _log.exception(e)
+        self.kaleidoCooldownActive = True
+        self.kaleido.applyCooldownActuators()
+        # Sync preset sliders: 0=FC, 1=RC, 3=HP
+        self.addRawEventSignal.emit(100, 100.0, 0, False, True, False)
+        self.addRawEventSignal.emit(10, 10.0, 1, False, True, False)
+        self.addRawEventSignal.emit(0, 0.0, 3, False, True, False)
+        self.updateKaleidoCooldownButton()
+        self.sendmessage(QApplication.translate(
+            'Message', 'Kaleido cooldown: air 100%, drum 10% until BT < 50°C'))
+
+    def tickKaleidoCooldown(self, bt: float) -> None:
+        """Sample-loop tick: hold cooldown actuators until BT target, then shut down."""
+        if not self.kaleidoCooldownActive or self.kaleido is None:
+            return
+        # Abort if recording started or connection dropped mid-cooldown
+        if self.qmc.flagstart or not self.qmc.flagon:
+            self.stopKaleidoCooldown(turn_off=True)
+            return
+        try:
+            from artisanlib.util import fromCtoFstrict
+            threshold = 50.0 if self.qmc.mode == 'C' else float(fromCtoFstrict(50.0))
+            if bt is not None and bt > -1 and bt < threshold:
+                self.stopKaleidoCooldown(turn_off=True)
+                self.sendmessage(QApplication.translate(
+                    'Message', 'Kaleido cooldown complete — all controls off'))
+                return
+            self.kaleido.applyCooldownActuators()
+        except Exception as e:  # pylint: disable=broad-except
+            _log.exception(e)
+
+    def stopKaleidoCooldown(self, turn_off: bool = True) -> None:
+        was_active = self.kaleidoCooldownActive
+        self.kaleidoCooldownActive = False
+        if turn_off and self.kaleido is not None and was_active:
+            try:
+                self.kaleido.allControlsOff()
+                self.addRawEventSignal.emit(0, 0.0, 0, False, True, False)
+                self.addRawEventSignal.emit(0, 0.0, 1, False, True, False)
+                self.addRawEventSignal.emit(0, 0.0, 3, False, True, False)
+            except Exception as e:  # pylint: disable=broad-except
+                _log.exception(e)
+        self.updateKaleidoCooldownButton()
 
     # removes window geometry and splitter settings from the given settings
     @staticmethod

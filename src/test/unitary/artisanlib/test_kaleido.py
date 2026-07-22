@@ -232,6 +232,12 @@ class TestKaleidoImplementationDetails:
         assert 'def resetReadings(self) -> None:' in source_content
         assert 'def pidON(self) -> None:' in source_content
         assert 'def pidOFF(self) -> None:' in source_content
+        assert 'def ensureHeating(self, on: bool = True) -> None:' in source_content
+        assert 'def setHeater(self, pct:int) -> None:' in source_content
+        assert 'def setFan(self, pct:int) -> None:' in source_content
+        assert 'def setDrum(self, pct:int) -> None:' in source_content
+        assert 'def applyCooldownActuators(self) -> None:' in source_content
+        assert 'def allControlsOff(self) -> None:' in source_content
         assert 'def setSV(self, sv:float) -> None:' in source_content
         assert 'def get_state(self, var:str) -> str|int|float|None:' in source_content
         assert (

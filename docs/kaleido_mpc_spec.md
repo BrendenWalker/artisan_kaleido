@@ -275,14 +275,14 @@ cluster ≈ 178–188 °C. Stats use post-TP rising phases; RoR is a 30 s BT win
 
 Interpolate within phase by BT between phase entry/exit bounds.
 
-| Phase | Shipped start→end | Log-refined start→end | Evidence (corpus) |
-|-------|-------------------|----------------------|-------------------|
-| Charge (post-TP peak) | 22 → 22 | 22 → 22 | BT 90–110 median RoR ≈ 21–22 |
-| Drying | 22 → 16 (BT 100–150) | **22 → 15.5** | Phase start/end medians ≈ 18.6 → 15.6; BT-bin at 140–150 ≈ 15.4 |
-| Yellow | 16 → 14 (150–170) | **15 → 14** | Phase ≈ 15.2 → 14.3; BT-bin 150–170 ≈ 14.7 → 14.0 |
-| Maillard | 12 → 10 (170–195) | **14 → 10** | Phase ≈ 14.3 → 12.0 into FCs; BT-bin 170–190 ≈ 13.0 → 10.3 |
-| FirstCrack | 8.5 → 8.5 | **11 → 9** | Phase start/end ≈ 11.6 → 9.3 (flat 8.5 was too low) |
-| Development | 8 → 5.5 | **9 → 5.5** | Phase ≈ 9.1 → 5.9 |
+| Phase | Shipped start→end | Log-refined start→end | Post AB_TEST_1 | Evidence (corpus) |
+|-------|-------------------|----------------------|----------------|-------------------|
+| Charge (post-TP peak) | 22 → 22 | 22 → 22 | 22 → 22 | BT 90–110 median RoR ≈ 21–22 |
+| Drying | 22 → 16 (BT 100–150) | **22 → 15.5** | 22 → 15.5 | Phase start/end medians ≈ 18.6 → 15.6; BT-bin at 140–150 ≈ 15.4 |
+| Yellow | 16 → 14 (150–170) | **15 → 14** | 15 → 14 | Phase ≈ 15.2 → 14.3; BT-bin 150–170 ≈ 14.7 → 14.0 |
+| Maillard | 12 → 10 (170–195) | **14 → 10** | 14 → 10 | Phase ≈ 14.3 → 12.0 into FCs; BT-bin 170–190 ≈ 13.0 → 10.3 |
+| FirstCrack | 8.5 → 8.5 | 11 → 9 | **10 → 7** (BT 180–195) | Field AB: flatter post-FC RoR compressed development; steeper target + soft-brake |
+| Development | 8 → 5.5 | 9 → 5.5 | **7 → 3.5** | Auto-enter Dev after FCs once BT ≥ 190 even without FCe |
 
 BT-bin median RoR curve (CHARGE→DROP pooled, all 23 logs):
 
@@ -292,14 +292,14 @@ BT-bin median RoR curve (CHARGE→DROP pooled, all 23 logs):
 
 ### 6.2 HP / FC baselines (%)
 
-| Phase | Shipped HP / FC | Log median HP / FC | Log-refined HP / FC | Notes |
-|-------|-----------------|--------------------|---------------------|-------|
-| Drying (post-TP) | 85 / 30 | 90 / 30 | **90 / 30** | Early heat often 90–100 |
-| Yellow | 80 / 40 | 85 / 30 | **85 / 35** | Keep FC low through yellow |
-| Maillard | 70 / 55 | 80 / 40 | **80 / 40** | Shipped FC 55 was aggressive vs logs |
-| FirstCrack | 60 / 65 | 50 / 40 | **50 / 50** | HP cut harder; FC only moderately up |
-| Development | 50 / 75 | 40 / 50 | **40 / 55** | Soft-brake: allow FC trim **up to ~80–100** at DROP (p90 in logs), not as fixed baseline |
-| Cooling | 0 / 80 | — | 0 / 80 | unchanged |
+| Phase | Shipped HP / FC | Log median HP / FC | Log-refined HP / FC | Post AB_TEST_1 | Notes |
+|-------|-----------------|--------------------|---------------------|----------------|-------|
+| Drying (post-TP) | 85 / 30 | 90 / 30 | **90 / 30** | 90 / 30 | Early heat often 90–100 |
+| Yellow | 80 / 40 | 85 / 30 | **85 / 35** | 85 / 35 | Keep FC low through yellow |
+| Maillard | 70 / 55 | 80 / 40 | **80 / 40** | 80 / 40 | Shipped FC 55 was aggressive vs logs |
+| FirstCrack | 60 / 65 | 50 / 40 | 50 / 50 | **40 / 60** | Harder HP cut + more air after FC |
+| Development | 50 / 75 | 40 / 50 | 40 / 55 | **25 / 70** | Soft-brake FC trim still allowed to ~80–100 |
+| Cooling | 0 / 80 | — | 0 / 80 | 0 / 80 | unchanged |
 
 Operator style varies after FCs (some drop HP to 0 and spike FC to 100; others ride 40/50). Baseline
 should sit near the median; crash/flick and ET−BT trims supply the soft-brake authority.
@@ -967,8 +967,8 @@ If the solver fails or times out: call the EnergyController path for that tick.
 | Drying (post-TP) | 85 (PID de-weighted) | 90 | 30 | 22 → 15.5 |
 | Yellow | 65 | 85 | 35 | 15 → 14 |
 | Maillard | 45 | 80 | 40 | 14 → 10 |
-| FirstCrack | 30 | 50 | 50 | 11 → 9 |
-| Development | 10 | 40 | 55 (trim to 80–100 OK) | 9 → 5.5 |
+| FirstCrack | 30 | 40 | 60 | 10 → 7 |
+| Development | 10 | 25 | 70 (trim to 80–100 OK) | 7 → 3.5 |
 | Cooling | 25 | 0 | 80 | 0 |
 
 Used by Layer 2 feedforward / offset PID today, and by MPC offset cost + optional baseline bias later.

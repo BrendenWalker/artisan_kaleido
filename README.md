@@ -64,6 +64,8 @@ With **Hybrid Controller** selected:
 1. Optionally load a **background profile** for visual comparison (Hybrid does **not** follow background RoR).
 2. Press **ON** — monitoring starts; set **SV** for warmup temperature.
 3. Press **Start Heating** — heaters on (`HS`) and Machine PID warmup (`AH=1`, SV→`TS`).
+   Automation also forces `HS=1` whenever it commands heat (PID ON or HP > 0), so missing this
+   button press no longer leaves Hybrid commanding power into a cold plant.
 4. Press **START** — recording only; roaster control is unchanged.
 5. Press **CHARGE** (or auto-detect) — switch to Hybrid (`AH=0`, drive HP + FC from the M6 RoR-shape plan).
 
@@ -88,10 +90,15 @@ Full architecture (planner, thermal twin, MPC roadmap): [kaleido_mpc_spec.md](do
 | Drying | 22 → 15.5 | 90 | 30 |
 | Yellow | 15 → 14 | 85 | 35 |
 | Maillard | 14 → 10 | 80 | 40 |
-| First crack | 11 → 9 | 50 | 50 |
-| Development | 9 → 5.5 | 40 | 55 |
+| First crack | 10 → 7 | 40 | 60 |
+| Development | 7 → 3.5 | 25 | 70 |
 
 Phases are detected from roast events (DRY, FCs, FCe) with BT fallbacks when events are not marked.
+After FCs, Development starts automatically once BT reaches ~190°C even if FCe is unmarked, so the
+declining RoR target does not stall.
+
+After DROP (or any idle ON session), use **COOLDOWN** on the main bar: air 100% / drum 10% until
+BT < 50°C, then all controls off. The button is available only while connected and not recording.
 
 ## Configuration
 
