@@ -30,7 +30,6 @@ setuptools==82.0.1
 wheel==0.47.0
 pyserial==3.5
 pymodbus==3.13.1
-python-snap7==2.1.0
 Phidget22==1.24.20260127
 Unidecode==1.4.0
 qrcode==8.2
@@ -43,7 +42,6 @@ xlrd==2.0.2
 websockets==16.0
 PyYAML==6.0.3
 psutil==7.2.2
-protobuf==7.35.1
 numpy==2.5.1
 scipy==1.18.0
 wquantiles==0.6
@@ -61,13 +59,11 @@ arabic-reshaper==3.0.0
 pillow==12.1.1
 pydantic==2.13.4
 babel==2.18.0
-bleak==3.0.2
 python-statemachine==3.0.0
 yoctopuce==2.1.15129
 PyQt6==6.11.0
 PyQt6-WebEngine==6.11.0
 qt6-tools==6.5.0.1.3
-paho-mqtt==2.1.0
 jmespath==1.1.0
 #
 #
@@ -83,7 +79,6 @@ pyinstaller==6.21.0; platform_system=='Linux' or sys_platform=='darwin' # on Win
 appnope==0.1.4; sys_platform=='darwin'
 pyobjc-core==12.2.1; sys_platform=='darwin'
 pyobjc-framework-Cocoa==12.1; sys_platform=='darwin'
-pyobjc-framework-CoreBluetooth==12.2.1; sys_platform=='darwin'
 pyobjc-framework-libdispatch==12.1; sys_platform=='darwin'
 #py2app==0.28.9; sys_platform=='darwin'
 ###

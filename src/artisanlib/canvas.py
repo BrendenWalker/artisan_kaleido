@@ -65,6 +65,7 @@ from artisanlib.time import ArtisanTime
 #from artisanlib.filters import LiveMedian
 from artisanlib.dialogs import ArtisanMessageBox
 from artisanlib.atypes import SerialSettings, BTBreakParams, BbpCache, AlarmSet, EnergyMetrics
+from artisanlib.phidgets import PhidgetManager
 
 from PyQt6.QtWidgets import (QApplication, QWidget, QMessageBox,
                          QGraphicsEffect,
@@ -91,17 +92,6 @@ from matplotlib.text import Annotation, Text # type:ignore[untyped-import,unused
 from matplotlib.lines import Line2D # type:ignore[untyped-import,unused-ignore]
 from matplotlib.offsetbox import DraggableAnnotation # type:ignore[untyped-import,unused-ignore]
 from matplotlib.colors import to_hex, to_rgba # type:ignore[untyped-import,unused-ignore]
-
-from artisanlib.phidgets import PhidgetManager
-from Phidget22.VoltageRange import VoltageRange # type: ignore[import-untyped]
-
-try:
-    # spanning a second multiprocessing instance on macOS falils to import the YAPI interface
-    from yoctopuce.yocto_api import YAPI # type: ignore[import-untyped]
-except Exception: # pylint: disable=broad-except
-    pass
-
-
 
 _log: Final[logging.Logger] = logging.getLogger(__name__)
 
@@ -643,7 +633,7 @@ class tgraphcanvas(QObject):
         self.statisticstimes:list[float] = [0,0,0,0,0] # total, dry phase, mid phase, finish phase  and cooling phase times
 
         #DEVICES
-        self.device:int = 18                                    # default device selected to None (18). Calls appropriate function
+        self.device:int = 138                                   # default device selected to Kaleido BT/ET (138). Calls appropriate function
 
         self.device_logging:bool = False # turn on/off device debug logging (MODBUS, ..) # Note that MODBUS log messages are written to the main artisan log file
         # Phidget messages are logged to the artisan device log
@@ -723,7 +713,7 @@ class tgraphcanvas(QObject):
         self.phidgetPort:int = 5661
         self.phidgetServerAdded:bool = False # this should be set on PhidgetNetwork.addServer and cleared on PhidgetNetwork.removeServer
         self.phidgetServiceDiscoveryStarted:bool = False # this should be set on PhidgetNetwork.addServer and cleared on PhidgetNetwork.removeServer
-        self.phidgetManager:PhidgetManager|None = None
+        self.phidgetManager:object|None = None
 
         self.yoctoRemoteFlag:bool = False
         self.yoctoServerID:str = '127.0.0.1'
@@ -745,19 +735,19 @@ class tgraphcanvas(QObject):
         self.phidget1018_changeTriggersValues: Final[list[int]] = list(range(0,51,1))
         self.phidget1018_changeTriggersStrings: Final[list[str]] = [f'{x*10}mV' for x in self.phidget1018_changeTriggersValues]
 
-        self.phidgetVCP100x_voltageRanges: list[int] = [VoltageRange.VOLTAGE_RANGE_AUTO]*8
+        self.phidgetVCP100x_voltageRanges: list[int] = [0]*8
         self.phidgetVCP100x_voltageRangeValues: Final[list[int]] = [
-            VoltageRange.VOLTAGE_RANGE_AUTO,
-            VoltageRange.VOLTAGE_RANGE_10mV,
-            VoltageRange.VOLTAGE_RANGE_40mV,
-            VoltageRange.VOLTAGE_RANGE_200mV,
-            VoltageRange.VOLTAGE_RANGE_312_5mV,
-            VoltageRange.VOLTAGE_RANGE_400mV,
-            VoltageRange.VOLTAGE_RANGE_1000mV,
-            VoltageRange.VOLTAGE_RANGE_2V,
-            VoltageRange.VOLTAGE_RANGE_5V,
-            VoltageRange.VOLTAGE_RANGE_15V,
-            VoltageRange.VOLTAGE_RANGE_40V
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
         ]
         self.phidgetVCP100x_voltageRangeStrings: Final[list[str]] = [
             'Auto',
@@ -788,45 +778,45 @@ class tgraphcanvas(QObject):
         # - add to self.devices
         self.devices: Final[list[str]] = [
                         #Fuji PID               #0
-                       'Omega HH806AU',         #1
-                       'Omega HH506RA',         #2
-                       'CENTER 309',            #3
-                       'CENTER 306',            #4
-                       'CENTER 305',            #5
-                       'CENTER 304',            #6
-                       'CENTER 303',            #7
-                       'CENTER 302',            #8
-                       'CENTER 301',            #9
-                       'CENTER 300',            #10
-                       'VOLTCRAFT K204',        #11
-                       'VOLTCRAFT K202',        #12
-                       'VOLTCRAFT 300K',        #13
-                       'VOLTCRAFT 302KJ',       #14
-                       'EXTECH 421509',         #15
-                       'Omega HH802U',          #16
-                       'Omega HH309',           #17
+                       '-Omega HH806AU',        #1
+                       '-Omega HH506RA',        #2
+                       '-CENTER 309',           #3
+                       '-CENTER 306',           #4
+                       '-CENTER 305',           #5
+                       '-CENTER 304',           #6
+                       '-CENTER 303',           #7
+                       '-CENTER 302',           #8
+                       '-CENTER 301',           #9
+                       '-CENTER 300',           #10
+                       '-VOLTCRAFT K204',       #11
+                       '-VOLTCRAFT K202',       #12
+                       '-VOLTCRAFT 300K',       #13
+                       '-VOLTCRAFT 302KJ',      #14
+                       '-EXTECH 421509',        #15
+                       '-Omega HH802U',         #16
+                       '-Omega HH309',          #17
                        'NONE',                  #18
-                       '-ARDUINOTC4',           #19
-                       'TE VA18B',              #20
-                       '+CENTER 309 34',        #21
+                       'ARDUINOTC4',           #19
+                       '-TE VA18B',             #20
+                       '-CENTER 309 34',        #21
                        '+PID SV/DUTY %',        #22
-                       'Omega HHM28[6]',        #23
-                       '+VOLTCRAFT K204 34',    #24
+                       '-Omega HHM28[6]',       #23
+                       '-VOLTCRAFT K204 34',    #24
                        '+Virtual',              #25
                        '-DTAtemperature',       #26
-                       'Program',               #27
+                       '-Program',              #27
                        '+ArduinoTC4 34',        #28
-                       'MODBUS',                #29
-                       'VOLTCRAFT K201',        #30
-                       'Amprobe TMD-56',        #31
+                       '-MODBUS',               #29
+                       '-VOLTCRAFT K201',       #30
+                       '-Amprobe TMD-56',       #31
                        '+ArduinoTC4 56',        #32
-                       '+MODBUS 34',            #33
+                       '-MODBUS 34',            #33
                        'Phidget 1048 4xTC 01',  #34
                        '+Phidget 1048 4xTC 23', #35
                        '+Phidget 1048 4xTC AT', #36
                        'Phidget 1046 4xRTD 01', #37
                        '+Phidget 1046 4xRTD 23',#38
-                       'Mastech MS6514',        #39
+                       '-Mastech MS6514',       #39
                        'Phidget IO 01',         #40
                        '+Phidget IO 23',        #41
                        '+Phidget IO 45',        #42
@@ -835,16 +825,16 @@ class tgraphcanvas(QObject):
                        'Yocto Thermocouple',    #45
                        'Yocto PT100',           #46
                        'Phidget 1045 IR',       #47
-                       '+Program 34',           #48
-                       '+Program 56',           #49
+                       '-Program 34',           #48
+                       '-Program 56',           #49
                        'DUMMY',                 #50
-                       '+CENTER 304 34',        #51
+                       '-CENTER 304 34',        #51
                        'Phidget 1051 1xTC 01',  #52
-                       'Hottop BT/ET',          #53
-                       '+Hottop Heater/Fan',    #54
-                       '+MODBUS 56',            #55
-                       'Apollo DT301',          #56
-                       'EXTECH 755',            #57
+                       '-Hottop BT/ET',         #53
+                       '-Hottop Heater/Fan',    #54
+                       '-MODBUS 56',            #55
+                       '-Apollo DT301',         #56
+                       '-EXTECH 755',           #57
                        'Phidget TMP1101 4xTC 01',  #58
                        '+Phidget TMP1101 4xTC 23', #59
                        '+Phidget TMP1101 4xTC AT', #60
@@ -854,7 +844,7 @@ class tgraphcanvas(QObject):
                        '+Phidget HUB IO 23',       #64
                        '+Phidget HUB IO 45',       #65
                        '-Omega HH806W',            #66 NOT WORKING
-                       'VOLTCRAFT PL-125-T2',      #67
+                       '-VOLTCRAFT PL-125-T2',     #67
                        'Phidget TMP1200 1xRTD A',  #68
                        'Phidget IO Digital 01',    #69
                        '+Phidget IO Digital 23',   #70
@@ -864,19 +854,19 @@ class tgraphcanvas(QObject):
                        'Phidget HUB IO Digital 01', #74
                        '+Phidget HUB IO Digital 23',#75
                        '+Phidget HUB IO Digital 45',#76
-                       'VOLTCRAFT PL-125-T4',       #77
-                       '+VOLTCRAFT PL-125-T4 34',   #78
-                       'S7',                        #79
-                       '+S7 34',                    #80
-                       '+S7 56',                    #81
-                       '+S7 78',                    #82
-                       'Aillio Bullet R1 BT/DT',             #83
-                       '+Aillio Bullet R1 Heater/Fan',       #84
-                       '+Aillio Bullet R1 BT RoR/Drum',      #85
-                       '+Aillio Bullet R1 Voltage/Exhaust',  #86
-                       '+Aillio Bullet R1 State/Fan RPM',    #87
-                       '+Program 78',               #88
-                       '+Program 910',              #89
+                       '-VOLTCRAFT PL-125-T4',      #77
+                       '-VOLTCRAFT PL-125-T4 34',   #78
+                       '-S7',                       #79
+                       '-S7 34',                    #80
+                       '-S7 56',                    #81
+                       '-S7 78',                    #82
+                       '-Aillio Bullet R1 BT/DT',            #83
+                       '-Aillio Bullet R1 Heater/Fan',      #84
+                       '-Aillio Bullet R1 BT RoR/Drum',     #85
+                       '-Aillio Bullet R1 Voltage/Exhaust', #86
+                       '-Aillio Bullet R1 State/Fan RPM',   #87
+                       '-Program 78',               #88
+                       '-Program 910',              #89
                        '+Slider 01',                #90
                        '+Slider 23',                #91
                        '-Probat Middleware',                 #92
@@ -886,59 +876,59 @@ class tgraphcanvas(QObject):
                        'Phidget DAQ1400 Frequency', #96
                        'Phidget DAQ1400 Digital',   #97
                        'Phidget DAQ1400 Voltage',   #98
-                       'Aillio Bullet R1 IBTS/BT',  #99
+                       '-Aillio Bullet R1 IBTS/BT', #99
                        'Yocto IR',                  #100
-                       'Behmor BT/CT',              #101
-                       '+Behmor 34',                #102
-                       'VICTOR 86B',                #103
-                       '+Behmor 56',                #104
-                       '+Behmor 78',                #105
+                       '-Behmor BT/CT',             #101
+                       '-Behmor 34',                #102
+                       '-VICTOR 86B',               #103
+                       '-Behmor 56',                #104
+                       '-Behmor 78',                #105
                        'Phidget HUB IO 0',          #106
                        'Phidget HUB IO Digital 0',  #107
                        'Yocto 4-20mA Rx',           #108
-                       '+MODBUS 78',                #109
-                       '+S7 910',                   #110
-                       'WebSocket',                 #111
-                       '+WebSocket 34',             #112
-                       '+WebSocket 56',             #113
+                       '-MODBUS 78',                #109
+                       '-S7 910',                   #110
+                       '-WebSocket',                #111
+                       '-WebSocket 34',             #112
+                       '-WebSocket 56',             #113
                        '+Phidget TMP1200 1xRTD B',  #114
-                       'HB BT/ET',                  #115
-                       '+HB DT/IT',                 #116
-                       '+HB AT',                    #117
-                       '+WebSocket 78',             #118
-                       '+WebSocket 910',            #119
+                       '-HB BT/ET',                 #115
+                       '-HB DT/IT',                 #116
+                       '-HB AT',                    #117
+                       '-WebSocket 78',             #118
+                       '-WebSocket 910',            #119
                        'Yocto 0-10V Rx',            #120
                        'Yocto milliVolt Rx',        #121
                        'Yocto Serial',              #122
                        'Phidget VCP1000',           #123
                        'Phidget VCP1001',           #124
                        'Phidget VCP1002',           #125
-                       'ARC BT/ET',                 #126
-                       '+ARC MET/IT',               #127
-                       '+ARC AT',                   #128
+                       '-ARC BT/ET',                #126
+                       '-ARC MET/IT',               #127
+                       '-ARC AT',                   #128
                        'Yocto Power',               #129
                        'Yocto Energy',              #130
                        'Yocto Voltage',             #131
                        'Yocto Current',             #132
                        'Yocto Sensor',              #133
-                       'Santoker BT/ET',            #134
-                       '+Santoker Power/Fan',       #135
-                       '+Santoker Drum',            #136
+                       '-Santoker BT/ET',           #134
+                       '-Santoker Power/Fan',       #135
+                       '-Santoker Drum',            #136
                        'Phidget DAQ1500',           #137
                        'Kaleido BT/ET',             #138
                        '+Kaleido SV/AT',            #139
                        '+Kaleido Drum/AH',          #140
                        '+Kaleido Heater/Fan',       #141
-                       'IKAWA',                     #142
-                       '+IKAWA SET/RPM',            #143
-                       '+IKAWA Heater/Fan',         #144
-                       '+IKAWA State/Humidity',     #145
+                       '-IKAWA',                    #142
+                       '-IKAWA SET/RPM',            #143
+                       '-IKAWA Heater/Fan',         #144
+                       '-IKAWA State/Humidity',     #145
                        'Phidget DAQ1000 01',        #146
                        '+Phidget DAQ1000 23',       #147
                        '+Phidget DAQ1000 45',       #148
                        '+Phidget DAQ1000 67',       #149
-                       '+MODBUS 910',               #150
-                       '+S7 1112',                  #151
+                       '-MODBUS 910',               #150
+                       '-S7 1112',                  #151
                        'Phidget DAQ1200 01',        #152
                        '+Phidget DAQ1200 23',       #153
                        'Phidget DAQ1300 01',        #154
@@ -947,53 +937,53 @@ class tgraphcanvas(QObject):
                        '+Phidget DAQ1301 23',       #157
                        '+Phidget DAQ1301 45',       #158
                        '+Phidget DAQ1301 67',       #159
-                       f'+IKAWA {deltaLabelUTF8}Humidity/{deltaLabelUTF8}Humidity Dir.',    #160
-                       '+Omega HH309 34',           #161
-                       'Digi-Sense 20250-07',       #162
-                       'Extech 42570',              #163
-                       'Mugma BT/ET',               #164
-                       '+Mugma Heater/Fan',         #165
-                       '+Mugma Heater/Catalyzer',   #166
-                       '+Mugma SV',                 #167
+                       f'-IKAWA {deltaLabelUTF8}Humidity/{deltaLabelUTF8}Humidity Dir.',    #160
+                       '-Omega HH309 34',           #161
+                       '-Digi-Sense 20250-07',      #162
+                       '-Extech 42570',             #163
+                       '-Mugma BT/ET',              #164
+                       '-Mugma Heater/Fan',         #165
+                       '-Mugma Heater/Catalyzer',   #166
+                       '-Mugma SV',                 #167
                        'Phidget TMP1202 1xRTD A',   #168
                        '+Phidget TMP1202 1xRTD B',  #169
-                       'ColorTrack Serial',         #170
-                       'Santoker R BT/ET',          #171
-                       '+Santoker IR/Board',        #172
-                       '+Santoker DelatBT/DeltaET', #173
-                       'ColorTrack BT',             #174
-                       'Thermoworks BlueDOT',       #175
-                       'Aillio Bullet R2',          #176
+                       '-ColorTrack Serial',        #170
+                       '-Santoker R BT/ET',         #171
+                       '-Santoker IR/Board',        #172
+                       '-Santoker DelatBT/DeltaET',#173
+                       '-ColorTrack BT',            #174
+                       '-Thermoworks BlueDOT',      #175
+                       '-Aillio Bullet R2',         #176
                        '+PID P/I',                  #177
                        '+PID D/Error',              #178
-                       '+Shelly 3EM Pro Energy/Return', #179
-                       '+Shelly Plug Energy/Last',      #180
-                       '+Shelly 3EM Pro Power/S',       #181
-                       '+Shelly Plug Power/Temp',       #182
-                       '+Shelly Plug Voltage/Current',  #183
-                       'TASI TA612C',                   #184
-                       '+TASI TA612C 34',               #185
-                       '+CM ET/BT',                     #186
-                       '+RoastSeeNEXT Agtron/Crack',    #187
-                       '+RoastSeeNEXT RoR/FoR',         #188
-                       '+RoastSeeNEXT Distance/Time',   #189
-                       '+RoastSeeNEXT Yellow',          #190
+                       '-Shelly 3EM Pro Energy/Return', #179
+                       '-Shelly Plug Energy/Last',      #180
+                       '-Shelly 3EM Pro Power/S',       #181
+                       '-Shelly Plug Power/Temp',       #182
+                       '-Shelly Plug Voltage/Current',  #183
+                       '-TASI TA612C',                  #184
+                       '-TASI TA612C 34',               #185
+                       '-CM ET/BT',                     #186
+                       '-RoastSeeNEXT Agtron/Crack',    #187
+                       '-RoastSeeNEXT RoR/FoR',         #188
+                       '-RoastSeeNEXT Distance/Time',   #189
+                       '-RoastSeeNEXT Yellow',          #190
                        '+Phidget TMP1000',           #191
                        '+Phidget HUM1000 Hum/Temp',  #192
                        '+Phidget PRE1000',           #193
                        '+Yocto Meteo Hum/Temp',      #194
                        '+Yocto Meteo Pressure',      #195
-                       'Orbiter BT/ET',              #196
-                       '+Orbiter IT/DT',             #197
-                       '+Orbiter Sound/Drum',        #198
-                       '+Orbiter Damper/Heater',     #199
-                       '+Orbiter Air/RoR',           #200
-                       'MQTT',                       #201
-                       '+MQTT 34',                   #202
-                       '+MQTT 56',                   #203
-                       '+MQTT 78',                   #204
-                       '+MQTT 910',                  #205
-                       '+MQTT 1112',                 #206
+                       '-Orbiter BT/ET',             #196
+                       '-Orbiter IT/DT',             #197
+                       '-Orbiter Sound/Drum',        #198
+                       '-Orbiter Damper/Heater',     #199
+                       '-Orbiter Air/RoR',           #200
+                       '-MQTT',                      #201
+                       '-MQTT 34',                   #202
+                       '-MQTT 56',                   #203
+                       '-MQTT 78',                   #204
+                       '-MQTT 910',                  #205
+                       '-MQTT 1112',                 #206
                        ]
 
         # ADD DEVICE:
@@ -1008,14 +998,14 @@ class tgraphcanvas(QObject):
             61, # Phidget TMP1100
             62, # Phidget 1011
             63, # Phidget HUB IO 01
-            64, # Phidget HUB IO 23 # + device but need to be mounted directly
-            65, # Phidget HUB IO 45 # + device but need to be mounted directly
+            64, # Phidget HUB IO 23
+            65, # Phidget HUB IO 45
             68, # Phidget TMP1200
             69, # Phidget IO Digital
             73, # Phidget 1011 IO Digital
             74, # Phidget HUB IO Digital 01
-            75, # Phidget HUB IO Digital 23 # + device but need to be mounted directly
-            76, # Phidget HUB IO Digital 45 # + device but need to be mounted directly
+            75, # Phidget HUB IO Digital 23
+            76, # Phidget HUB IO Digital 45
             95, # Phidget DAQ1400 Current
             96, # Phidget DAQ1400 Frequency
             97, # Phidget DAQ1400 Digital
@@ -1026,30 +1016,27 @@ class tgraphcanvas(QObject):
             124, # Phidget VCP1001
             125, # Phidget VCP1002
             137, # Phidget DAQ1500
-            146, # Phidget DAQ1000 01
-            152, # Phidget DAQ1200 01
-            154, # Phidget DAQ1300 01
-            156, # Phidget DAQ1301 01
+            146, # Phidget DAQ1000
+            152, # Phidget DAQ1200
+            154, # Phidget DAQ1300
+            156, # Phidget DAQ1301
             168, # Phidget TMP1202
-            191, # +Phidget TMP1000
-            192, # +Phidget HUM1000 Hum/Temp
-            193, # +Phidget PRE1000
+            191, # Phidget TMP1000
+            192, # Phidget HUM1000
+            193, # Phidget PRE1000
         ]
 
         # ADD DEVICE:
         # ids of (main) devices (without a + in front of their name string)
         # that do NOT communicate via any serial port thus do not need any serial port configuration
+        # Kaleido Serial still uses kaleidoSerial flag elsewhere
         self.nonSerialDevices : Final[list[int]] = self.phidgetDevices + [
             18, # NONE (manual)
-            27, # Program
             45, # Yocto Thermocouple
             46, # Yocto PT100
-            79, # S7
-            83, # Aillio Bullet R1 BT/DT
-            99, # Aillio Bullet R1 IBTS/BT
+            50, # DUMMY
             100, # Yocto IR
             108, # Yocto 4-20mA Rx
-            111, # WebSocket
             120, # Yocto-0-10V-Rx
             121, # Yocto-milliVolt-Rx
             122, # Yocto-Serial
@@ -1058,16 +1045,9 @@ class tgraphcanvas(QObject):
             131, # Yocto Voltage
             132, # Yocto Current
             133, # Yocto Sensor
-            134, # Santoker BT/ET
             138, # Kaleido BT/ET
-            142, # IKAWA,
-            164, # Mugma BT/ET
-            171, # Santoker R BT/ET
-            174, # ColorTrack BT
-            175, # Thermoworks BlueDOT
-            176, # Aillio Bullet R2
-            194, # +Yocto Meteo Hum/Temp
-            195  # +Yocto Meteo Pressure
+            194, # Yocto Meteo Hum/Temp
+            195, # Yocto Meteo Pressure
         ]
 
         # ADD DEVICE:
@@ -1075,92 +1055,13 @@ class tgraphcanvas(QObject):
         self.nonTempDevices : Final[list[int]] = [
             22, # +PID SV/DUTY %
             25, # +Virtual
-            40, # Phidget IO 01
-            41, # +Phidget IO 23
-            42, # +Phidget IO 45
-            43, # +Phidget IO 67
             50, # DUMMY
-            54, # +Hottop Heater/Fan
-            57, # EXTECH 755
-            62, # Phidget 1011 IO 01
-            63, # Phidget HUB IO 01
-            64, # +Phidget HUB IO 23
-            65, # +Phidget HUB IO 45
-            69, # Phidget IO Digital 01
-            70, # +Phidget IO Digital 23
-            71, # +Phidget IO Digital 45
-            72, # +Phidget IO Digital 67
-            73, # Phidget 1011 IO Digital 01
-            74, # Phidget HUB IO Digital 0
-            75, # +Phidget HUB IO Digital 23
-            76, # +Phidget HUB IO Digital 45
-            84, # +Aillio Bullet R1 Heater/Fan
-            87, # +Aillio Bullet R1 State
             90, # +Slider 01
             91, # +Slider 23
-            95, # Phidget DAQ1400 Current
-            96, # Phidget DAQ1400 Frequency
-            97, # Phidget DAQ1400 Digital
-            98, # Phidget DAQ1400 Voltage
-            106, # Phidget HUB IO 0
-            107, # Phidget HUB IO Digital 0
-            108, # Yocto 4-20mA Rx
-            120, # Yocto-0-10V-Rx
-            121, # Yocto-milliVolt-Rx
-            122, # Yocto-Serial
-            123, # Phidget VCP1000
-            124, # Phidget VCP1001
-            125, # Phidget VCP1002
-            129, # Yocto Power
-            130, # Yocto Energy
-            131, # Yocto Voltage
-            132, # Yocto Current
-            133, # Yocto Sensor
-            135, # Santoker Power/Fan
-            136, # Santoker Drum
-            137, # Phidget DAQ1500
             140, # Kaleido Drum/AH
             141, # Kaleido Heater/Fan
-            143, # IKAWA Set/RPM
-            144, # IKAWA Heater/Fan
-            145, # IKAWA State/Humidity
-            146, # Phidget DAQ1000 01
-            147, # +Phidget DAQ1000 23
-            148, # +Phidget DAQ1000 45
-            149, # +Phidget DAQ1000 67
-            152, # Phidget DAQ1200 01
-            153, # +Phidget DAQ1200 23
-            154, # Phidget DAQ1300 01
-            155, # +Phidget DAQ1300 23
-            156, # Phidget DAQ1301 01
-            157, # +Phidget DAQ1301 23
-            158, # +Phidget DAQ1301 45
-            159, # +Phidget DAQ1301 67
-            160, # IKAWA \Delta Humidity / \Delat Humidity direction
-            165, # +Mugma Heater/Fan
-            166, # +Mugma Heater/Catalyzer
-            170, # ColorTrack Serial
-            173, # +Santoker BT RoR / ET RoR
-            174, # ColorTrack BT
             177, # +PID P/I
-            178, # +PID D/Error
-            179, # +Shelly 3EM Pro Energy/Return
-            180, # +Shelly Plug Total/Last
-            181, # +Shelly 3EM Pro Power/S
-            182, # +Shelly Plug Power/Temp
-            183, # +Shelly Plug Voltage/Current
-            187, # +RoastSeeNEXT Agtron/Crack
-            188, # +RoastSeeNEXT RoR/FOR
-            189, # +RoastSeeNEXT Distance/Time
-            190, # +RoastSeeNEXT Yellow
-            191, # +Phidget TMP1000
-            192, # +Phidget HUM1000 Hum/Temp
-            193, # +Phidget PRE1000
-            194, # +Yocto Meteo Hum/Temp
-            195, # +Yocto Meteo Pressure
-            198, # +Orbiter Sound/Drum
-            199, # +Orbiter Damper/Heater
-            200  # +Orbiter Air/RoR
+            178  # +PID D/Error
         ]
 
         # ADD DEVICE:
@@ -1183,7 +1084,8 @@ class tgraphcanvas(QObject):
             73, # Phidget 1011 IO Digital 01
             74, # Phidget HUB IO Digital 01
             75, # Phidget HUB IO Digital 23
-            76  # Phidget HUB IO Digital 45
+            76, # Phidget HUB IO Digital 45
+            107, # Phidget HUB IO Digital 0
         ]
 
         #extra devices
@@ -2591,20 +2493,8 @@ class tgraphcanvas(QObject):
     # returns True if the given device_id and channel_offset indicating if the devices first or second channel is addressed,
     # is a binary or special device channel
     # which should for example be excluded from filtering
-    def dummy_or_special_device(self, device_id:int, channel_offset:int) -> bool:
-        return (
-              # any S7 binary channel
-             (device_id == 79 and 2 < self.aw.s7.type[0+channel_offset] < 11) or # S7
-             (device_id == 80 and 2 < self.aw.s7.type[2+channel_offset] < 11) or # S7 34
-             (device_id == 81 and 2 < self.aw.s7.type[4+channel_offset] < 11) or # S7 56
-             (device_id == 82 and 2 < self.aw.s7.type[6+channel_offset] < 11) or # S7 78
-             (device_id == 83 and 2 < self.aw.s7.type[8+channel_offset] < 11) or # S7 910
-             (device_id == 151 and 2 < self.aw.s7.type[8+channel_offset] < 11) or # S7 1112
-              # any other binary device
-             device_id in self.binaryDevices or
-              # special device
-             device_id in self.specialDevices
-             )
+    def dummy_or_special_device(self, device_id:int, channel_offset:int) -> bool:  # noqa: ARG002
+        return device_id in self.specialDevices
 
     # returns None if there is no weight at the given container_idx registered
     def get_container_weight(self, container_idx:int) -> float|None:
@@ -4425,40 +4315,10 @@ class tgraphcanvas(QObject):
     # returns True if the extra device n, channel c, is of type MODBUS or S7, has no factor defined, nor any math formula, and is of type int
     # channel c is either 0 or 1
     @functools.cache # noqa: B019 # pylint: disable=W1518 # Not relevant here, as qmc is only created once: [B019] Use of `functools.lru_cache` or `functools.cache` on methods can lead to memory leaks
-    def intChannel(self, n:int, c:int) -> bool:
+    def intChannel(self, n:int, c:int) -> bool:  # noqa: ARG002
         if len(self.extradevices) > n:
-            no_math_formula_defined:bool = False
-            if c == 0:
-                no_math_formula_defined = bool(self.extramathexpression1[n] == '')
-            if c == 1:
-                no_math_formula_defined = bool(self.extramathexpression2[n] == '')
-            # MODBUS channels
-            for idx, dev_type in enumerate([29,33,55,109,150]): # MODBUS, MODBUS_34, MODBUS_56, MODBUS_78, MODBUS_910
-                if self.extradevices[n] == dev_type:
-                    return ((self.aw.modbus.inputFloatsAsInt[idx*2 + c] or self.aw.modbus.inputBCDsAsInt[idx*2 + c] or not self.aw.modbus.inputFloats[idx*2 + c]) and
-                        self.aw.modbus.inputDivs[idx*2 + c] == 0 and
-                        (self.aw.modbus.inputModes[idx*2 + c] == '' or self.aw.modbus.inputModes[idx*2 + c] == self.aw.qmc.mode) and
-                        no_math_formula_defined)
-            # S7 channels
-            for idx, dev_type in enumerate([70,80,81,82,110,151]): # S7, S7_34, S7_56, S7_78, S7_910, S7_1112
-                if self.extradevices[n] == dev_type:
-                    return (self.aw.s7.type[idx*2 + c] != 1 and
-                            (self.aw.s7.mode[idx*2 + c] == 0 or (self.aw.s7.mode[idx*2 + c] == 1 and
-                                self.aw.qmc.mode == 'C') or (self.aw.s7.mode[idx*2 + c] == 2 and self.aw.qmc.mode == 'F')) and
-                            (self.aw.s7.div[idx*2 + c] == 0 or self.aw.s7.type[idx*2 + c] == 2) and
-                            no_math_formula_defined)
-            # others
-            if self.extradevices[n] in {54, 90, 91, 135, 136, 140, 141, 165,
-                198, 199
-                }: # Hottop Heater/Fan, Slider 12, Slider 34, Santoker Power / Fan, Kaleido Fan/Drum, Kaleido Heater/AH, Mugma Heater/Fan, Orbiter Sound/Drum, Orbiter Damper/Heater
-                return True
-            if self.extradevices[n] == 136 and c == 0: # Santoker Drum
-                return True
-            if self.extradevices[n] in {140, 141}: # Kaleido drum/AH, heater/fan
-                return True
-            if self.extradevices[n] == 144 or (self.extradevices[n] == 145 and c==0): # IKAWA heater/fan, state
-                return True
-            if self.extradevices[n] == 165: # noqa: SIM103 # MUGMA heater/fan
+            # Slider 01/23, Kaleido Drum/AH, Kaleido Heater/Fan
+            if self.extradevices[n] in {90, 91, 140, 141}:
                 return True
             return False
         return False
@@ -5149,17 +5009,9 @@ class tgraphcanvas(QObject):
                     except Exception as e: # pylint: disable=broad-except
                         _log.exception(e)
 
-                    #update SV on Arduino/TC4, Hottop, or MODBUS if in Ramp/Soak or Background Follow mode and PID is active
+                    #update SV if in Ramp/Soak or Background Follow mode and PID is active
                     if self.flagon: # only during sampling
-                        #update SV on FujiPIDs
-                        if self.device == 0 and self.aw.fujipid.followBackground and self.flagstart: # no SV updates while not yet recording for Fuji PIDs
-                            # calculate actual SV
-                            sv = self.aw.fujipid.calcSV(tx)
-                            # update SV (if needed)
-                            if sv is not None and sv != self.aw.fujipid.sv:
-                                sv = max(0.0, sv) # we don't send SV < 0
-                                self.aw.fujipid.setsv(sv,silent=True) # this is called in updategraphics() within the GUI thread to move the sliders
-                        elif (self.aw.pidcontrol.pidActive and self.aw.pidcontrol.svMode == 1) or self.aw.pidcontrol.svMode == 2:
+                        if (self.aw.pidcontrol.pidActive and self.aw.pidcontrol.svMode == 1) or self.aw.pidcontrol.svMode == 2:
                             # in BackgroundFollow mode we update the SV even if not active, just we do not move the SV slider
                             # calculate actual SV
                             sv = self.aw.pidcontrol.calcSV(tx)
@@ -6242,41 +6094,24 @@ class tgraphcanvas(QObject):
                     self.markChargeSignal.emit(False) # this queues an event which forces a realignment/redraw by resetting the cache ax_background and fires the CHARGE action
                 elif action == 17 and self.Controlbuttonflag:
                     # RampSoak ON
-                    if self.device == 0: # FUJI PID
-                        self.aw.fujipid.setrampsoak(1)
-                    else: # internal or external MODBUS PID control
-                        self.aw.pidcontrol.svMode = 1
-                        self.aw.pidcontrol.pidOn()
+                    self.aw.pidcontrol.svMode = 1
+                    self.aw.pidcontrol.pidOn()
                 elif action == 18 and self.Controlbuttonflag:
                     # RampSoak OFF
-                    if self.device == 0: # FUJI PID
-                        self.aw.fujipid.setrampsoak(0)
-                    else:  # internal or external MODBUS PID control
-                        self.aw.pidcontrol.svMode = 0
-                        self.aw.pidcontrol.pidOff()
+                    self.aw.pidcontrol.svMode = 0
+                    self.aw.pidcontrol.pidOff()
                 elif action == 19 and self.Controlbuttonflag:
                     # PID ON
-                    if self.device == 0: # FUJI PID
-                        self.aw.fujipid.setONOFFstandby(0)
-                    else: # internal or external MODBUS PID control or Arduino TC4 PID
-                        self.aw.pidcontrol.pidOn()
+                    self.aw.pidcontrol.pidOn()
                 elif action == 20 and self.Controlbuttonflag:
                     # PID OFF
-                    if self.device == 0: # FUJI PID
-                        self.aw.fujipid.setONOFFstandby(1)
-                    else: # internal or external MODBUS PID control or Arduino TC4 PID
-                        self.aw.pidcontrol.pidOff()
+                    self.aw.pidcontrol.pidOff()
                 elif action == 21:
                     # SV slider alarm
                     try:
                         text = alarm_description[0]
                         sv = float(str(text))
-                        if self.device == 0:
-                            if sv != self.aw.fujipid.sv:
-                                sv = max(0.0, sv) # we don't send SV < 0
-                                self.aw.fujipid.setsv(sv,silent=True)
-                        #elif self.aw.pidcontrol.pidActive:
-                        elif sv != self.aw.pidcontrol.sv:
+                        if sv != self.aw.pidcontrol.sv:
                             sv = max(0.0, sv) # we don't send SV < 0
                             self.aw.pidcontrol.setSV(sv,init=False)
                     except Exception as e: # pylint: disable=broad-except
@@ -6458,38 +6293,6 @@ class tgraphcanvas(QObject):
 
 
                             if delta <= 0:
-                                #for devices that support automatic roaster control
-                                #if Fuji PID
-                                if self.device == 0 and '::' in self.backgroundEStrings[i]:
-
-                                    # COMMAND SET STRINGS
-                                    #  (adjust the SV PID to the float VALUE1)
-                                    # SETRS::VALUE1::VALUE2::VALUE3  (VALUE1 = target SV. float VALUE2 = time to reach int VALUE 1 (ramp) in minutes. int VALUE3 = hold (soak) time in minutes)
-
-                                    # IMPORTANT: VALUES are for controlling ET only (not BT). The PID should control ET not BT. The PID should be connected to ET only.
-                                    # Therefore, these values don't reflect a BT defined profile. They define an ET profile.
-                                    # They reflect the changes in ET, which indirectly define BT after some time lag
-
-                                    # There are two ways to record a roast. One is by changing Set Values (SV) during the roast,
-                                    # the other is by using ramp/soaks segments (RS).
-                                    # Examples:
-
-                                    # SETSV::560.3           sets an SV value of 560.3F in the PID at the time of the recorded background event
-
-                                    # SETRS::440.2::2::0     starts Ramp Soak mode so that it reaches 440.2F in 2 minutes and holds (soaks) 440.2F for zero minutes
-
-                                    # SETRS::300.0::2::3::SETRS::540.0::6::0::SETRS::560.0::4::0::SETRS::560::0::0
-                                    #       this command has 4 comsecutive commands inside (4 segments)
-                                    #       1 SETRS::300.0::2::3 reach 300.0F in 2 minutes and hold it for 3 minutes (ie. total dry phase time = 5 minutes)
-                                    #       2 SETRS::540.0::6::0 then reach 540.0F in 6 minutes and hold it there 0 minutes (ie. total mid phase time = 6 minutes )
-                                    #       3 SETRS::560.0::4::0 then reach 560.0F in 4 minutes and hold it there 0 minutes (ie. total finish phase time = 4 minutes)
-                                    #       4 SETRS::560::0::0 then do nothing (because ramp time and soak time are both 0)
-                                    #       END ramp soak mode
-
-                                    self.aw.fujipid.replay(self.backgroundEStrings[i])
-                                    libtime.sleep(.3)  #avoid possible close times (rounding off)
-
-
                                 # if playbackevents is active, we fire the event by moving the slider, but only if
                                 # an event type is given (type<4), the background event type is named exactly as the one of the foreground
                                 # (NOTE: the event slider does not need to be visible any longer)
@@ -8177,13 +7980,9 @@ class tgraphcanvas(QObject):
                 pass
 
             #self.aw.pidcontrol.sv = None
-            self.aw.fujipid.sv = None
             self.dutycycle = -1
             self.dutycycleTX = 0.
             self.currentpidsv = 0.
-
-            self.aw.extraMODBUStx = 0.
-            self.aw.extraS7tx = 0.
 
             # we remove the filename to force writing a new file
             # and avoid accidental overwriting of existing data
@@ -13136,72 +12935,6 @@ class tgraphcanvas(QObject):
             if d in self.nonTempDevices:
                 self.extraNoneTempHint1.append(True)
                 self.extraNoneTempHint2.append(True)
-            elif d == 29: # MODBUS
-                self.extraNoneTempHint1.append(self.aw.modbus.inputModes[0] == '')
-                self.extraNoneTempHint2.append(self.aw.modbus.inputModes[1] == '')
-            elif d == 33: # +MODBUS 34
-                self.extraNoneTempHint1.append(self.aw.modbus.inputModes[2] == '')
-                self.extraNoneTempHint2.append(self.aw.modbus.inputModes[3] == '')
-            elif d == 55: # +MODBUS 56
-                self.extraNoneTempHint1.append(self.aw.modbus.inputModes[4] == '')
-                self.extraNoneTempHint2.append(self.aw.modbus.inputModes[5] == '')
-            elif d == 109: # +MODBUS 78
-                self.extraNoneTempHint1.append(self.aw.modbus.inputModes[6] == '')
-                self.extraNoneTempHint2.append(self.aw.modbus.inputModes[7] == '')
-            elif d == 79: # S7
-                self.extraNoneTempHint1.append(not bool(self.aw.s7.mode[0]))
-                self.extraNoneTempHint2.append(not bool(self.aw.s7.mode[1]))
-            elif d == 80: # +S7 34
-                self.extraNoneTempHint1.append(not bool(self.aw.s7.mode[2]))
-                self.extraNoneTempHint2.append(not bool(self.aw.s7.mode[3]))
-            elif d == 81: # +S7 56
-                self.extraNoneTempHint1.append(not bool(self.aw.s7.mode[4]))
-                self.extraNoneTempHint2.append(not bool(self.aw.s7.mode[5]))
-            elif d == 82: # +S7 78
-                self.extraNoneTempHint1.append(not bool(self.aw.s7.mode[6]))
-                self.extraNoneTempHint2.append(not bool(self.aw.s7.mode[7]))
-            elif d == 110: # +S7 910
-                self.extraNoneTempHint1.append(not bool(self.aw.s7.mode[8]))
-                self.extraNoneTempHint2.append(not bool(self.aw.s7.mode[9]))
-            elif d == 111: # WebSocket
-                self.extraNoneTempHint1.append(not bool(self.aw.ws.channel_modes[0]))
-                self.extraNoneTempHint2.append(not bool(self.aw.ws.channel_modes[1]))
-            elif d == 112: # +WebSocket 34
-                self.extraNoneTempHint1.append(not bool(self.aw.ws.channel_modes[2]))
-                self.extraNoneTempHint2.append(not bool(self.aw.ws.channel_modes[3]))
-            elif d == 113: # +WebSocket 56
-                self.extraNoneTempHint1.append(not bool(self.aw.ws.channel_modes[4]))
-                self.extraNoneTempHint2.append(not bool(self.aw.ws.channel_modes[5]))
-            elif d == 118: # +WebSocket 78
-                self.extraNoneTempHint1.append(not bool(self.aw.ws.channel_modes[6]))
-                self.extraNoneTempHint2.append(not bool(self.aw.ws.channel_modes[7]))
-            elif d == 119: # +WebSocket 910
-                self.extraNoneTempHint1.append(not bool(self.aw.ws.channel_modes[8]))
-                self.extraNoneTempHint2.append(not bool(self.aw.ws.channel_modes[9]))
-            elif d == 150: # +MODBUS 910
-                self.extraNoneTempHint1.append(not bool(self.aw.s7.mode[8]))
-                self.extraNoneTempHint2.append(not bool(self.aw.s7.mode[9]))
-            elif d == 151: # +S7 1112
-                self.extraNoneTempHint1.append(not bool(self.aw.s7.mode[10]))
-                self.extraNoneTempHint2.append(not bool(self.aw.s7.mode[11]))
-            elif d == 201: # MQTT 12
-                self.extraNoneTempHint1.append(not bool(self.aw.mqtt.channel_modes[0]))
-                self.extraNoneTempHint2.append(not bool(self.aw.mqtt.channel_modes[1]))
-            elif d == 202: # MQTT 34
-                self.extraNoneTempHint1.append(not bool(self.aw.mqtt.channel_modes[2]))
-                self.extraNoneTempHint2.append(not bool(self.aw.mqtt.channel_modes[3]))
-            elif d == 203: # MQTT 56
-                self.extraNoneTempHint1.append(not bool(self.aw.mqtt.channel_modes[4]))
-                self.extraNoneTempHint2.append(not bool(self.aw.mqtt.channel_modes[5]))
-            elif d == 204: # MQTT 78
-                self.extraNoneTempHint1.append(not bool(self.aw.mqtt.channel_modes[6]))
-                self.extraNoneTempHint2.append(not bool(self.aw.mqtt.channel_modes[7]))
-            elif d == 205: # MQTT 910
-                self.extraNoneTempHint1.append(not bool(self.aw.mqtt.channel_modes[8]))
-                self.extraNoneTempHint2.append(not bool(self.aw.mqtt.channel_modes[9]))
-            elif d == 206: # MQTT 1112
-                self.extraNoneTempHint1.append(not bool(self.aw.mqtt.channel_modes[10]))
-                self.extraNoneTempHint2.append(not bool(self.aw.mqtt.channel_modes[11]))
             else:
                 self.extraNoneTempHint1.append(False)
                 self.extraNoneTempHint2.append(False)
@@ -13381,66 +13114,7 @@ class tgraphcanvas(QObject):
 
             # ADD DEVICE: # start communication/connect
             if not bool(self.aw.simulator):
-                if self.device == 53 and self.aw.hottop is None: # only start Hottop connection if there is not already one
-                    # connect HOTTOP
-                    from artisanlib.hottop import Hottop
-                    hottop_serial = SerialSettings(
-                                port = self.aw.ser.comport,
-                                baudrate = self.aw.ser.baudrate,
-                                bytesize = self.aw.ser.bytesize,
-                                stopbits = self.aw.ser.stopbits,
-                                parity = self.aw.ser.parity,
-                                timeout = self.aw.ser.timeout,
-                                clear_HUPCL = False)
-                    self.aw.hottop = Hottop(
-                        serial=hottop_serial,
-                        connected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} connected').format('Hottop'),True,None),
-                        disconnected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} disconnected').format('Hottop'),True,None))
-                    self.aw.hottop.setLogging(self.device_logging)
-                    self.aw.hottop.start()
-                elif self.device == 134:
-                    # connect Santoker
-                    from artisanlib.santoker import Santoker
-                    santoker_serial:SerialSettings|None = None
-                    if self.aw.santokerSerial and not self.aw.santokerBLE:
-                        santoker_serial = SerialSettings(
-                                port = self.aw.ser.comport,
-                                baudrate = self.aw.ser.baudrate,
-                                bytesize = self.aw.ser.bytesize,
-                                stopbits = self.aw.ser.stopbits,
-                                parity = self.aw.ser.parity,
-                                timeout = self.aw.ser.timeout,
-                                clear_HUPCL = False)
-                    self.aw.santoker = Santoker(self.aw.santokerHost, self.aw.santokerPort,
-                        santoker_serial, self.aw.santokerBLE,
-                        connected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} connected').format('Santoker'),True,None),
-                        disconnected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} disconnected').format('Santoker'),True,None),
-                        # CHARGE handler disactivated to not trigger CHARGE after CHARGE is signalled to the machine by START
-                        # NOTE: only after CHARGE the heater
-                        charge_handler=lambda : (self.markChargeDelaySignal.emit(0) if (len(self.aw.santokerEventFlags)>0 and self.aw.santokerEventFlags[0] and self.timeindex[0] == -1) else None),
-                        dry_handler=lambda : (self.markDRYSignal.emit(False) if (len(self.aw.santokerEventFlags)>1 and self.aw.santokerEventFlags[1] and self.timeindex[1] == 0) else None),
-                        fcs_handler=lambda : (self.markFCsSignal.emit(False) if (len(self.aw.santokerEventFlags)>2 and self.aw.santokerEventFlags[2] and self.timeindex[2] == 0) else None),
-                        scs_handler=lambda : (self.markSCsSignal.emit(False) if (len(self.aw.santokerEventFlags)>4 and self.aw.santokerEventFlags[4] and self.timeindex[4] == 0) else None),
-                        drop_handler=lambda : (self.markDropSignal.emit(False) if (len(self.aw.santokerEventFlags)>6 and self.aw.santokerEventFlags[6] and self.timeindex[6] == 0) else None))
-                    self.aw.santoker.setLogging(self.device_logging)
-                    self.aw.santoker.start()
-                elif self.device == 171:
-                    # connect Santoker R
-                    from artisanlib.santoker_r import SantokerR
-                    self.aw.santokerR = SantokerR(
-                        connected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} connected').format('Santoker R'),True,None),
-                        disconnected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} disconnected').format('Santoker R'),True,None))
-                    self.aw.santokerR.setLogging(self.device_logging)
-                    self.aw.santokerR.start(case_sensitive=False)
-                elif self.device == 175:
-                    # connect Thermoworks BlueDOT
-                    from artisanlib.bluedot import BlueDOT
-                    self.aw.thermoworksBlueDOT = BlueDOT(
-                        connected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} connected').format('Thermoworks BlueDOT'),True,None),
-                        disconnected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} disconnected').format('Thermoworks BlueDOT'),True,None))
-                    self.aw.thermoworksBlueDOT.setLogging(self.device_logging)
-                    self.aw.thermoworksBlueDOT.start(case_sensitive=False)
-                elif self.device == 138:
+                if self.device == 138:
                     # connect Kaleido
                     from artisanlib.kaleido import KaleidoPort
                     self.aw.kaleido = KaleidoPort()
@@ -13459,48 +13133,6 @@ class tgraphcanvas(QObject):
                         serial=kaleido_serial,
                         connected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} connected').format('Kaleido'),True,None),
                         disconnected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} disconnected').format('Kaleido'),True,None))
-                elif self.device == 142:
-                    try:
-                        from artisanlib.ikawa import IKAWA_BLE
-                        self.aw.ikawa = IKAWA_BLE(
-                            connected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} connected').format('IKAWA'),True,None),
-                            disconnected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} disconnected').format('IKAWA'),True,None))
-                        self.aw.ikawa.setLogging(self.device_logging)
-                        self.aw.ikawa.start_sampling()
-                        self.aw.sendmessageSignal.emit(QApplication.translate('Message', 'scanning for device'),True,None)
-                    except Exception as ex:  # pylint: disable=broad-except
-                        _log.exception(ex)
-                        _, _, exc_tb = sys.exc_info()
-                        self.adderror((QApplication.translate('Error Message', 'Exception:') + ' Bluetooth BLE support not available {0}').format(str(ex)),getattr(exc_tb, 'tb_lineno', '?'))
-                elif self.device == 164:
-                    # connect Mugma
-                    from artisanlib.mugma import Mugma
-                    self.aw.mugma = Mugma(self.aw.mugmaHost, self.aw.mugmaPort, self.device_logging,
-                        connected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} connected').format('Mugma'),True,None),
-                        disconnected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} disconnected').format('Mugma'),True,None))
-                    self.aw.mugma.setLogging(self.device_logging)
-                    self.aw.mugma.start()
-
-                elif self.device == 196:
-                    # connect Orbiter
-                    from artisanlib.orbiter import Orbiter
-                    orbiter_serial = SerialSettings(
-                                port = self.aw.ser.comport,
-                                baudrate = self.aw.ser.baudrate,
-                                bytesize = self.aw.ser.bytesize,
-                                stopbits = self.aw.ser.stopbits,
-                                parity = self.aw.ser.parity,
-                                timeout = self.aw.ser.timeout,
-                                clear_HUPCL = True)
-                    self.aw.orbiter = Orbiter(orbiter_serial,
-                        connected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} connected').format('Orbiter'),True,None),
-                        disconnected_handler=lambda : self.aw.sendmessageSignal.emit(QApplication.translate('Message', '{} disconnected').format('Orbiter'),True,None))
-                    self.aw.orbiter.setLogging(self.device_logging)
-                    self.aw.orbiter.start()
-
-                elif self.device == 201 or 201 in self.extradevices:
-                    # connect MQTT
-                    self.aw.mqtt.start(self.aw.qmc.device_logging)
 
             self.aw.initializedMonitoringExtraDeviceStructures()
 
@@ -13607,67 +13239,10 @@ class tgraphcanvas(QObject):
             self.aw.pidcontrol.pidOff(send_command=self.device != 138)
 
             try:
-                if not bool(self.aw.simulator) and self.device == 53 and self.aw.hottop is not None and \
-                        not self.aw.hottop.hasHottopControl():
-                    # disconnect HOTTOP only if not under Artisan control
-                    self.aw.hottop.stop()
-                    self.aw.hottop = None
-
-                # disconnect Santoker
-                if not bool(self.aw.simulator) and self.device == 134 and self.aw.santoker is not None:
-                    self.aw.santoker.stop()
-                    self.aw.santoker = None
-
-                # disconnect Santoker R
-                if not bool(self.aw.simulator) and self.device == 171 and self.aw.santokerR is not None:
-                    self.aw.santokerR.stop()
-                    self.aw.santokerR = None
-
-                if self.aw.lebrew_roastseeNEXT is not None:
-                    self.aw.lebrew_roastseeNEXT.stop()
-                    self.aw.lebrew_roastseeNEXT = None
-
-                # disconnect Thermoworks BlueDOT
-                if not bool(self.aw.simulator) and self.device == 175 and self.aw.thermoworksBlueDOT is not None:
-                    self.aw.thermoworksBlueDOT.stop()
-                    self.aw.thermoworksBlueDOT = None
-
                 # disconnect Kaleido
                 if not bool(self.aw.simulator) and self.device == 138 and self.aw.kaleido is not None:
                     self.aw.kaleido.stop()
                     self.aw.kaleido = None
-
-                # disconnect IKAWA
-                if not bool(self.aw.simulator) and self.device == 142 and self.aw.ikawa is not None:
-                    self.aw.ikawa.stop_sampling()
-                    try:
-                        if self.aw.ikawa.ambient_pressure != -1:
-                            self.ambient_pressure = self.aw.ikawa.ambient_pressure
-                    except Exception as e: # pylint: disable=broad-except
-                        _log.exception(e)
-                    self.aw.ikawa = None
-
-                # disconnect Mugma
-                if not bool(self.aw.simulator) and self.device == 164 and self.aw.mugma is not None:
-                    self.aw.mugma.stop()
-                    self.aw.mugma = None
-
-                # disconnect Orbiter
-                if not bool(self.aw.simulator) and self.device == 196 and self.aw.orbiter is not None:
-                    self.aw.orbiter.stop()
-                    self.aw.orbiter = None
-
-                # disconnect MQTT
-                if not bool(self.aw.simulator) and self.device == 201:
-                    self.aw.mqtt.stop()
-
-                # at OFF we stop the follow-background on FujiPIDs and set the SV to 0
-                if self.device == 0 and self.aw.fujipid.followBackground and self.aw.fujipid.sv and self.aw.fujipid.sv > 0:
-                    try:
-                        self.aw.fujipid.setsv(0,silent=True)
-                    except Exception as e: # pylint: disable=broad-except
-                        _log.exception(e)
-                    self.aw.fujipid.sv = 0
             except Exception as e: # pylint: disable=broad-except
                 _log.exception(e)
             QTimer.singleShot(5,self.disconnectProbes)
@@ -13952,11 +13527,6 @@ class tgraphcanvas(QObject):
 
     def getAmbientData(self) -> None:
         _log.debug('getAmbientData()')
-        # this is needed to suppress the message on the ignored Exception
-        #                            # Phidget that is raised on starting the PhidgetManager without installed
-        #                            # Phidget driver (artisanlib/suppresss_error.py fails to suppress this)
-#        _stderr = sys.stderr
-#        sys.stderr = object
         try:
             humidity = None
             temp = None # assumed to be gathered in C (not F!)
@@ -14011,8 +13581,6 @@ class tgraphcanvas(QObject):
                 self.aw.sendmessage(QApplication.translate('Message','Pressure: {}hPa').format(self.ambient_pressure))
         except Exception as e:  # pylint: disable=broad-except
             _log.exception(e)
-#        finally:
-#            sys.stderr = _stderr
 
     # computes the barometric pressure from
     #   aap:  atmospheric pressure in hPa
@@ -14023,21 +13591,11 @@ class tgraphcanvas(QObject):
     def barometricPressure(aap:float, atc:float, hasl:float) -> float:
         return float(aap * pow((1 - ((0.0065*hasl) / (atc + (0.0065*hasl) + 273.15))),-5.257))
 
-    # close serial port, Phidgets and Yocto ports
+    # close serial port
     def disconnectProbesFromSerialDevice(self, ser:'serialport') -> None:
         _log.debug('disconnectProbesFromSerialDevice(%s)',ser)
         try:
             self.samplingSemaphore.acquire(1)
-
-            if ser.colorTrackBT is not None:
-                ser.colorTrackBT.stop()
-                libtime.sleep(0.05)
-                ser.colorTrackBT = None
-
-            if ser.colorTrackSerial is not None:
-                ser.colorTrackSerial.stop()
-                libtime.sleep(0.05)
-                ser.colorTrackSerial = None
 
             # close main serial port
             try:
@@ -14149,7 +13707,8 @@ class tgraphcanvas(QObject):
                         ser.YOCTOthread = None
                     ser.YOCTOvalues = [[],[]]
                     ser.YOCTOlastvalues = [-1.0]*2
-                    YAPI.FreeAPI() # type:ignore[reportUnboundVariable,unused-ignore]
+                    from yoctopuce.yocto_api import YAPI
+                    YAPI.FreeAPI()
                 except Exception as e: # pylint: disable=broad-except
                     _log.exception(e)
         finally:
@@ -14218,13 +13777,6 @@ class tgraphcanvas(QObject):
         _log.debug('disconnectProbes')
         # close ports of main device
         self.disconnectProbesFromSerialDevice(self.aw.ser)
-        # close (serial) port of Modbus device
-        self.aw.modbus.disconnect()
-        # close port of S7 device
-        self.aw.s7.disconnect()
-        # close WebSocket connection
-        self.aw.ws.disconnect()
-        # close ports of extra devices
         for xs in self.aw.extraser:
             self.disconnectProbesFromSerialDevice(xs)
 
@@ -15419,13 +14971,6 @@ class tgraphcanvas(QObject):
                             self.aw.sendmessage(message)
                         except Exception as e: # pylint: disable=broad-except
                             _log.exception(e)
-                        # at DROP we stop the follow background on FujiPIDs and set the SV to 0
-                        if self.device == 0 and self.aw.fujipid.followBackground and self.aw.fujipid.sv and self.aw.fujipid.sv > 0:
-                            try:
-                                self.aw.fujipid.setsv(0,silent=True)
-                                self.aw.fujipid.sv = 0
-                            except Exception as e: # pylint: disable=broad-except
-                                _log.exception(e)
                         if self.roastpropertiesAutoOpenDropFlag:
                             self.aw.openPropertiesSignal.emit()
                     self.aw.onMarkMoveToNext(self.aw.buttonDROP)

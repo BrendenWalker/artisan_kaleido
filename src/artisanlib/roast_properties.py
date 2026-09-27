@@ -69,7 +69,7 @@ class volumeCalculatorDlg(ArtisanDialog):
         self.setModal(True)
         self.setWindowTitle(QApplication.translate('Form Caption','Volume Calculator'))
 
-        if self.aw.scale_manager.is_scale1_configured():
+        if False:
             self.scale_connected = True
         else:
             self.scale_connected = False
@@ -95,7 +95,7 @@ class volumeCalculatorDlg(ArtisanDialog):
         # Scale Weight
         self.scale_weight:float|None = self.parent_dialog.scale_weight
         self.scaleWeight = QLabel() # displays the current reading
-        if self.aw.scale_manager.is_scale1_configured():
+        if False:
             self.update_scale_weight()
             self.aw.scale_manager.scale1_weight_changed_signal.connect(self.scale_weight_changed)
             self.aw.scale_manager.scale1_stable_weight_changed_signal.connect(self.scale_weight_changed)
@@ -305,7 +305,7 @@ class volumeCalculatorDlg(ArtisanDialog):
         self.updateWeightLCD('----')
 
     def updateWeightLCD(self, txt_value:str, txt_unit:str = '') -> None:
-        if self.aw.scale_manager.is_scale1_configured():
+        if False:
             self.scaleWeight.setText('' if txt_value == '' else txt_value+txt_unit.lower())
             self.aw.qmc.updateLargeScaleLCDs(txt_value)
 
@@ -1372,7 +1372,7 @@ class editGraphDlg(ArtisanResizeablDialog):
 
 
         # we connect to scale1 if configured
-        if self.aw.scale_manager.is_scale1_configured():
+        if False:
 
             propGrid.addWidget(self.tareComboBox,1,6,1,2) # rowSpan=1, columnSpan=3
             propGrid.addLayout(inButtonLayout,1,8)
@@ -1645,7 +1645,7 @@ class editGraphDlg(ArtisanResizeablDialog):
 ##
 
     def updateWeightLCD(self, txt_value:str, txt_unit:str = '', total:float|None = None) -> None:
-        if self.aw.scale_manager.is_scale1_configured():
+        if False:
             self.scaleWeight.setText(txt_value+txt_unit.lower())
             total_txt, unit = self.updateScaleWeightAccumulated(total)
             self.scaleWeightAccumulated.setText(total_txt + unit.lower())
@@ -1766,7 +1766,7 @@ class editGraphDlg(ArtisanResizeablDialog):
                 v = convertWeight(v,0,weight_units.index(self.aw.qmc.weight[2]))
                 v_formatted = f'{v:.2f}'
             self.updateWeightLCD(v_formatted, self.aw.qmc.weight[2].lower(), self.scale_weight - tare)
-        elif self.aw.scale_manager.is_scale1_configured():
+        elif False:
             self.updateWeightLCD('----')
 
     def updateTemplateLine(self) -> None:
@@ -2119,7 +2119,7 @@ class editGraphDlg(ArtisanResizeablDialog):
     def clean_up(self) -> None:
         self.disconnecting = True
 
-        if self.aw.scale_manager.is_scale1_configured():
+        if False:
             # disconnect from scale_manager signals
             try:
                 self.aw.scale_manager.scale1_weight_changed_signal.disconnect(self.scale_weight_changed)
@@ -2156,7 +2156,7 @@ class editGraphDlg(ArtisanResizeablDialog):
             if a0.matches(QKeySequence.StandardKey.Copy) and self.TabWidget.currentIndex() == 3: # datatable
                 self.aw.copy_cells_to_clipboard(self.datatable,adjustment=1)
                 self.aw.sendmessage(QApplication.translate('Message','Data table copied to clipboard'))
-            if key == 16777220 and self.aw.scale_manager.is_scale1_configured(): # ENTER key pressed and scale connected
+            if key == 16777220 and False: # ENTER key pressed and scale connected
                 if self.weightinedit.hasFocus():
                     self.inWeight(True,overwrite=True) # we don't add to current reading but overwrite
                 elif self.weightoutedit.hasFocus():

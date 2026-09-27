@@ -110,7 +110,7 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QMessageBox, QLabel, QMainWi
                          QSlider,
                          QColorDialog, QFrame, QScrollArea, QProgressDialog,
                          QStyleFactory, QMenuBar, QMenu, QLayout, QDockWidget)
-from PyQt6.QtGui import (QScreen, QPageLayout, QAction, QImageReader, QWindow,
+from PyQt6.QtGui import (QScreen, QPageLayout, QAction, QActionGroup, QImageReader, QWindow,
                             QKeySequence, QShortcut,
                             QPixmap,QColor,QDesktopServices,QIcon,
                             QRegularExpressionValidator, QDoubleValidator, QPainter, QCursor)
@@ -163,25 +163,13 @@ import matplotlib.backends.qt_editor._formlayout as formlayout # type:ignore[unt
 if TYPE_CHECKING:
     from types import TracebackType
     from artisanlib.atypes import ExtraDeviceSettings, Palette # pylint: disable=unused-import
-    from artisanlib.scale import ScaleSpec
     from artisanlib.roast_properties import editGraphDlg # pylint: disable=unused-import
     from artisanlib.comparator import roastCompareDlg # pylint: disable=unused-import
     from artisanlib.wheels import WheelDlg # pylint: disable=unused-import
-    from artisanlib.hottop import Hottop # pylint: disable=unused-import
     from artisanlib.weblcds import WebLCDs, WebGreen, WebRoasted # pylint: disable=unused-import
-    from artisanlib.santoker import Santoker # pylint: disable=unused-import
-    from artisanlib.santoker_r import SantokerR # pylint: disable=unused-import
-    from artisanlib.lebrew import Lebrew_RoastSeeNEXT # pylint: disable=unused-import
-    from artisanlib.bluedot import BlueDOT # pylint: disable=unused-import
-    from artisanlib.mugma import Mugma # pylint: disable=unused-import
     from artisanlib.kaleido import KaleidoPort # pylint: disable=unused-import
     from artisanlib.hybrid_controller import HybridController, HybridControllerConfig, create_controller_backend # pylint: disable=unused-import
-    from artisanlib.orbiter import Orbiter # pylint: disable=unused-import
     from artisanlib.phases_canvas import tphasescanvas # pylint: disable=unused-import
-    try:
-        from artisanlib.ikawa import IKAWA_BLE # pylint: disable=unused-import
-    except Exception: # pylint: disable=broad-except
-        pass
     from matplotlib.text import Annotation # type:ignore[untyped-import,unused-ignore] # pylint: disable=unused-import
     from openpyxl.worksheet.worksheet import Worksheet # pylint: disable=unused-import
     import numpy.typing as npt # pylint: disable=unused-import
@@ -193,14 +181,6 @@ if TYPE_CHECKING:
     from matplotlib.artist import Artist # type:ignore[untyped-import,unused-ignore] # pylint: disable=unused-import
     from matplotlib.lines import Line2D # type:ignore[untyped-import,unused-ignore] # pylint: disable=unused-import
     from xml.etree.ElementTree import Element as XMLElement
-
-# fix socket.inet_pton on Windows (used by pymodbus TCP/UDP)
-try:
-    if str(platform.system()).startswith('Windows'):
-        import win_inet_pton # type: ignore[import-not-found] # @UnresolvedImport @UnusedImport # pylint: disable=import-error,unused-import # noqa: F401
-except Exception: # pylint: disable=broad-except
-    pass
-
 
 from artisanlib.atypes import (ProfileData, ComputedProfileInformation, RecentRoast, CurveSimilarity, ProductionData, ProductionDataStr, Wheel)
 from artisanlib.util import (appFrozen, uchr, decodeLocal, decodeLocalStrict, encodeLocal, encodeLocalStrict, s2a, fill_gaps,
@@ -229,12 +209,6 @@ from artisanlib.hybrid_controller import (
 from artisanlib.qtsingleapplication import QtSingleApplication
 
 
-
-try:
-    # spanning a second multiprocessing instance (Hottop server) on macOS falils to import the YAPI interface
-    from yoctopuce.yocto_api import YAPI # type: ignore[import-untyped]
-except ImportError:
-    pass
 
 # platform dependent imports:
 if sys.platform.startswith('darwin'):
@@ -722,10 +696,6 @@ if platform.system().startswith('Windows'):
     app.setStyle('Fusion')
     app.setWindowIcon(QIcon(os.path.join(getAppPath(),'artisan.png')))
 
-from artisanlib.s7port import s7port
-from artisanlib.wsport import wsport
-from artisanlib.mqttport import mqttport
-from artisanlib.modbusport import modbusport
 from artisanlib.slider_style import artisan_slider_style
 from artisanlib.event_button_style import artisan_event_button_style
 from artisanlib.simulator import Simulator
@@ -733,18 +703,31 @@ from artisanlib.dialogs import HelpDlg, ArtisanInputDialog, ArtisanComboBoxDialo
 from artisanlib.large_lcds import (LargeMainLCDs, LargeDeltaLCDs, LargePIDLCDs, LargeExtraLCDs, LargePhasesLCDs, LargeScaleLCDs)
 from artisanlib.logs import (serialLogDlg, errorDlg, messageDlg)
 from artisanlib.comm import serialport
-from artisanlib.pid_dialogs import (PXRpidDlgControl, PXG4pidDlgControl,
-    PID_DlgControl, DTApidDlgControl)
-from artisanlib.pid_control import FujiPID, PIDcontrol, DtaPID
+from artisanlib.pid_dialogs import PID_DlgControl
+from artisanlib.pid_control import PIDcontrol
 from artisanlib.widgets import (MyQLCDNumber, EventPushButton, MajorEventPushButton,
     AnimatedMajorEventPushButton, MinorEventPushButton, AuxEventPushButton, ClickableLCDFrame, Splitter, SliderUnclickable)
 
 from artisanlib.notifications import Notification, NotificationManager, NotificationType
 from artisanlib.canvas import tgraphcanvas
 from artisanlib.phases_canvas import tphasescanvas
-from artisanlib.scale import ScaleManager
 
 
+class _RemovedHardware:
+    """No-op stand-in for stripped Modbus/S7/WS/MQTT/Fuji/DTA ports.
+
+    Leftover event-action parsers and Ports-dialog apply blocks still mention
+    those objects. Attribute reads return a callable no-op; assignment of
+    unknown names is allowed. Shared across handles is fine: nothing talks
+    to hardware.
+    """
+
+    lastReadResult: object | None = None
+    channels: int = 0
+    CHANNELS: int = 0
+
+    def __getattr__(self, _name: str) -> object:
+        return lambda *_a, **_k: None
 
 
 #####
@@ -1330,8 +1313,6 @@ class UI_MODE(IntEnum):
 #class ApplicationWindow():
 class ApplicationWindow(QMainWindow):
 
-    singleShotPhidgetsPulseOFF = pyqtSignal(int,int,str) # signal to be called from the eventaction thread to realise Phidgets pulse via QTimer in the main thread
-    singleShotPhidgetsPulseOFFSerial = pyqtSignal(int,int,str,str)
     setTitleSignal = pyqtSignal(str,bool) # can be called from another thread or a QTimer to set the profile title in the main GUI thread
     sendmessageSignal = pyqtSignal(str,bool,str)
     openPropertiesSignal = pyqtSignal()
@@ -1356,10 +1337,8 @@ class ApplicationWindow(QMainWindow):
     pidOffSignal = pyqtSignal()
     pidToggleSignal = pyqtSignal()
     notificationsSetEnabledSignal = pyqtSignal(bool)
-    santokerSendMessageSignal = pyqtSignal(bytes,int)
     kaleidoSendMessageSignal = pyqtSignal(str,str)
     kaleidoSendMessageAwaitSignal = pyqtSignal(str,str,int,int)
-    orbiterSendMessageSignal = pyqtSignal(bytes,bytes,bytes,int)
     addEventSignal = pyqtSignal(int,int,bool,bool,bool)
     addRawEventSignal = pyqtSignal(int,float,int,bool,bool,bool)
     updateMessageLogSignal = pyqtSignal()
@@ -1384,19 +1363,17 @@ class ApplicationWindow(QMainWindow):
         'weblcds_index_path', 'weblcds_websocket_path',
         'taskWebDisplayGreenActive', 'taskWebDisplayGreenPort', 'taskWebDisplayRoastedActive', 'taskWebDisplayRoastedPort',
         'taskWebDisplayRoastedIndexPath', 'taskWebDisplayRoastedWebSocketPath', 'taskWebDisplayGreen_server', 'taskWebDisplayRoasted_server',
-        'custom_scale_ids', 'custom_scale_names',
-        'scale_manager', 'scale1_model', 'scale1_name', 'scale1_id', 'container1_idx', 'two_bucket_mode', 'green_task_precision', 'scale2_model', 'scale2_name', 'scale2_id', 'container2_idx',
+        'container1_idx', 'two_bucket_mode', 'green_task_precision', 'container2_idx',
         'WebLCDsAlerts', 'EventsDlg_activeTab', 'graphColorDlg_activeTab', 'PID_DlgControl_activeTab', 'CurveDlg_activeTab', 'editGraphDlg_activeTab',
         'backgroundDlg_activeTab', 'DeviceAssignmentDlg_activeTab', 'AlarmDlg_activeTab', 'StatisticsDlg_activeTab', 'resetqsettings', 'settingspath', 'wheelpath', 'profilepath',
-        'userprofilepath', 'printer', 'main_widget', 'defaultdpi', 'dpi', 'qmc', 'HottopControlActive', 'AsyncSamplingTimer', 'wheeldialog',
+        'userprofilepath', 'printer', 'main_widget', 'defaultdpi', 'dpi', 'qmc', 'AsyncSamplingTimer', 'wheeldialog',
         'simulator', 'simulatorpath', 'comparator', 'eventsbuttonflag', 'minieventsflags', 'seriallogflag',
-        'seriallog', 'ser', 'modbus', 'extraMODBUStemps', 'extraMODBUStx', 's7', 'extraS7tx', 'ws', 'extraser', 'extracomport', 'extrabaudrate',
-        'extrabytesize', 'extraparity', 'extrastopbits', 'extratimeout', 'hottop', 'santokerHost', 'santokerPort', 'santokerSerial', 'santokerBLE', 'santokerEventFlags', 'santoker', 'santokerR', 'lebrew_roastseeNEXT', 'thermoworksBlueDOT', 'fujipid', 'dtapid', 'pidcontrol', 'soundflag', 'recentRoasts', 'maxRecentRoasts',
-        'mugmaHost','mugmaPort', 'mugma', 'mugma_default_host', 'shelly_3EMPro_host', 'shelly_PlusPlug_host',
+        'seriallog', 'ser', 'extraser', 'extracomport', 'extrabaudrate',
+        'extrabytesize', 'extraparity', 'extrastopbits', 'extratimeout', 'pidcontrol', 'soundflag', 'recentRoasts', 'maxRecentRoasts',
         'kaleido_default_host', 'kaleidoHost', 'kaleidoPort', 'kaleidoSerial', 'kaleidoPID', 'kaleidoHybridControl',
         'hybridControlBackend', 'hybridHeaterKp', 'hybridHeaterKi', 'hybridHeaterKd', 'hybridFanKp', 'hybridFanKi', 'hybridFanKd',
         'hybridHeaterSlew', 'hybridFanSlew', 'hybridRorAccelGain', 'hybridHeaterTrimLimit', 'hybridCrashRorMargin', 'hybridCrashFcGain',
-        'hybrid_controller', 'kaleido', 'kaleidoEventFlags', 'colorTrack_mean_window_size', 'colorTrack_median_window_size', 'ikawa',
+        'hybrid_controller', 'kaleido', 'kaleidoEventFlags', 'HottopControlActive',
         'lcdpaletteB', 'lcdpaletteF', 'extraeventsbuttonsflags', 'extraeventslabels', 'extraeventbuttoncolor', 'extraeventsactionstrings',
         'extraeventbuttonround', 'block_quantification_sampling_ticks', 'sampling_seconds_to_block_quantifiction', 'sampling_ticks_to_block_quantifiction', 'extraeventsactionslastvalue',
         'org_extradevicesettings', 'eventslidervalues', 'eventslidervisibilities', 'eventsliderKeyboardControl', 'eventsliderAlternativeLayout_default',
@@ -1566,22 +1543,9 @@ class ApplicationWindow(QMainWindow):
         self.taskWebDisplayRoastedWebSocketPath:Final[str] = 'roasted_ws'
         self.taskWebDisplayRoasted_server:WebRoasted|None = None # holds the Roasted Web display instance
 
-        # Scales
-        self.scale_manager:ScaleManager = ScaleManager(self.scale_connected_handler, self.scale_disconnected_handler)
-        # association of scale ids (eg. BLE addresses) to custom user names for the scales
-        self.custom_scale_ids:list[str] = []   # same length as self.custom_scale_names
-        self.custom_scale_names:list[str] = [] # same length as self.custom_scale_ids
-        # scale1: for roasted and green (if no second scale is configured, otherwise just for roasted)
-        self.scale1_model:int|None = None
-        self.scale1_name:str|None = None  # the display/local name of the device (like "ACAIA162FC")
-        self.scale1_id:str|None = None    # the id, eg. the BT address (like "24:71:89:cc:09:05")
         self.container1_idx:int = -1 # -1: no container set; otherwise index into selected qmc.container_names/qmc.container_weights
         self.two_bucket_mode:bool = False # if True, the TaskManager allows to split green task weight into two buckets
         self.green_task_precision:float = 10 # precision in percent (range [0.1 - 10%]; if set to 0 all "non-overlapping" weights are accepted)
-        # scale2: just for green
-        self.scale2_model:int|None = None
-        self.scale2_name:str|None = None  # the display/local name of the device (like "ACAIA162FC")
-        self.scale2_id:str|None = None    # the device id, eg. the BT address (like "24:71:89:cc:09:05")
         self.container2_idx:int = -1 # -1: no container set; otherwise index into selected qmc.container_names/qmc.container_weights
 
         # active tab
@@ -1650,11 +1614,8 @@ class ApplicationWindow(QMainWindow):
         self.qmc.canvas.setMinimumHeight(150)
         #self.qmc.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground)
 
-        # PID control for Arduino, Hottop and generic MODBUS devices
+        # PID control for Kaleido / software PID
         self.pidcontrol:PIDcontrol = PIDcontrol(self)
-
-        #### Hottop Control
-        self.HottopControlActive:bool = False
 
         #### Async Sampling Timer
         self.AsyncSamplingTimer:QTimer|None = None
@@ -1682,19 +1643,6 @@ class ApplicationWindow(QMainWindow):
 
         #create a serial port object (main ET BT device)
         self.ser:serialport = serialport(self)
-        #create a modbus port object (main modbus device)
-        self.modbus:modbusport = modbusport(self)
-        #temporary storage to pass values. Holds the MODBUS channels T1 and T2 as well as the extra channels T3, T4, T5 and T6 values for MODBUS connected devices
-        self.extraMODBUStemps:list[float] = [-1.0]*self.modbus.channels
-        self.extraMODBUStx:float = 0.
-
-        #create an s7 port object (main s7 device)
-        self.s7:s7port = s7port(self)
-        self.extraS7tx:float = 0.
-        #create an WebSocket port object
-        self.ws:wsport = wsport(self)
-        #create an MQTT port object
-        self.mqtt:mqttport = mqttport(self)
         #list with extra serial ports (extra devices)
         self.extraser:list[serialport] = []
         #extra comm port settings
@@ -1710,42 +1658,6 @@ class ApplicationWindow(QMainWindow):
         self.weblcds_websocket_path:Final[str] = 'websocket'
         self.weblcds_server:WebLCDs|None = None # holds the WebLCD instance
 
-        # Hottop
-        self.hottop:Hottop|None = None # holds the Hottop instance created on connect; reset to None on disconnect
-
-        # Santoker WiFi/BLE
-        self.santokerHost:str = '10.10.100.254'
-        self.santokerPort:int = 20001
-        # NOTE if not santokerSerial and not santokerBLE, connection is via Network (WiFi)
-        #    santokerSerial and santokerBLE should never be True at the same time (BLE will have preceedence)
-        self.santokerSerial:bool = False # if True connection is via the main serial port
-        self.santokerBLE:bool = False # if True connection is via the main serial port
-        self.santokerEventFlags:list[bool] = [False, False, False, False, False, False, False ] # CHARGE, DRY, FCs, FCe, SCs, SCe, DROP
-        self.santoker:Santoker|None = None # holds the Santoker instance created on connect; reset to None on disconnect
-
-        # Santoker R
-        self.santokerR:SantokerR|None = None # holds the Santoker R instance created on connect; reset to None on disconnect
-
-        # Lebrew RoastSee NEXT
-        self.lebrew_roastseeNEXT:Lebrew_RoastSeeNEXT|None = None # holds the Lebrew RoastSeeNEXT instance; reset to None on disconnect
-
-        # Thermoworks BlueDOT
-        self.thermoworksBlueDOT:BlueDOT|None = None  # holds the BlueDOT instance created on connect; reset to None on disconnect
-
-        # Mugma Network
-        self.mugma_default_host:Final[str] = '127.0.0.1'
-        self.mugmaHost:str = '127.0.0.1'
-        self.mugmaPort:int = 1504
-        self.mugma:Mugma|None = None # holds the Mugma instance created on connect; reset to None on disconnect
-
-        # Shelly
-        self.shelly_3EMPro_host:str = '127.0.0.1'
-        self.shelly_PlusPlug_host:str = '127.0.0.1'
-
-        # ColorTrack
-        self.colorTrack_mean_window_size:int = 50    # window size of the mean filter (10-200)
-        self.colorTrack_median_window_size:int = 50  # window size of the median filter (10-200)
-
         # Kaleido Network
         self.kaleido_default_host:Final[str] = '127.0.0.1'
         self.kaleidoHost:str = self.kaleido_default_host
@@ -1756,6 +1668,20 @@ class ApplicationWindow(QMainWindow):
         self.kaleido:KaleidoPort|None = None # holds the Kaleido instance created on connect; reset to None on disconnect
         self.kaleidoEventFlags:list[bool] = [False, False, False, False, False, False, False ] # CHARGE, DRY, FCs, FCe, SCs, SCe, DROP
         self.kaleidoCooldownActive:bool = False # idle air/drum cooldown until BT < 50°C
+        # leftover machine handles: None for dedicated drivers, dead ports for
+        # command parsers / Ports-dialog apply that still name Modbus/S7/WS/MQTT/Fuji
+        self.santoker = None
+        self.orbiter = None
+        self.hottop = None
+        self.HottopControlActive = False
+        self.mugma = None
+        _dead = _RemovedHardware()
+        self.mqtt = _dead
+        self.modbus = _dead
+        self.s7 = _dead
+        self.ws = _dead
+        self.dtapid = _dead
+        self.fujipid = _dead
 
         # Hybrid Controller settings
         self.hybridControlBackend:str = DEFAULT_CONTROL_BACKEND  # "energy" | "mpc"
@@ -1774,16 +1700,6 @@ class ApplicationWindow(QMainWindow):
         self.hybrid_controller:HybridController = create_controller_backend(
             self.hybridControlBackend, self.buildHybridControllerConfig())
         self.hybridDiagnostics:object|None = None  # latest HybridDiagnostics from sample loop
-
-        # Orbiter
-        self.orbiter:Orbiter|None = None # holds the Orbiter instance created on connect; reset to None on disconnect
-
-        # Ikawa BLE
-        self.ikawa:'IKAWA_BLE|None' = None # noqa: UP037
-
-        # create a ET control objects
-        self.fujipid: FujiPID = FujiPID(self)
-        self.dtapid: DtaPID = DtaPID(self)
 
         self.soundflag:int = 0
 
@@ -4070,8 +3986,6 @@ class ApplicationWindow(QMainWindow):
         self.recording_build:str = str(__build__) # saved to and loaded from profiles, indicating the Artisan build that created this profile, will be set to __build__ on RESET
 
         # we connect the signals
-        self.singleShotPhidgetsPulseOFF.connect(self.processSingleShotPhidgetsPulse)
-        self.singleShotPhidgetsPulseOFFSerial.connect(self.processSingleShotPhidgetsPulse)
         self.setTitleSignal.connect(self.qmc.setProfileTitle)
         self.sendmessageSignal.connect(self.sendmessage)
         self.openPropertiesSignal.connect(self.editgraph)
@@ -4096,10 +4010,8 @@ class ApplicationWindow(QMainWindow):
         self.pidOffSignal.connect(self.pidOff)
         self.pidToggleSignal.connect(self.pidToggle)
         self.notificationsSetEnabledSignal.connect(self.notificationsSetEnabled)
-        self.santokerSendMessageSignal.connect(self.santokerSendMessage)
         self.kaleidoSendMessageSignal.connect(self.kaleidoSendMessage)
         self.kaleidoSendMessageAwaitSignal.connect(self.kaleidoSendMessageAwait)
-        self.orbiterSendMessageSignal.connect(self.orbiterSendMessage)
         self.addEventSignal.connect(self.addEventSlot, type=Qt.ConnectionType.QueuedConnection) # type: ignore[call-arg]
         self.addRawEventSignal.connect(self.addRawEventSlot, type=Qt.ConnectionType.QueuedConnection) # type: ignore[call-arg]
            # by default the connection type is AutoConnection (If the emitter & receiver are in the same thread, a DirectConnection is used. Otherwise, a QueuedConnection is used.)
@@ -4255,8 +4167,7 @@ class ApplicationWindow(QMainWindow):
         if self.ui_mode is not UI_MODE.PRODUCTION or len(self.qmc.extradevices)>0:
             view_menu.addAction(self.extralcdsAction)
         view_menu.addAction(self.phaseslcdsAction)
-        if self.ui_mode is not UI_MODE.PRODUCTION or self.scale1_model is not None:
-            view_menu.addAction(self.scalelcdsAction)
+        view_menu.addAction(self.scalelcdsAction)
         view_menu.addSeparator()
         if not (platform.system() == 'Darwin' and self.qmc.locale_str == 'en'): # macOS automatically adds the fullscreen action to View menu
 #            self.fullscreenAction = QAction(QApplication.translate('Menu', 'Full Screen'), self)
@@ -4371,52 +4282,6 @@ class ApplicationWindow(QMainWindow):
             self.qpc.canvas.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Fixed)
             self.qpc.canvas.mpl_connect('scroll_event', self.scrollingPhases)
             self.scroller.setWidget(self.qpc.canvas)
-
-    def scale_connected_handler(self, scale_id:str, scale_name:str) -> None:
-        if scale_name:
-            name = (self.getScaleName((scale_name, scale_id)) if scale_id else scale_name)
-        else:
-            name = QApplication.translate('Tab','Scale')
-        self.sendmessageSignal.emit(QApplication.translate('Message', '{} connected').format(name),True,None)
-
-    def scale_disconnected_handler(self, scale_id:str, scale_name:str) -> None:
-        if scale_name:
-            name = (self.getScaleName((scale_name, scale_id)) if scale_id else scale_name)
-        else:
-            name = QApplication.translate('Tab','Scale')
-        self.sendmessageSignal.emit(QApplication.translate('Message', '{} disconnected').format(name),True,None)
-
-    # returns the custom name associated with the given scale_id if any, or None
-    def get_custom_scale_name(self, scale_id:str) -> str|None:
-        try:
-            return self.custom_scale_names[self.custom_scale_ids.index(scale_id)]
-        except Exception: # pylint: disable=broad-except
-            return None
-
-    # if supplied name is empty a previous custom name entry is removed
-    def set_custom_scale_name(self, scale_id:str, name:str) -> None:
-        if name == '':
-            # given name is the empty string we remove the entry if it exists
-            try:
-                idx = self.custom_scale_ids.index(scale_id)
-                self.custom_scale_ids.pop(idx)
-                self.custom_scale_names.pop(idx)
-            except Exception: # pylint: disable=broad-except
-                pass
-        else:
-            try:
-                # update existing custom name
-                self.custom_scale_names[self.custom_scale_ids.index(scale_id)] = name
-            except ValueError:
-                # add a new custom name entry
-                self.custom_scale_ids.append(scale_id)
-                self.custom_scale_names.append(name)
-            except Exception as e: # pylint: disable=broad-except
-                _log.exception(e)
-
-    def getScaleName(self, scale_device:'ScaleSpec') -> str:
-        custom_name = self.get_custom_scale_name(scale_device[1])
-        return custom_name or scale_device[0]
 
     def updateBadge(self, count:int|None = None) -> None:
         del count
@@ -5067,18 +4932,6 @@ class ApplicationWindow(QMainWindow):
 
 
 
-    # turns channel off after millis
-    @pyqtSlot(int,int,str)
-    @pyqtSlot(int,int,str,str)
-    def processSingleShotPhidgetsPulse(self, channel:int, millis:int, fct:str, serial:str|None = None) -> None:
-        if fct == 'OUTsetPWM':
-            QTimer.singleShot(int(round(millis)),lambda : self.ser.phidgetOUTsetPWM(channel,0,serial))
-        elif fct == 'OUTsetPWMhub':
-            QTimer.singleShot(int(round(millis)),lambda : self.ser.phidgetOUTsetPWMhub(channel,0,serial))
-        elif fct == 'BinaryOUTset':
-            QTimer.singleShot(int(round(millis)),lambda : (None if self.ser.phidgetBinaryOUTset(channel, False, serial) else None)) # return None to fulfill the type signature of QTimer.singleShot()
-
-
 ###################################   APPLICATION WINDOW (AW) FUNCTIONS  #####################################
 
     # if recurse is True (default) and no selection exists, all is selected before calling the copy function again
@@ -5432,6 +5285,47 @@ class ApplicationWindow(QMainWindow):
 
     def populateMachineMenu(self) -> None:
         self.populateListMenu('Machines','.aset',self.openMachineSettings,self.machineMenu, addMenu=False)
+        group = QActionGroup(self.machineMenu)
+        group.setExclusive(True)
+        group.setExclusionPolicy(QActionGroup.ExclusionPolicy.ExclusiveOptional)
+        for action in self._machineMenuActions():
+            action.setCheckable(True)
+            group.addAction(action)
+        try:
+            self.machineMenu.aboutToShow.disconnect(self.updateMachineMenuSelection)
+        except TypeError:
+            pass
+        self.machineMenu.aboutToShow.connect(self.updateMachineMenuSelection)
+        self.updateMachineMenuSelection()
+
+    def _machineMenuActions(self) -> list[QAction]:
+        actions:list[QAction] = []
+        menus:list[QMenu] = [self.machineMenu]
+        while menus:
+            menu = menus.pop()
+            for action in menu.actions():
+                submenu = action.menu()
+                if submenu is not None:
+                    menus.append(submenu)
+                elif not action.isSeparator():
+                    actions.append(action)
+        return actions
+
+    def currentKaleidoMachineAsetBasename(self) -> str|None:
+        # Live connection mode, not the last menu click: Device WiFi/Serial can change without reloading a preset.
+        if self.qmc.device != 138:
+            return None
+        return 'Serial.aset' if self.kaleidoSerial else 'Network.aset'
+
+    @pyqtSlot()
+    def updateMachineMenuSelection(self) -> None:
+        wanted = self.currentKaleidoMachineAsetBasename()
+        for action in self._machineMenuActions():
+            data = action.data()
+            path = ''
+            if isinstance(data, (tuple, list)) and data:
+                path = str(data[0])
+            action.setChecked(wanted is not None and os.path.basename(path) == wanted)
 
     @pyqtSlot(bool)
     def openMachineSettings(self, _checked:bool = False) -> None:
@@ -5453,13 +5347,8 @@ class ApplicationWindow(QMainWindow):
                     org_etypes = self.qmc.etypes
                     org_device = self.qmc.device
                     org_machinesetup = self.qmc.machinesetup
-                    org_modbus_host = self.modbus.host
-                    org_s7_host = self.s7.host
-                    org_ws_host = self.ws.host
                     org_kaleido_host = self.kaleidoHost
-                    org_mugma_host = self.mugmaHost
                     org_comport = self.ser.comport
-                    org_modbus_comport = self.modbus.comport
                     org_roastersize_setup = self.qmc.roastersize_setup
                     org_last_batchsize = self.qmc.last_batchsize
                     org_roastersize = self.qmc.roastersize
@@ -5475,63 +5364,10 @@ class ApplicationWindow(QMainWindow):
                     self.loadSettings(fn=action.data()[0],remember=False,machine=True,reload=False)
                     res:bool = False
                     res2: bool|None = None
-                    ### setup specific configuration dialogs
-                    if action.data()[1] == 'Phidget':
-                        if action.text() == 'VINT Ambient Modules':
-                            elevation, res2 = QInputDialog.getInt(self,
-                                QApplication.translate('Message', 'Ambient'),
-                                QApplication.translate('Message', 'Elevation (MASL)'),value=self.qmc.elevation)
-                            if res2:
-                                try:
-                                    self.qmc.elevation = int(elevation)
-                                except Exception: # pylint: disable=broad-except
-                                    pass
-                            else:
-                                res = False
-                                self.sendmessage(QApplication.translate('Message','Action canceled'))
-                        else:
-                            res = True
-                            self.qmc.machinesetup = action.text()
-                        if res:
-                            QTimer.singleShot(700, self.qmc.startPhidgetManager)
-                    else:
-                        self.qmc.machinesetup = action.text()
-                        res = True
+                    self.qmc.machinesetup = action.text()
+                    res = True
                     ###
-                    if (self.qmc.device == 29 or 29 in self.qmc.extradevices) and self.modbus.type in {3,4}: # MODBUS TCP or UDP
-                        # as default we offer the current settings MODBUS host, or if this is set to its default as after a factory reset (self.modbus.default_host) we take the one from the machine setup
-                        defaultModbusHost:str = (self.modbus.host if org_modbus_host == self.modbus.default_host else org_modbus_host)
-                        host, res2 = QInputDialog.getText(self,
-                            f"{QApplication.translate('Message', 'Machine')} (MODBUS)",
-                            QApplication.translate('Message', 'Network name or IP address'),text=defaultModbusHost)
-                        if res2:
-                            res = res2
-                            self.modbus.host = host
-                        else:
-                            res = False
-                    elif self.qmc.device == 79 or 79 in self.qmc.extradevices: # S7
-                        # as default we offer the current settings S7 host, or if this is set to its default as after a factory reset (self.s7.default_host) we take the one from the machine setup
-                        defaultS7Host:str = (self.s7.host if org_s7_host == self.s7.default_host else org_s7_host)
-                        host, res2 = QInputDialog.getText(self,
-                            f"{QApplication.translate('Message', 'Machine')} (S7)",
-                            QApplication.translate('Message', 'Network name or IP address'),text=defaultS7Host)
-                        if res2:
-                            res = res2
-                            self.s7.host = host
-                        else:
-                            res = False
-                    elif self.qmc.device == 111 or 111 in self.qmc.extradevices: # WebSocket
-                        # as default we offer the current settings WebSocket host, or if this is set to its default as after a factory reset (self.ws.default_host) we take the one from the machine setup
-                        defaultWSHost:str = (self.ws.host if org_ws_host == self.ws.default_host else org_ws_host)
-                        host, res2 = QInputDialog.getText(self,
-                            f"{QApplication.translate('Message', 'Machine')} (WebSocket)",
-                            QApplication.translate('Message', 'Network name or IP address'),text=defaultWSHost)
-                        if res2:
-                            res = res2
-                            self.ws.host = host
-                        else:
-                            res = False
-                    elif self.qmc.device == 138 and not self.kaleidoSerial: # Kaleido Network
+                    if self.qmc.device == 138 and not self.kaleidoSerial: # Kaleido Network
                         # as default we offer the current settings kaleido host, or if this is set to its default as after a factory reset (self.kaleido_default_host) we take the one from the machine setup
                         defaultKaleidoHost:str = (self.kaleidoHost if org_kaleido_host == self.kaleido_default_host else org_kaleido_host)
                         host, res2 = QInputDialog.getText(self,
@@ -5542,47 +5378,17 @@ class ApplicationWindow(QMainWindow):
                             self.kaleidoHost = host
                         else:
                             res = False
-                    elif self.qmc.device == 164: # Mugma
-                        # as default we offer the current settings mugma host, or if this is set to its default as after a factory reset (self.mugma_default_host) we take the one from the machine setup
-                        defaultMugmaHost:str = (self.mugmaHost if org_mugma_host == self.mugma_default_host else org_mugma_host)
-                        host, res2 = QInputDialog.getText(self,
-                            QApplication.translate('Message', 'Machine'),
-                            QApplication.translate('Message', 'Network name or IP address'),text=defaultMugmaHost)
-                        if res2:
-                            res = res2
-                            self.mugmaHost = host
-                        else:
-                            res = False
-                    elif (self.qmc.device in {0, 9, 19, 53, 101, 115, 126, 196} or ((self.qmc.device == 29 or 29 in self.qmc.extradevices) and self.modbus.type in {0, 1, 2}) or
-                            (self.qmc.device == 134 and self.santokerSerial and not self.santokerBLE) or
-                            (self.qmc.device == 138 and self.kaleidoSerial)): # Fuji, Center301, TC4, Hottop, Behmor or MODBUS serial, HB/ARC
-                        select_device_name = None
-                        # as default we offer the current settings serial/modbus port, or if this is set to its default as after a factory reset (self.ser.default_comport or self.modbus.default_comport) we take the one from the machine setup
-                        defaultComPort:str = ((self.modbus.comport if org_modbus_comport == self.modbus.default_comport else org_modbus_comport) if self.qmc.device == 29 else (self.ser.comport if org_comport == self.ser.default_comport else org_comport))
-                        select_modbus_serial_port:bool = self.qmc.device == 29 or (29 in self.qmc.extradevices and self.qmc.device not in {0, 9, 19, 53, 101, 115, 126, 134, 138})
+                    elif self.qmc.device == 138 and self.kaleidoSerial: # Kaleido Serial
+                        defaultComPort:str = (self.ser.comport if org_comport == self.ser.default_comport else org_comport)
                         serial_port_dialog_title:str = QApplication.translate('Message', 'Port Configuration')
-                        if select_modbus_serial_port:
-                            serial_port_dialog_title = f'{serial_port_dialog_title} (MODBUS)'
-                        if self.qmc.device == 53: # Hottop 2k+:
-                            select_device_name = 'FT230X Basic UART'
                         commPort_dlg:ArtisanPortsDialog = ArtisanPortsDialog(self, self,
                             title = serial_port_dialog_title,
-                            selection=defaultComPort, select_device_name=select_device_name)
+                            selection=defaultComPort, select_device_name=None)
                         res = bool(commPort_dlg.exec())
                         if res:
                             new_port = commPort_dlg.getSelection()
                             if new_port is not None:
-                                if select_modbus_serial_port: # MODBUS serial
-                                    self.modbus.comport = new_port
-                                else: # Fuji or HOTTOP
-                                    self.ser.comport = new_port
-                    elif self.qmc.device == 142: # IKAWA
-                        # we request Bluetooth permission
-                        permission_status:bool|None = self.app.getBluetoothPermission(request=True)
-                        if permission_status is False:
-                            message:str = QApplication.translate('Message','Bluetootooth access denied')
-                            QMessageBox.warning(None, #self, # only without super this one shows the native dialog on macOS under Qt 6.6.2 and later
-                                    message, message)
+                                self.ser.comport = new_port
                     if res:
                         if self.qmc.roastersize_setup == 0:
                             batchsize, res2 = QInputDialog.getDouble(self,
@@ -5670,13 +5476,8 @@ class ApplicationWindow(QMainWindow):
                         self.qmc.etypes= org_etypes
                         self.qmc.device = org_device
                         self.qmc.machinesetup = org_machinesetup
-                        self.modbus.host = org_modbus_host
-                        self.s7.host = org_s7_host
-                        self.ws.host = org_ws_host
                         self.kaleidoHost = org_kaleido_host
-                        self.mugmaHost = org_mugma_host
                         self.ser.comport = org_comport
-                        self.modbus.comport = org_modbus_comport
                         self.qmc.roastersize_setup = org_roastersize_setup
                         self.qmc.last_batchsize = org_last_batchsize
                         self.qmc.roastersize = org_roastersize
@@ -6564,13 +6365,7 @@ class ApplicationWindow(QMainWindow):
     def showControlButton(self) -> None:
         res:bool = False
         lcds:bool = False
-        if self.qmc.device in {0, 26}: # FUJI, DTA
-            res = True
-            if self.ser.showFujiLCDs:
-                lcds = True
-#        elif self.qmc.device == 19 and self.qmc.PIDbuttonflag: # ARDUINOTC4
-#            res = True
-        elif self.qmc.Controlbuttonflag:
+        if self.qmc.Controlbuttonflag:
             res = True
         if res:
             self.pidcontrol.activateONOFFeasySV(self.pidcontrol.svButtons)
@@ -6632,10 +6427,10 @@ class ApplicationWindow(QMainWindow):
             self.superusermode = not self.superusermode
             if self.superusermode:
                 self.sendmessage(QApplication.translate('Message','super on'))
-                _log.info('Hottop super on')
+                _log.info('super on')
             else:
                 self.sendmessage(QApplication.translate('Message','super off'))
-                _log.info('Hottop super off')
+                _log.info('super off')
 
     @pyqtSlot(QPoint)
     def PhaseslcdClicked(self, _:QPoint) -> None: # pylint: disable=no-self-use # used as slot
@@ -6677,17 +6472,11 @@ class ApplicationWindow(QMainWindow):
 
     @pyqtSlot(float)
     def adjustPIDsv(self, x:float) -> None:
-        if self.qmc.device == 0: # Fuji PID
-            self.fujipid.adjustsv(x)
-#        elif self.qmc.device == 19: # Arduino TC4
-        else: # Arduino TC4, internal Software PID or MODBUS/S7 external PID
-            self.pidcontrol.adjustsv(x)
+        self.pidcontrol.adjustsv(x)
 
     @pyqtSlot(float)
     def setPIDsv(self, sv:float) -> None:
-        if self.qmc.device == 0 and sv != self.fujipid.sv: # Fuji PID
-            self.fujipid.setsv(sv,silent=True)
-        elif sv != self.pidcontrol.sv:
+        if sv != self.pidcontrol.sv:
             self.pidcontrol.setSV(sv,init=False)
 
     @pyqtSlot(bool)
@@ -7981,10 +7770,7 @@ class ApplicationWindow(QMainWindow):
     @pyqtSlot()
     def sliderSVreleased(self) -> None:
         try:
-            if self.qmc.device == 0:
-                self.fujipid.setsv(self.sliderSV.value(),silent=True)
-            else:
-                self.pidcontrol.setSV(self.sliderSV.value(),False)
+            self.pidcontrol.setSV(self.sliderSV.value(),False)
         except Exception as e: # pylint: disable=broad-except
             _log.exception(e)
 
@@ -8512,6 +8298,10 @@ class ApplicationWindow(QMainWindow):
                     return
 
                 cmd_str = str(cmd)
+
+                # Kaleido-only: skip command actions for removed machines / DAQ
+                if action in {2, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22}:
+                    return
 
                 # we add {BT}, {ET}, {t}ime substitutions for Serial/CallProgram/MODBUS/S7/Artisan/WebSocket command actions
                 if action in {1, 2, 4, 7, 15, 20, 22}:
@@ -11625,12 +11415,8 @@ class ApplicationWindow(QMainWindow):
         if self.largePhasesLCDs_dialog is not None:
             self.largePhasesLCDs_dialog.updateVisiblitiesPhases()
         #
-        if self.ser.showFujiLCDs and self.qmc.device in {0, 26}:         #extra LCDs for Fuji or DTA pid
-            self.LCD6frame.setVisible(True)
-            self.LCD7frame.setVisible(True)
-        else:
-            self.LCD6frame.setVisible(False)
-            self.LCD7frame.setVisible(False)
+        self.LCD6frame.setVisible(False)
+        self.LCD7frame.setVisible(False)
         if self.qmc.LCDdecimalplaces:
             self.setLCDsDigitCount(5)
         else:
@@ -17711,12 +17497,6 @@ class ApplicationWindow(QMainWindow):
             self.qmc.ambient_humidity_device = toInt(settings.value('ambient_humidity_device',self.qmc.ambient_humidity_device))
             self.qmc.ambient_pressure_device = toInt(settings.value('ambient_pressure_device',self.qmc.ambient_pressure_device))
             self.qmc.elevation = toInt(settings.value('elevation',self.qmc.elevation))
-            self.santokerHost = toString(settings.value('santokerHost',self.santokerHost))
-            self.santokerPort = toInt(settings.value('santokerPort',self.santokerPort))
-            self.santokerSerial = toBool(settings.value('santokerSerial',self.santokerSerial))
-            self.santokerBLE = toBool(settings.value('santokerBLE',self.santokerBLE))
-            if settings.contains('santokerEventFlags'):
-                self.santokerEventFlags = [toBool(x) for x in toList(settings.value('santokerEventFlags',self.santokerEventFlags))]
             self.kaleidoHost = toString(settings.value('kaleidoHost',self.kaleidoHost))
             self.kaleidoPort = toInt(settings.value('kaleidoPort',self.kaleidoPort))
             self.kaleidoSerial = toBool(settings.value('kaleidoSerial',self.kaleidoSerial))
@@ -17742,12 +17522,6 @@ class ApplicationWindow(QMainWindow):
                 self.hybridControlBackend, self.buildHybridControllerConfig())
             if settings.contains('kaleidoEventFlags'):
                 self.kaleidoEventFlags = [toBool(x) for x in toList(settings.value('kaleidoEventFlags',self.kaleidoEventFlags))]
-            self.mugmaHost = toString(settings.value('mugmaHost',self.mugmaHost))
-            self.mugmaPort = toInt(settings.value('mugmaPort',self.mugmaPort))
-            self.shelly_3EMPro_host = toString(settings.value('shelly_3EMPro_host',self.shelly_3EMPro_host))
-            self.shelly_PlusPlug_host = toString(settings.value('shelly_PlusPlug_host',self.shelly_PlusPlug_host))
-            self.colorTrack_mean_window_size = toInt(settings.value('ctMean',self.colorTrack_mean_window_size))
-            self.colorTrack_median_window_size = toInt(settings.value('ctMedian',self.colorTrack_median_window_size))
             # activate CONTROL BUTTON
             self.showControlButton()
             self.ser.controlETpid = [toInt(x) for x in toList(settings.value('controlETpid',self.ser.controlETpid))]
@@ -18005,158 +17779,9 @@ class ApplicationWindow(QMainWindow):
             settings.endGroup()
 #--- END GROUP SerialPort
 
-#--- BEGIN GROUP WebSocket
-            #restorer WebSocket port
-            settings.beginGroup('WebSocket')
-            self.ws.compression = toBool(settings.value('compression',self.ws.compression))
-            self.ws.host = toString(settings.value('host',self.ws.host))
-            self.ws.port = toInt(settings.value('port',self.ws.port))
-            self.ws.path = toString(settings.value('path',self.ws.path))
-            self.ws.machineID = toInt(settings.value('machineID',self.ws.machineID))
-            self.ws.connect_timeout = toFloat(settings.value('connect_timeout',self.ws.connect_timeout))
-            self.ws.request_timeout = toFloat(settings.value('request_timeout',self.ws.request_timeout))
-            self.ws.reconnect_interval = toFloat(settings.value('reconnect_interval',self.ws.reconnect_interval))
-            self.ws.id_node = toString(settings.value('id_node',self.ws.id_node))
-            self.ws.machine_node = toString(settings.value('machine_node',self.ws.machine_node))
-            self.ws.command_node = toString(settings.value('command_node',self.ws.command_node))
-            self.ws.data_node = toString(settings.value('data_node',self.ws.data_node))
-            self.ws.pushMessage_node = toString(settings.value('pushMessage_node',self.ws.pushMessage_node))
-            self.ws.request_data_command = toString(settings.value('request_data_command',self.ws.request_data_command))
-            self.ws.charge_message = toString(settings.value('charge_message',self.ws.charge_message))
-            self.ws.drop_message = toString(settings.value('drop_message',self.ws.drop_message))
-            self.ws.STARTonCHARGE = toBool(settings.value('STARTonCHARGE',self.ws.STARTonCHARGE))
-            self.ws.OFFonDROP = toBool(settings.value('OFFonDROP',self.ws.OFFonDROP))
-            self.ws.addEvent_message = toString(settings.value('addEvent_message',self.ws.addEvent_message))
-            self.ws.event_node = toString(settings.value('event_node',self.ws.event_node))
-            self.ws.DRY_node = toString(settings.value('DRY_node',self.ws.DRY_node))
-            self.ws.FCs_node = toString(settings.value('FCs_node',self.ws.FCs_node))
-            self.ws.FCe_node = toString(settings.value('FCe_node',self.ws.FCe_node))
-            self.ws.SCs_node = toString(settings.value('SCs_node',self.ws.SCs_node))
-            self.ws.SCe_node = toString(settings.value('SCe_node',self.ws.SCe_node))
-            self.ws.channel_requests = [toString(x) for x in toList(settings.value('channel_requests',self.ws.channel_requests))]
-            self.ws.channel_requests = self.ws.channel_requests + ['']*(max(0,self.ws.channels - len(self.ws.channel_requests)))
-            self.ws.channel_nodes = [toString(x) for x in toList(settings.value('channel_nodes',self.ws.channel_nodes))]
-            self.ws.channel_nodes = self.ws.channel_nodes + ['']*(max(0,self.ws.channels - len(self.ws.channel_nodes)))
-            self.ws.channel_modes = [toInt(x) for x in toList(settings.value('channel_modes',self.ws.channel_modes))]
-            self.ws.channel_modes = self.ws.channel_modes + [0]*(max(0,self.ws.channels - len(self.ws.channel_modes)))
-            settings.endGroup()
-#--- END GROUP WebSocket
-
-#--- BEGIN GROUP S7
-            #restore s7 port
-            settings.beginGroup('S7')
-            self.s7.area = [toInt(x) for x in toList(settings.value('area',self.s7.area))]
-            self.s7.area = self.s7.area + [0]*(max(0,self.s7.channels - len(self.s7.area)))
-            self.s7.db_nr = [toInt(x) for x in toList(settings.value('db_nr',self.s7.db_nr))]
-            self.s7.db_nr = self.s7.db_nr + [1]*(max(0,self.s7.channels - len(self.s7.db_nr)))
-            self.s7.start = [toInt(x) for x in toList(settings.value('start',self.s7.start))]
-            self.s7.start = self.s7.start + [0]*(max(0,self.s7.channels - len(self.s7.start)))
-            self.s7.type = [toInt(x) for x in toList(settings.value('type',self.s7.type))]
-            self.s7.type = self.s7.type + [0]*(max(0,self.s7.channels - len(self.s7.type)))
-            self.s7.mode = [toInt(x) for x in toList(settings.value('mode',self.s7.mode))]
-            self.s7.mode = self.s7.mode + [0]*(max(0,self.s7.channels - len(self.s7.mode)))
-            self.s7.div = [toInt(x) for x in toList(settings.value('div',self.s7.div))]
-            self.s7.div = self.s7.div + [0]*(max(0,self.s7.channels - len(self.s7.div)))
-            self.s7.host = toString(settings.value('host',self.s7.host))
-            self.s7.port = toInt(settings.value('port',self.s7.port))
-            self.s7.rack = toInt(settings.value('rack',self.s7.rack))
-            self.s7.slot = toInt(settings.value('slot',self.s7.slot))
-            self.s7.PID_area = toInt(settings.value('PID_area',self.s7.PID_area))
-            self.s7.PID_db_nr = toInt(settings.value('PID_db_nr',self.s7.PID_db_nr))
-            self.s7.PID_SV_register = toInt(settings.value('PID_SV_register',self.s7.PID_SV_register))
-            self.s7.PID_p_register = toInt(settings.value('PID_p_register',self.s7.PID_p_register))
-            self.s7.PID_i_register = toInt(settings.value('PID_i_register',self.s7.PID_i_register))
-            self.s7.PID_d_register = toInt(settings.value('PID_d_register',self.s7.PID_d_register))
-            self.s7.PID_OFF_action = s2a(toString(settings.value('PID_OFF_action',self.s7.PID_OFF_action)))
-            self.s7.PID_ON_action = s2a(toString(settings.value('PID_ON_action',self.s7.PID_ON_action)))
-            self.s7.PIDmultiplier = toInt(settings.value('PIDmultiplier',self.s7.PIDmultiplier))
-            self.s7.SVmultiplier = toInt(settings.value('SVmultiplier',self.s7.SVmultiplier))
-            self.s7.SVtype = toInt(settings.value('SVtype',self.s7.SVtype))
-            self.s7.optimizer = toBool(settings.value('optimizer',self.s7.optimizer))
-            self.s7.fetch_max_blocks = toBool(settings.value('fetch_max_blocks',self.s7.fetch_max_blocks))
-            settings.endGroup()
-#--- END GROUP S7
-
-#--- BEGIN GROUP MQTT
-            #restore MQTT port
-            settings.beginGroup('MQTT')
-            self.mqtt.protocol_version = toInt(settings.value('protocol_version',self.mqtt.protocol_version))
-            self.mqtt.transport = toInt(settings.value('transport',self.mqtt.transport))
-            self.mqtt.tls = toBool(settings.value('tls',self.mqtt.tls))
-            self.mqtt.host = toString(settings.value('host',self.mqtt.host))
-            self.mqtt.port = toInt(settings.value('port',self.mqtt.port))
-            self.mqtt.user = toString(settings.value('user',self.mqtt.user))
-            self.mqtt.connect_timeout = toFloat(settings.value('connect_timeout',self.mqtt.connect_timeout))
-            self.mqtt.keepalive = toInt(settings.value('keepalive',self.mqtt.keepalive))
-            self.mqtt.topic = toString(settings.value('topic',self.mqtt.topic))
-            self.mqtt.channel_topics = list(toStringList(settings.value('channel_topics',self.mqtt.channel_topics)))[:self.mqtt.CHANNELS]
-            self.mqtt.channel_topics = self.mqtt.channel_topics + ['']*max(0, self.mqtt.CHANNELS - len(self.mqtt.channel_topics))
-            self.mqtt.channel_nodes = list(toStringList(settings.value('channel_nodes',self.mqtt.channel_nodes)))[:self.mqtt.CHANNELS]
-            self.mqtt.channel_nodes = self.mqtt.channel_nodes + ['']*max(0, self.mqtt.CHANNELS - len(self.mqtt.channel_nodes))
-            self.mqtt.channel_modes = list(toStringList(settings.value('channel_modes',self.mqtt.channel_modes)))[:self.mqtt.CHANNELS]
-            self.mqtt.channel_modes = self.mqtt.channel_modes + ['']*max(0, self.mqtt.CHANNELS - len(self.mqtt.channel_modes))
-            settings.endGroup()
-#--- END GROUP MQTT
-
-            self.mqtt.load_credentials() # if self.mqtt.user is set we try to load the self.mqtt.password from the keychain
 
 
-#--- BEGIN GROUP Modbus
-            #restore modbus port
-            settings.beginGroup('Modbus')
-            self.modbus.comport = s2a(toString(settings.value('comport',self.modbus.comport)))
-            self.modbus.baudrate = toInt(settings.value('baudrate',int(self.modbus.baudrate)))
-            self.modbus.bytesize = toInt(settings.value('bytesize',self.modbus.bytesize))
-            self.modbus.stopbits = toInt(settings.value('stopbits',self.modbus.stopbits))
-            self.modbus.parity = s2a(toString(settings.value('parity',self.modbus.parity)))
-            self.modbus.timeout = max(0.3, float2float(toFloat(settings.value('timeout',self.modbus.timeout)))) # min serial MODBUS timeout is 300ms
-            self.modbus.modbus_serial_connect_delay = toFloat(settings.value('modbus_serial_connect_delay',self.modbus.modbus_serial_connect_delay))
-            self.modbus.serial_readRetries = toInt(settings.value('serial_readRetries',self.modbus.serial_readRetries))
-            self.modbus.IP_timeout = float2float(toFloat(settings.value('IP_timeout',self.modbus.IP_timeout)))
-            self.modbus.IP_retries = toInt(settings.value('IP_retries',self.modbus.IP_retries))
-            for i in range(self.modbus.channels):
-                if settings.contains(f'input{i + 1}slave'):
-                    # setting 'inputXslave' was changed in Artisan >3.2.0 to 'inputXdeviceId'
-                    # to stay compatible with older settings we still keep this around for a moment:
-                    # we still read from both, but write only to the new
-                    # TODO: remove this in v4.0
-                    self.modbus.inputDeviceIds[i] = toInt(settings.value(f'input{i + 1}slave', self.modbus.inputDeviceIds[i]))
-                self.modbus.inputDeviceIds[i] = toInt(settings.value(f'input{i + 1}deviceId', self.modbus.inputDeviceIds[i]))
-                self.modbus.inputRegisters[i] = toInt(settings.value(f'input{i+1}register',self.modbus.inputRegisters[i]))
-                self.modbus.inputFloats[i] = toBool(settings.value(f'input{i+1}float',self.modbus.inputFloats[i]))
-                self.modbus.inputBCDs[i] = toBool(settings.value(f'input{i+1}bcd',self.modbus.inputBCDs[i]))
-                self.modbus.inputCodes[i] = toInt(settings.value(f'input{i+1}code',self.modbus.inputCodes[i]))
-                self.modbus.inputModes[i] = s2a(toString(settings.value(f'input{i+1}mode',self.modbus.inputModes[i])))
-                self.modbus.inputDivs[i] = toInt(settings.value(f'input{i+1}div',self.modbus.inputDivs[i]))
-                self.modbus.inputFloatsAsInt[i] = toBool(settings.value(f'input{i+1}FloatsAsInt',self.modbus.inputFloatsAsInt[i]))
-                self.modbus.inputBCDsAsInt[i] = toBool(settings.value(f'input{i+1}BCDsAsInt',self.modbus.inputBCDsAsInt[i]))
-                self.modbus.inputSigned[i] = toBool(settings.value(f'input{i+1}Signed',self.modbus.inputSigned[i]))
-            self.modbus.wordorderLittle = toBool(settings.value('wordorderLittle',self.modbus.wordorderLittle))
-            self.modbus.optimizer = toBool(settings.value('optimizer',self.modbus.optimizer))
-            self.modbus.fetch_max_blocks = toBool(settings.value('fetch_max_blocks',self.modbus.fetch_max_blocks))
-            self.modbus.PIDmultiplier = toInt(settings.value('PIDmultiplier',self.modbus.PIDmultiplier))
-            self.modbus.SVmultiplier = toInt(settings.value('SVmultiplier',self.modbus.SVmultiplier))
-            self.modbus.SVwriteLong = toBool(settings.value('SVwriteLong',self.modbus.SVwriteLong))
-            self.modbus.SVwriteFloat = toBool(settings.value('SVwriteFloat',self.modbus.SVwriteFloat))
-            if settings.contains('PID_slave_ID'):
-                # setting 'PID_slave_ID' was changed in Artisan >3.2.0 to 'PID_device_ID'
-                # to stay compatible with older settings we still keep this around for a moment:
-                # we still read from both, but write only to the new
-                # TODO: remove this in v4.0
-                self.modbus.PID_device_ID = toInt(settings.value('PID_slave_ID', self.modbus.PID_device_ID))
-            self.modbus.PID_device_ID = toInt(settings.value('PID_device_ID', self.modbus.PID_device_ID))
-            self.modbus.PID_SV_register = toInt(settings.value('PID_SV_register',self.modbus.PID_SV_register))
-            self.modbus.PID_p_register = toInt(settings.value('PID_p_register',self.modbus.PID_p_register))
-            self.modbus.PID_i_register = toInt(settings.value('PID_i_register',self.modbus.PID_i_register))
-            self.modbus.PID_d_register = toInt(settings.value('PID_d_register',self.modbus.PID_d_register))
-            self.modbus.PID_OFF_action = s2a(toString(settings.value('PID_OFF_action',self.modbus.PID_OFF_action)))
-            self.modbus.PID_ON_action = s2a(toString(settings.value('PID_ON_action',self.modbus.PID_ON_action)))
-            #restore MODBUS TCP/UDP settings
-            self.modbus.type = toInt(settings.value('type',self.modbus.type))
-            self.modbus.host = toString(settings.value('host',self.modbus.host))
-            self.modbus.port = toInt(settings.value('port',self.modbus.port))
-            settings.endGroup()
-#--- END GROUP Modbus
+
 
 #--- BEGIN GROUP Alarms
             #restore alarms
@@ -18222,7 +17847,7 @@ class ApplicationWindow(QMainWindow):
 #--- END GROUP Alarms
 
 #--- BEGIN GROUP ArduinoPID
-            #restore TC4/Arduino PID settings
+            #restore TC4/Arduino PID settings (SV slider, software PID, Kaleido warmup SV)
             settings.beginGroup('ArduinoPID')
             self.pidcontrol.pidOnCHARGE = toBool(settings.value('pidOnCHARGE',self.pidcontrol.pidOnCHARGE))
             self.pidcontrol.pidOffDROP = toBool(settings.value('pidOffDROP',self.pidcontrol.pidOffDROP))
@@ -18319,40 +17944,6 @@ class ApplicationWindow(QMainWindow):
             settings.endGroup()
 #--- END GROUP ArduinoPID
 
-#--- BEGIN GROUP PXR
-            #restore pid settings
-            settings.beginGroup('PXR')
-            for k in list(self.fujipid.PXR.keys()):
-                if isinstance(self.fujipid.PXR[k][0], float):
-                    self.fujipid.PXR[k][0] = toFloat(settings.value(k,self.fujipid.PXR[k][0]))
-                elif isinstance(self.fujipid.PXR[k][0], int):
-                    self.fujipid.PXR[k][0] = toInt(settings.value(k,self.fujipid.PXR[k][0]))
-            settings.endGroup()
-#--- END GROUP PXR
-
-#--- BEGIN GROUP PXG4
-            settings.beginGroup('PXG4')
-            for k in list(self.fujipid.PXG4.keys()):
-                if isinstance(self.fujipid.PXG4[k][0], float):
-                    self.fujipid.PXG4[k][0] = toFloat(settings.value(k,self.fujipid.PXG4[k][0]))
-                elif isinstance(self.fujipid.PXG4[k][0], int):
-                    self.fujipid.PXG4[k][0] = toInt(settings.value(k,self.fujipid.PXG4[k][0]))
-            self.fujipid.PXG4['selectsv'][0] = max(1.0, self.fujipid.PXG4['selectsv'][0])
-            self.fujipid.followBackground = toBool(settings.value('followBackground',self.fujipid.followBackground))
-            self.fujipid.lookahead = toInt(settings.value('lookahead',self.fujipid.lookahead))
-            settings.endGroup()
-#--- END GROUP PXG4
-
-#--- BEGIN GROUP deltaDTA
-            if settings.contains('deltaDTA'):
-                settings.beginGroup('deltaDTA')
-                for k in list(self.dtapid.dtamem.keys()):
-                    if isinstance(self.dtapid.dtamem[k][0], float):
-                        self.dtapid.dtamem[k][0] = toFloat(settings.value(k,self.dtapid.dtamem[k][0]))
-                    elif isinstance(self.dtapid.dtamem[k][0], int):
-                        self.dtapid.dtamem[k][0] = toInt(settings.value(k,self.dtapid.dtamem[k][0]))
-                settings.endGroup()
-#--- END GROUP deltaDTA
 
             self.qmc.filterDropOuts = toBool(settings.value('filterDropOuts',self.qmc.filterDropOuts))
             self.qmc.dropSpikes = toBool(settings.value('dropSpikes',self.qmc.dropSpikes))
@@ -18606,10 +18197,6 @@ class ApplicationWindow(QMainWindow):
                 _log.info('machine: %s (%s, %skg, %s)', self.qmc.machinesetup, self.qmc.roastertype_setup, self.qmc.roastersize_setup, ([''] + self.qmc.sourcenames)[self.qmc.roasterheating_setup])
                 _log.info('device: %s (%s extra devices)', (['Fuji PID']+self.qmc.devices)[self.qmc.device], len(self.qmc.extradevices))
                 _log.info('serial: %s @%s', self.ser.comport, self.ser.baudrate)
-                _log.info('MODBUS %s: %s, %s %s%s%s@%s (%s, %s, %s / %s, %s)', ['Serial RTU','Serial ASCII','Serial Binary','TCP','UDP'][self.modbus.type],
-                        self.modbus.host, self.modbus.comport, self.modbus.bytesize, self.modbus.parity, self.modbus.stopbits, self.modbus.baudrate, self.modbus.timeout, self.modbus.modbus_serial_connect_delay, self.modbus.serial_readRetries, self.modbus.IP_timeout, self.modbus.IP_retries)
-                _log.info('S7: %s', self.s7.host)
-                _log.info('WebSocket: %s', self.ws.host)
             except Exception as e: # pylint: disable=broad-except
                 _log.error(e)
 
@@ -18880,54 +18467,6 @@ class ApplicationWindow(QMainWindow):
             settings.endGroup()
 #--- END GROUP Tasks
 
-#--- BEGIN GROUP Scales
-            # Scales
-            settings.beginGroup('Scales')
-            self.custom_scale_ids = list(toStringList(settings.value('custom_scale_ids',self.custom_scale_ids)))
-            self.custom_scale_names = list(toStringList(settings.value('custom_scale_names',self.custom_scale_names)))
-            if settings.contains('scale1_model'):
-                try:
-                    self.scale1_model = toInt(settings.value('scale1_model',self.scale1_model))
-                except Exception: # pylint: disable=broad-except
-                    self.scale1_model = None
-            if settings.contains('scale1_name'):
-                try:
-                    self.scale1_name = toString(settings.value('scale1_name',self.scale1_name))
-                except Exception: # pylint: disable=broad-except
-                    self.scale1_name = None
-            if settings.contains('scale1_id'):
-                try:
-                    self.scale1_id = settings.value('scale1_id',self.scale1_id)
-                except Exception: # pylint: disable=broad-except
-                    self.scale1_id = None
-            self.container1_idx = toInt(settings.value('container1_idx',int(self.container1_idx)))
-            self.two_bucket_mode = toBool(settings.value('two_bucket_mode',int(self.two_bucket_mode)))
-            self.green_task_precision = toFloat(settings.value('green_task_precision', self.green_task_precision))
-            if settings.contains('scale2_model'):
-                try:
-                    self.scale2_model = toInt(settings.value('scale2_model',self.scale2_model))
-                except Exception: # pylint: disable=broad-except
-                    self.scale2_model = None
-            if settings.contains('scale2_name'):
-                try:
-                    self.scale2_name = toString(settings.value('scale2_name',self.scale2_name))
-                except Exception: # pylint: disable=broad-except
-                    self.scale2_name = None
-            if settings.contains('scale2_id'):
-                try:
-                    self.scale2_id = settings.value('scale2_id',self.scale2_id)
-                except Exception: # pylint: disable=broad-except
-                    self.scale2_id = None
-            self.container2_idx = toInt(settings.value('container2_idx',int(self.container2_idx)))
-            settings.endGroup()
-
-            # configure the two scales according to the settings just loaded
-            if self.scale1_model is not None and self.scale1_id is not None and self.scale1_name is not None:
-                self.scale_manager.set_scale1_signal.emit(self.scale1_model, self.scale1_id, self.scale1_name)
-            if self.scale2_model is not None and self.scale2_id is not None and self.scale2_name is not None:
-                self.scale_manager.set_scale2_signal.emit(self.scale2_model, self.scale2_id, self.scale2_name)
-
-#--- END GROUP Scales
 
             self.LargeLCDsFlag = toBool(settings.value('LargeLCDs',self.LargeLCDsFlag))
             if self.LargeLCDsFlag:
@@ -19741,11 +19280,6 @@ class ApplicationWindow(QMainWindow):
             self.settingsSetValue(settings, default_settings, 'ambient_humidity_device',self.qmc.ambient_humidity_device, read_defaults)
             self.settingsSetValue(settings, default_settings, 'ambient_pressure_device',self.qmc.ambient_pressure_device, read_defaults)
             self.settingsSetValue(settings, default_settings, 'elevation',self.qmc.elevation, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'santokerHost',self.santokerHost, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'santokerPort',self.santokerPort, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'santokerSerial',self.santokerSerial, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'santokerBLE',self.santokerBLE, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'santokerEventFlags',self.santokerEventFlags, read_defaults)
             self.settingsSetValue(settings, default_settings, 'kaleidoHost',self.kaleidoHost, read_defaults)
             self.settingsSetValue(settings, default_settings, 'kaleidoPort',self.kaleidoPort, read_defaults)
             self.settingsSetValue(settings, default_settings, 'kaleidoSerial',self.kaleidoSerial, read_defaults)
@@ -19765,12 +19299,6 @@ class ApplicationWindow(QMainWindow):
             self.settingsSetValue(settings, default_settings, 'hybridCrashRorMargin',self.hybridCrashRorMargin, read_defaults)
             self.settingsSetValue(settings, default_settings, 'hybridCrashFcGain',self.hybridCrashFcGain, read_defaults)
             self.settingsSetValue(settings, default_settings, 'kaleidoEventFlags',self.kaleidoEventFlags, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'mugmaHost',self.mugmaHost, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'mugmaPort',self.mugmaPort, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'shelly_3EMPro_host',self.shelly_3EMPro_host, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'shelly_PlusPlug_host',self.shelly_PlusPlug_host, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'ctMean',self.colorTrack_mean_window_size, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'ctMedian',self.colorTrack_median_window_size, read_defaults)
             settings.endGroup()
 #--- END GROUP System
 
@@ -19934,236 +19462,14 @@ class ApplicationWindow(QMainWindow):
             settings.endGroup()
 #--- END GROUP SerialPort
 
-#--- BEGIN GROUP WebSocket
-            #save WebSocket port
-            settings.beginGroup('WebSocket')
-            self.settingsSetValue(settings, default_settings, 'compression',self.ws.compression, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'host',self.ws.host, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'port',self.ws.port, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'path',self.ws.path, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'machineID',self.ws.machineID, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'connect_timeout',self.ws.connect_timeout, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'request_timeout',self.ws.request_timeout, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'reconnect_interval',self.ws.reconnect_interval, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'id_node',self.ws.id_node, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'machine_node',self.ws.machine_node, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'command_node',self.ws.command_node, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'data_node',self.ws.data_node, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pushMessage_node',self.ws.pushMessage_node, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'request_data_command',self.ws.request_data_command, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'charge_message',self.ws.charge_message, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'drop_message',self.ws.drop_message, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'STARTonCHARGE',self.ws.STARTonCHARGE, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'OFFonDROP',self.ws.OFFonDROP, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'addEvent_message',self.ws.addEvent_message, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'event_node',self.ws.event_node, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'DRY_node',self.ws.DRY_node, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'FCs_node',self.ws.FCs_node, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'FCe_node',self.ws.FCe_node, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'SCs_node',self.ws.SCs_node, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'SCe_node',self.ws.SCe_node, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'channel_requests',self.ws.channel_requests, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'channel_nodes',self.ws.channel_nodes, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'channel_modes',self.ws.channel_modes, read_defaults)
-            settings.endGroup()
-#--- END GROUP WebSocket
-
-#--- BEGIN GROUP S7
-            #save s7 port
-            settings.beginGroup('S7')
-            self.settingsSetValue(settings, default_settings, 'area',self.s7.area, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'db_nr',self.s7.db_nr, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'start',self.s7.start, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'type',self.s7.type, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'mode',self.s7.mode, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'div',self.s7.div, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'host',self.s7.host, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'port',self.s7.port, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'rack',self.s7.rack, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'slot',self.s7.slot, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_area',self.s7.PID_area, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_db_nr',self.s7.PID_db_nr, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_SV_register',self.s7.PID_SV_register, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_p_register',self.s7.PID_p_register, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_i_register',self.s7.PID_i_register, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_d_register',self.s7.PID_d_register, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_OFF_action',self.s7.PID_OFF_action, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_ON_action',self.s7.PID_ON_action, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PIDmultiplier',self.s7.PIDmultiplier, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'SVtype',self.s7.SVtype, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'SVmultiplier',self.s7.SVmultiplier, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'optimizer',self.s7.optimizer, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'fetch_max_blocks',self.s7.fetch_max_blocks, read_defaults)
-            settings.endGroup()
-#--- END GROUP S7
-
-#--- BEGIN GROUP MQTT
-            #restore MQTT port
-            settings.beginGroup('MQTT')
-            self.settingsSetValue(settings, default_settings, 'protocol_version',self.mqtt.protocol_version, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'transport',self.mqtt.transport, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'tls',self.mqtt.tls, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'host',self.mqtt.host, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'port',self.mqtt.port, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'user',self.mqtt.user, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'connect_timeout',self.mqtt.connect_timeout, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'keepalive',self.mqtt.keepalive, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'topic',self.mqtt.topic, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'channel_topics',self.mqtt.channel_topics, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'channel_nodes',self.mqtt.channel_nodes, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'channel_modes',self.mqtt.channel_modes, read_defaults)
-            settings.endGroup()
-#--- END GROUP MQTT
-
-#--- BEGIN GROUP Modbus
-            #save modbus port
-            settings.beginGroup('Modbus')
-            self.settingsSetValue(settings, default_settings, 'comport',self.modbus.comport, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'baudrate',self.modbus.baudrate, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'bytesize',self.modbus.bytesize, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'stopbits',self.modbus.stopbits, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'parity',self.modbus.parity, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'timeout',self.modbus.timeout, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'modbus_serial_connect_delay',self.modbus.modbus_serial_connect_delay, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'serial_readRetries',self.modbus.serial_readRetries, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'IP_timeout',self.modbus.IP_timeout, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'IP_retries',self.modbus.IP_retries, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_device_ID', self.modbus.PID_device_ID, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_SV_register',self.modbus.PID_SV_register, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_p_register',self.modbus.PID_p_register, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_i_register',self.modbus.PID_i_register, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_d_register',self.modbus.PID_d_register, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_OFF_action',self.modbus.PID_OFF_action, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PID_ON_action',self.modbus.PID_ON_action, read_defaults)
-            for i in range(self.modbus.channels):
-                self.settingsSetValue(settings, default_settings, f'input{i+1}deviceId', self.modbus.inputDeviceIds[i], read_defaults)
-                self.settingsSetValue(settings, default_settings, f'input{i+1}register',self.modbus.inputRegisters[i], read_defaults)
-                self.settingsSetValue(settings, default_settings, f'input{i+1}float',self.modbus.inputFloats[i], read_defaults)
-                self.settingsSetValue(settings, default_settings, f'input{i+1}bcd',self.modbus.inputBCDs[i], read_defaults)
-                self.settingsSetValue(settings, default_settings, f'input{i+1}code',self.modbus.inputCodes[i], read_defaults)
-                self.settingsSetValue(settings, default_settings, f'input{i+1}div',self.modbus.inputDivs[i], read_defaults)
-                self.settingsSetValue(settings, default_settings, f'input{i+1}mode',self.modbus.inputModes[i], read_defaults)
-                self.settingsSetValue(settings, default_settings, f'input{i+1}FloatsAsInt',self.modbus.inputFloatsAsInt[i], read_defaults)
-                self.settingsSetValue(settings, default_settings, f'input{i+1}BCDsAsInt',self.modbus.inputBCDsAsInt[i], read_defaults)
-                self.settingsSetValue(settings, default_settings, f'input{i+1}Signed',self.modbus.inputSigned[i], read_defaults)
-            self.settingsSetValue(settings, default_settings, 'PIDmultiplier',self.modbus.PIDmultiplier, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'SVmultiplier',self.modbus.SVmultiplier, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'SVwriteLong',self.modbus.SVwriteLong, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'SVwriteFloat',self.modbus.SVwriteFloat, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'wordorderLittle',self.modbus.wordorderLittle, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'optimizer',self.modbus.optimizer, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'fetch_max_blocks',self.modbus.fetch_max_blocks, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'type',self.modbus.type, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'host',self.modbus.host, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'port',self.modbus.port, read_defaults)
-            settings.endGroup()
-#--- END GROUP Modbus
-
-#--- BEGIN GROUP ArduinoPID
-            #save pid settings (only key and value[0])
-            settings.beginGroup('ArduinoPID')
-            self.settingsSetValue(settings, default_settings, 'pidOnCHARGE',self.pidcontrol.pidOnCHARGE, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidOffDROP',self.pidcontrol.pidOffDROP, read_defaults)
-#            self.settingsSetValue(settings, default_settings, 'RStimeAfterCHARGE',self.pidcontrol.RStimeAfterCHARGE, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'loadpidfrombackground',self.pidcontrol.loadpidfrombackground, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'createEvents',self.pidcontrol.createEvents, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'loadRampSoakFromProfile',self.pidcontrol.loadRampSoakFromProfile, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'loadRampSoakFromBackground',self.pidcontrol.loadRampSoakFromBackground, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svLabel',self.pidcontrol.svLabel, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svValues',self.pidcontrol.svValues, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svRamps',self.pidcontrol.svRamps, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svSoaks',self.pidcontrol.svSoaks, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svActions',self.pidcontrol.svActions, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svBeeps',self.pidcontrol.svBeeps, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svDescriptions',self.pidcontrol.svDescriptions, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svSlider',self.pidcontrol.svSlider, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svButtons',self.pidcontrol.svButtons, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svMode',self.pidcontrol.svMode, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svLookahead',self.pidcontrol.svLookahead, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'dutySteps',self.pidcontrol.dutySteps, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svSliderMin',self.pidcontrol.svSliderMin, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svSliderMax',self.pidcontrol.svSliderMax, read_defaults)
-            sv = max(min(self.pidcontrol.svValue, self.pidcontrol.svSliderMax), self.pidcontrol.svSliderMin)
-            self.settingsSetValue(settings, default_settings, 'svValue',sv, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'svSync',self.pidcontrol.svSync, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'dutyMin',self.pidcontrol.dutyMin, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'dutyMax',self.pidcontrol.dutyMax, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'positiveTargetRangeLimit',self.pidcontrol.positiveTargetRangeLimit, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'positiveTargetMin',self.pidcontrol.positiveTargetMin, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'positiveTargetMax',self.pidcontrol.positiveTargetMax, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'negativeTargetRangeLimit',self.pidcontrol.negativeTargetRangeLimit, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'negativeTargetMin',self.pidcontrol.negativeTargetMin, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'negativeTargetMax',self.pidcontrol.negativeTargetMax, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'derivative_filter',self.pidcontrol.derivative_filter, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'duty_filter',self.pidcontrol.duty_filter, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'sv_filter',self.pidcontrol.sv_filter, read_defaults)
-            #-
-            self.settingsSetValue(settings, default_settings, 'pidKp',self.pidcontrol.pidKp, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidKi',self.pidcontrol.pidKi, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidKd',self.pidcontrol.pidKd, read_defaults)
-            #-
-            self.settingsSetValue(settings, default_settings, 'pidKp1',self.pidcontrol.pidKp1, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidKi1',self.pidcontrol.pidKi1, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidKd1',self.pidcontrol.pidKd1, read_defaults)
-            #-
-            self.settingsSetValue(settings, default_settings, 'pidKp2',self.pidcontrol.pidKp2, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidKi2',self.pidcontrol.pidKi2, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidKd2',self.pidcontrol.pidKd2, read_defaults)
-            #-
-            self.settingsSetValue(settings, default_settings, 'pidSchedule0',self.pidcontrol.pidSchedule0, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidSchedule1',self.pidcontrol.pidSchedule1, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidSchedule2',self.pidcontrol.pidSchedule2, read_defaults)
-            #-
-            self.settingsSetValue(settings, default_settings, 'pidGainScheduling',self.pidcontrol.pidGainScheduling, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidGainSchedulingSV',self.pidcontrol.pidGainSchedulingSV, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidGainSchedulingQuadratic',self.pidcontrol.pidGainSchedulingQuadratic, read_defaults)
-            #-
-            self.settingsSetValue(settings, default_settings, 'pidPsetpointWeight',self.pidcontrol.pidPsetpointWeight, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidDsetpointWeight',self.pidcontrol.pidDsetpointWeight, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidDlimit',self.pidcontrol.pidDlimit, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidIlimitFactor',self.pidcontrol.pidIlimitFactor, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidIWP',self.pidcontrol.pidIWP, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidIRoC',self.pidcontrol.pidIRoC, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidIRoCthreshold',self.pidcontrol.pidIRoCthreshold, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidSource',self.pidcontrol.pidSource, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidCycle',self.pidcontrol.pidCycle, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidPositiveTarget',self.pidcontrol.pidPositiveTarget, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'pidNegativeTarget',self.pidcontrol.pidNegativeTarget, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'invertControl',self.pidcontrol.invertControl, read_defaults)
-            for n in range(self.pidcontrol.RSLen):
-                self.settingsSetValue(settings, default_settings, 'RS_svLabel'+str(n),self.pidcontrol.RS_svLabels[n], read_defaults)
-                self.settingsSetValue(settings, default_settings, 'RS_svValues'+str(n),self.pidcontrol.RS_svValues[n], read_defaults)
-                self.settingsSetValue(settings, default_settings, 'RS_svRamps'+str(n),self.pidcontrol.RS_svRamps[n], read_defaults)
-                self.settingsSetValue(settings, default_settings, 'RS_svSoaks'+str(n),self.pidcontrol.RS_svSoaks[n], read_defaults)
-                self.settingsSetValue(settings, default_settings, 'RS_svActions'+str(n),self.pidcontrol.RS_svActions[n], read_defaults)
-                self.settingsSetValue(settings, default_settings, 'RS_svBeeps'+str(n),self.pidcontrol.RS_svBeeps[n], read_defaults)
-                self.settingsSetValue(settings, default_settings, 'RS_svDescriptions'+str(n),self.pidcontrol.RS_svDescriptions[n], read_defaults)
-            settings.endGroup()
-#--- END GROUP ArduinoPID
 
 
-#--- BEGIN GROUP PXR
-            settings.beginGroup('PXR')
-            for k in list(self.fujipid.PXR.keys()):
-                self.settingsSetValue(settings, default_settings, k,self.fujipid.PXR[k][0], read_defaults)
-            settings.endGroup()
-#--- END GROUP PXR
 
-#--- BEGIN GROUP PXG4
-            settings.beginGroup('PXG4')
-            for k in list(self.fujipid.PXG4.keys()):
-                self.settingsSetValue(settings, default_settings, k,self.fujipid.PXG4[k][0], read_defaults)
-            self.settingsSetValue(settings, default_settings, 'followBackground',self.fujipid.followBackground, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'lookahead',self.fujipid.lookahead, read_defaults)
-            settings.endGroup()
-#--- END GROUP PXG4
 
-#--- BEGIN GROUP deltaDTA
-            settings.beginGroup('deltaDTA')
-            for k in list(self.dtapid.dtamem.keys()):
-                self.settingsSetValue(settings, default_settings, k,self.dtapid.dtamem[k][0], read_defaults)
-            settings.endGroup()
-#--- END GROUP deltaDTA
+
+
+
+
 
             self.settingsSetValue(settings, default_settings, 'filterDropOuts',self.qmc.filterDropOuts, read_defaults)
             self.settingsSetValue(settings, default_settings, 'dropSpikes',self.qmc.dropSpikes, read_defaults)
@@ -20389,6 +19695,88 @@ class ApplicationWindow(QMainWindow):
             settings.endGroup()
 #--- END GROUP Alarms
 
+#--- BEGIN GROUP ArduinoPID
+            #save pid settings (only key and value[0])
+            settings.beginGroup('ArduinoPID')
+            self.settingsSetValue(settings, default_settings, 'pidOnCHARGE',self.pidcontrol.pidOnCHARGE, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidOffDROP',self.pidcontrol.pidOffDROP, read_defaults)
+#            self.settingsSetValue(settings, default_settings, 'RStimeAfterCHARGE',self.pidcontrol.RStimeAfterCHARGE, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'loadpidfrombackground',self.pidcontrol.loadpidfrombackground, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'createEvents',self.pidcontrol.createEvents, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'loadRampSoakFromProfile',self.pidcontrol.loadRampSoakFromProfile, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'loadRampSoakFromBackground',self.pidcontrol.loadRampSoakFromBackground, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svLabel',self.pidcontrol.svLabel, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svValues',self.pidcontrol.svValues, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svRamps',self.pidcontrol.svRamps, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svSoaks',self.pidcontrol.svSoaks, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svActions',self.pidcontrol.svActions, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svBeeps',self.pidcontrol.svBeeps, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svDescriptions',self.pidcontrol.svDescriptions, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svSlider',self.pidcontrol.svSlider, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svButtons',self.pidcontrol.svButtons, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svMode',self.pidcontrol.svMode, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svLookahead',self.pidcontrol.svLookahead, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'dutySteps',self.pidcontrol.dutySteps, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svSliderMin',self.pidcontrol.svSliderMin, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svSliderMax',self.pidcontrol.svSliderMax, read_defaults)
+            sv = max(min(self.pidcontrol.svValue, self.pidcontrol.svSliderMax), self.pidcontrol.svSliderMin)
+            self.settingsSetValue(settings, default_settings, 'svValue',sv, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'svSync',self.pidcontrol.svSync, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'dutyMin',self.pidcontrol.dutyMin, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'dutyMax',self.pidcontrol.dutyMax, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'positiveTargetRangeLimit',self.pidcontrol.positiveTargetRangeLimit, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'positiveTargetMin',self.pidcontrol.positiveTargetMin, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'positiveTargetMax',self.pidcontrol.positiveTargetMax, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'negativeTargetRangeLimit',self.pidcontrol.negativeTargetRangeLimit, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'negativeTargetMin',self.pidcontrol.negativeTargetMin, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'negativeTargetMax',self.pidcontrol.negativeTargetMax, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'derivative_filter',self.pidcontrol.derivative_filter, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'duty_filter',self.pidcontrol.duty_filter, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'sv_filter',self.pidcontrol.sv_filter, read_defaults)
+            #-
+            self.settingsSetValue(settings, default_settings, 'pidKp',self.pidcontrol.pidKp, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidKi',self.pidcontrol.pidKi, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidKd',self.pidcontrol.pidKd, read_defaults)
+            #-
+            self.settingsSetValue(settings, default_settings, 'pidKp1',self.pidcontrol.pidKp1, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidKi1',self.pidcontrol.pidKi1, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidKd1',self.pidcontrol.pidKd1, read_defaults)
+            #-
+            self.settingsSetValue(settings, default_settings, 'pidKp2',self.pidcontrol.pidKp2, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidKi2',self.pidcontrol.pidKi2, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidKd2',self.pidcontrol.pidKd2, read_defaults)
+            #-
+            self.settingsSetValue(settings, default_settings, 'pidSchedule0',self.pidcontrol.pidSchedule0, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidSchedule1',self.pidcontrol.pidSchedule1, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidSchedule2',self.pidcontrol.pidSchedule2, read_defaults)
+            #-
+            self.settingsSetValue(settings, default_settings, 'pidGainScheduling',self.pidcontrol.pidGainScheduling, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidGainSchedulingSV',self.pidcontrol.pidGainSchedulingSV, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidGainSchedulingQuadratic',self.pidcontrol.pidGainSchedulingQuadratic, read_defaults)
+            #-
+            self.settingsSetValue(settings, default_settings, 'pidPsetpointWeight',self.pidcontrol.pidPsetpointWeight, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidDsetpointWeight',self.pidcontrol.pidDsetpointWeight, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidDlimit',self.pidcontrol.pidDlimit, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidIlimitFactor',self.pidcontrol.pidIlimitFactor, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidIWP',self.pidcontrol.pidIWP, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidIRoC',self.pidcontrol.pidIRoC, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidIRoCthreshold',self.pidcontrol.pidIRoCthreshold, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidSource',self.pidcontrol.pidSource, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidCycle',self.pidcontrol.pidCycle, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidPositiveTarget',self.pidcontrol.pidPositiveTarget, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'pidNegativeTarget',self.pidcontrol.pidNegativeTarget, read_defaults)
+            self.settingsSetValue(settings, default_settings, 'invertControl',self.pidcontrol.invertControl, read_defaults)
+            for n in range(self.pidcontrol.RSLen):
+                self.settingsSetValue(settings, default_settings, 'RS_svLabel'+str(n),self.pidcontrol.RS_svLabels[n], read_defaults)
+                self.settingsSetValue(settings, default_settings, 'RS_svValues'+str(n),self.pidcontrol.RS_svValues[n], read_defaults)
+                self.settingsSetValue(settings, default_settings, 'RS_svRamps'+str(n),self.pidcontrol.RS_svRamps[n], read_defaults)
+                self.settingsSetValue(settings, default_settings, 'RS_svSoaks'+str(n),self.pidcontrol.RS_svSoaks[n], read_defaults)
+                self.settingsSetValue(settings, default_settings, 'RS_svActions'+str(n),self.pidcontrol.RS_svActions[n], read_defaults)
+                self.settingsSetValue(settings, default_settings, 'RS_svBeeps'+str(n),self.pidcontrol.RS_svBeeps[n], read_defaults)
+                self.settingsSetValue(settings, default_settings, 'RS_svDescriptions'+str(n),self.pidcontrol.RS_svDescriptions[n], read_defaults)
+            settings.endGroup()
+#--- END GROUP ArduinoPID
+
             self.settingsSetValue(settings, default_settings, 'profilepath',self.userprofilepath, read_defaults)
             self.settingsSetValue(settings, default_settings, 'settingspath',self.settingspath, read_defaults)
             self.settingsSetValue(settings, default_settings, 'wheelpath',self.wheelpath, read_defaults)
@@ -20536,23 +19924,6 @@ class ApplicationWindow(QMainWindow):
             settings.endGroup()
 #--- END GROUP Tasks
 
-#--- BEGIN GROUP Scales
-            # Scales
-            settings.beginGroup('Scales')
-            self.settingsSetValue(settings, default_settings, 'custom_scale_ids',self.custom_scale_ids, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'custom_scale_names',self.custom_scale_names, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'scale1_model',self.scale1_model, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'scale1_name',self.scale1_name, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'scale1_id',self.scale1_id, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'container1_idx',self.container1_idx, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'two_bucket_mode',self.two_bucket_mode, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'green_task_precision',self.green_task_precision, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'scale2_model',self.scale2_model, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'scale2_name',self.scale2_name, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'scale2_id',self.scale2_id, read_defaults)
-            self.settingsSetValue(settings, default_settings, 'container2_idx',self.container2_idx, read_defaults)
-            settings.endGroup()
-#--- END GROUP Scales
 
             self.settingsSetValue(settings, default_settings, 'LargeLCDs',self.LargeLCDsFlag, read_defaults)
             self.settingsSetValue(settings, default_settings, 'LargeDeltaLCDs',self.LargeDeltaLCDsFlag, read_defaults)
@@ -20755,38 +20126,15 @@ class ApplicationWindow(QMainWindow):
 
 
     def stopActivities(self) -> None:
-        # disconnect connected scales
-        self.scale_manager.disconnect_all_signal.emit()
-
         if self.full_screen_mode_active:
             if self.fullscreenAction is not None and not (platform.system() == 'Darwin' and self.qmc.locale_str == 'en'):
                 self.fullscreenAction.setChecked(False)
             self.showNormal()
         if self.simulator is None:
-            if self.qmc.device == 53 and self.hottop is not None:
-                # disconnect HOTTOP
-                self.hottop.stop()
-                self.hottop = None
-            elif self.qmc.device == 134 and self.santoker is not None:
-                # disconnect Santoker
-                self.santoker.stop()
-                self.santoker = None
-            elif self.qmc.device == 171 and self.santokerR is not None:
-                # disconnect Santoker R
-                self.santokerR.stop()
-                self.santokerR = None
-            elif self.qmc.device == 175 and self.thermoworksBlueDOT is not None:
-                # disconnect BlueDOT
-                self.thermoworksBlueDOT.stop()
-                self.thermoworksBlueDOT = None
-            elif self.qmc.device == 138 and self.kaleido is not None:
+            if self.qmc.device == 138 and self.kaleido is not None:
                 # disconnect Kaleido
                 self.kaleido.stop()
                 self.kaleido = None
-            elif self.qmc.device == 164 and self.mugma is not None:
-                # disconnect Mugma
-                self.mugma.stop()
-                self.mugma = None
 
         if self.qmc.flagon:
             self.qmc.ToggleMonitor()
@@ -20800,11 +20148,6 @@ class ApplicationWindow(QMainWindow):
         if self.taskWebDisplayRoastedActive:
             self.stopWebRoasted()
             self.taskWebDisplayRoastedActive = True # to ensure they are started again on restart
-
-        try:
-            self.scale_manager.disconnect_all_slot()
-        except Exception as e: # pylint: disable=broad-except
-            _log.exception(e)
 
         if self.LargeLCDsFlag and self.largeLCDs_dialog:
             tmp_LargeLCDs = self.LargeLCDsFlag # we keep the state to properly store it in the settings
@@ -20910,16 +20253,6 @@ class ApplicationWindow(QMainWindow):
                     libtime.sleep(0.7) # on OS X opening a serial port too fast after closing the port gets disabled
             except Exception as e: # pylint: disable=broad-except
                 _log.exception(e)
-        # close modbus port
-        self.modbus.disconnect()
-        # close s7 port
-        self.s7.disconnect()
-#        # close color meter port
-#        try:
-#            if self.color:
-#                self.color.closeport()
-#        except Exception as e: # pylint: disable=broad-except
-#            _log.exception(e)
 
     @pyqtSlot()
     @pyqtSlot(bool)
@@ -23927,23 +23260,6 @@ class ApplicationWindow(QMainWindow):
         if __build__ != '0': # pyright:ignore[reportUnnecessaryComparison]
             build = ' build ' + __build__
         name:str = (application_viewer_display_name if self.app.artisanviewerMode else application_display_name)
-        otherlibs:str = ''
-        try:
-            from Phidget22.Phidget import Phidget as PhidgetDriver # type: ignore[import-untyped]
-            phidgetlibversion = PhidgetDriver.getLibraryVersion()
-            otherlibs += ', ' + phidgetlibversion
-        except Exception as e: # pylint: disable=broad-except
-            _log.debug(e)
-        try:
-            from Phidget22 import __version__ as phidget_lib_version # type: ignore[import-untyped] # @UnresolvedImport
-            otherlibs += f' ({phidget_lib_version})'
-        except Exception: # pylint: disable=broad-except
-            pass
-        try:
-            yocto_version = YAPI.GetAPIVersion() # type:ignore[reportPossibleUnboundVariable,unused-ignore]
-            otherlibs += ', Yoctopuce ' + yocto_version
-        except Exception as e: # pylint: disable=broad-except
-            _log.exception(e)
         revision:str = f' ({str(__revision__)})' if str(__revision__) != '' else ''
         github:str = '<a href="https://github.com/BrendenWalker/kaleido_scope">https://github.com/BrendenWalker/kaleido_scope</a>'
         license_link:str = '<a href="http://www.gnu.org/copyleft/gpl.html">GNU Public Licence (GPLv3.0)</a>'
@@ -23951,7 +23267,7 @@ class ApplicationWindow(QMainWindow):
                 QApplication.translate('About', 'About'),
                 f"""<h2>{name} {__version__}{build}{revision}</h2>
                 <p>
-                <small>Python {platform.python_version()}, Qt {qVersion}, PyQt {PYQT_VERSION_STR}, Matplotlib {mpl.__version__}, NumPy {numpy.__version__}, SciPy {SCIPY_VERSION_STR}, pymodbus {PYMODBUS_VERSION_STR}{otherlibs}</small>
+                <small>Python {platform.python_version()}, Qt {qVersion}, PyQt {PYQT_VERSION_STR}, Matplotlib {mpl.__version__}, NumPy {numpy.__version__}, SciPy {SCIPY_VERSION_STR}, pymodbus {PYMODBUS_VERSION_STR}</small>
                 </p>
                 <p>{github}</p>
                 <p><b>{QApplication.translate('About', 'License')}</b><br><small>{license_link}</small></p>
@@ -24005,10 +23321,6 @@ class ApplicationWindow(QMainWindow):
         from artisanlib.ports import comportDlg
         dialog = comportDlg(self,self)
         if dialog.exec():
-            # we stop the HOTTOP loop to trigger a new connect with the potential changed serial port settings
-            if self.qmc.device == 53 and self.hottop:
-                # disconnect HOTTOP
-                self.hottop.stop()
             # set serial port
             try:
                 self.ser.comport = str(dialog.comportEdit.getSelection())
@@ -24017,237 +23329,6 @@ class ApplicationWindow(QMainWindow):
                 self.ser.stopbits = toInt(str(dialog.stopbitsComboBox.currentText()))
                 self.ser.parity = str(dialog.parityComboBox.currentText())
                 self.ser.timeout = float2float(toFloat(comma2dot(str(dialog.timeoutEdit.text()))))
-            except Exception as e: # pylint: disable=broad-except
-                _log.exception(e)
-            # set modbus port
-            try:
-                self.modbus.comport = str(dialog.modbus_comportEdit.getSelection())
-                self.modbus.baudrate = toInt(str(dialog.modbus_baudrateComboBox.currentText()))              #int changes QString to int
-                self.modbus.bytesize = toInt(str(dialog.modbus_bytesizeComboBox.currentText()))
-                self.modbus.stopbits = toInt(str(dialog.modbus_stopbitsComboBox.currentText()))
-                self.modbus.parity = str(dialog.modbus_parityComboBox.currentText())
-                self.modbus.timeout = max(0.3, float2float(toFloat(str(dialog.modbus_timeoutEdit.text()))))  # minimum serial timeout should be 300ms
-            except Exception as e: # pylint: disable=broad-except
-                _log.exception(e)
-            try:
-                self.modbus.modbus_serial_connect_delay = float2float(toFloat(dialog.modbus_Serial_delayEdit.text()))
-            except Exception as e: # pylint: disable=broad-except
-                _log.exception(e)
-            self.modbus.serial_readRetries = dialog.modbus_Serial_retriesComboBox.currentIndex()
-            try:
-                self.modbus.IP_timeout = float2float(toFloat(str(dialog.modbus_IP_timeoutEdit.text())))
-            except Exception: # pylint: disable=broad-except
-                pass
-            try:
-                self.modbus.IP_retries = dialog.modbus_IP_retriesComboBox.currentIndex()
-                self.modbus.PID_device_ID = toInt(str(dialog.modbus_PIDdevice_Edit.text()))
-                self.modbus.PID_SV_register = toInt(str(dialog.modbus_SVregister_Edit.text()))
-                self.modbus.PID_p_register = toInt(str(dialog.modbus_Pregister_Edit.text()))
-                self.modbus.PID_i_register = toInt(str(dialog.modbus_Iregister_Edit.text()))
-                self.modbus.PID_d_register = toInt(str(dialog.modbus_Dregister_Edit.text()))
-                self.modbus.PID_OFF_action = s2a(toString(dialog.modbus_pid_off.text()))
-                self.modbus.PID_ON_action = s2a(toString(dialog.modbus_pid_on.text()))
-            except Exception as e: # pylint: disable=broad-except
-                _log.exception(e)
-
-            for i in range(self.modbus.channels):
-                try:
-                    inputDeviceEdit = dialog.modbus_inputDeviceEdits[i]
-                    if inputDeviceEdit is not None:
-                        self.modbus.inputDeviceIds[i] = toInt(inputDeviceEdit.text())
-                except Exception: # pylint: disable=broad-except
-                    self.modbus.inputDeviceIds[i] = 0
-                try:
-                    inputRegisterEdit = dialog.modbus_inputRegisterEdits[i]
-                    if inputRegisterEdit is not None:
-                        self.modbus.inputRegisters[i] = int(inputRegisterEdit.text())
-                except Exception: # pylint: disable=broad-except
-                    self.modbus.inputRegisters[i] = 0
-                try:
-                    inputCode = dialog.modbus_inputCodes[i]
-                    if inputCode is not None:
-                        self.modbus.inputCodes[i] = int(inputCode.currentText())
-                except Exception: # pylint: disable=broad-except
-                    self.modbus.inputCodes[i] = 3
-                try:
-                    inputDiv = dialog.modbus_inputDivs[i]
-                    if inputDiv is not None:
-                        self.modbus.inputDivs[i] = inputDiv.currentIndex()
-                except Exception: # pylint: disable=broad-except
-                    self.modbus.inputDivs[i] = 0
-                try:
-                    inputMode = dialog.modbus_inputModes[i]
-                    if inputMode is not None:
-                        self.modbus.inputModes[i] = str(inputMode.currentText())
-                except Exception: # pylint: disable=broad-except
-                    self.modbus.inputModes[i] = 'C'
-                inputDecode = dialog.modbus_inputDecodes[i]
-                if inputDecode is not None:
-                    if inputDecode.currentIndex() == 4:
-                        self.modbus.inputBCDsAsInt[i] = True
-                        self.modbus.inputFloatsAsInt[i] = False
-                        self.modbus.inputFloats[i] = False
-                        self.modbus.inputBCDs[i] = False
-                        self.modbus.inputSigned[i] = False
-                    elif inputDecode.currentIndex() == 1:
-                        self.modbus.inputBCDsAsInt[i] = False
-                        self.modbus.inputFloatsAsInt[i] = True
-                        self.modbus.inputFloats[i] = False
-                        self.modbus.inputBCDs[i] = False
-                        self.modbus.inputSigned[i] = False
-                    elif inputDecode.currentIndex() == 6:
-                        self.modbus.inputBCDsAsInt[i] = False
-                        self.modbus.inputFloatsAsInt[i] = False
-                        self.modbus.inputFloats[i] = True
-                        self.modbus.inputBCDs[i] = False
-                        self.modbus.inputSigned[i] = False
-                    elif inputDecode.currentIndex() == 5:
-                        self.modbus.inputBCDsAsInt[i] = False
-                        self.modbus.inputFloatsAsInt[i] = False
-                        self.modbus.inputFloats[i] = False
-                        self.modbus.inputBCDs[i] = True
-                        self.modbus.inputSigned[i] = False
-                    elif inputDecode.currentIndex() == 2:
-                        self.modbus.inputBCDsAsInt[i] = False
-                        self.modbus.inputFloatsAsInt[i] = False
-                        self.modbus.inputFloats[i] = False
-                        self.modbus.inputBCDs[i] = False
-                        self.modbus.inputSigned[i] = True
-                    elif inputDecode.currentIndex() == 3:
-                        self.modbus.inputBCDsAsInt[i] = False
-                        self.modbus.inputFloatsAsInt[i] = True
-                        self.modbus.inputFloats[i] = False
-                        self.modbus.inputBCDs[i] = False
-                        self.modbus.inputSigned[i] = True
-                    else: # index 0
-                        self.modbus.inputBCDsAsInt[i] = False
-                        self.modbus.inputFloatsAsInt[i] = False
-                        self.modbus.inputFloats[i] = False
-                        self.modbus.inputBCDs[i] = False
-                        self.modbus.inputSigned[i] = False
-            self.modbus.SVmultiplier = dialog.modbus_SVmultiplier.currentIndex()
-            if dialog.SVComboBox.currentIndex() == 2:
-                self.modbus.SVwriteFloat = True
-                self.modbus.SVwriteLong = False
-            elif dialog.SVComboBox.currentIndex() == 1:
-                self.modbus.SVwriteFloat = False
-                self.modbus.SVwriteLong = True
-            else:
-                self.modbus.SVwriteFloat = False
-                self.modbus.SVwriteLong = False
-            self.modbus.PIDmultiplier = dialog.modbus_PIDmultiplier.currentIndex()
-            self.modbus.wordorderLittle = bool(dialog.modbus_littleEndianWords.isChecked())
-            self.modbus.optimizer = bool(dialog.modbus_optimize.isChecked())
-            self.modbus.fetch_max_blocks = bool(dialog.modbus_full_block.isChecked())
-            self.modbus.type = int(dialog.modbus_type.currentIndex())
-            self.modbus.host = str(dialog.modbus_hostEdit.text())
-            try:
-                self.modbus.port = toInt(str(dialog.modbus_portEdit.text()))
-            except Exception as e: # pylint: disable=broad-except
-                _log.exception(e)
-
-            # MQTT Setup
-            try:
-                self.mqtt.protocol_version = dialog.mqtt_protocolCombo.currentIndex()
-                self.mqtt.transport = dialog.mqtt_transportCombo.currentIndex()
-                self.mqtt.tls = dialog.mqtt_tls_checkBox.isChecked()
-                self.mqtt.host = str(dialog.mqtt_hostEdit.text()).strip()
-                self.mqtt.port = toInt(str(dialog.mqtt_portEdit.text()))
-                self.mqtt.user = str(dialog.mqtt_user_Edit.text()).strip()
-                password = str(dialog.mqtt_password_Edit.text()).strip()
-                self.mqtt.connect_timeout = float(dialog.mqtt_connect_timeoutEdit.text())
-                self.mqtt.keepalive = toInt(str(dialog.mqtt_keepaliveEdit.text()))
-                self.mqtt.topic = str(dialog.mqtt_topic_Edit.text()).strip()
-                if password != self.mqtt.password:
-                    self.mqtt.password = password
-                    self.mqtt.store_credentials() # store/update MQTT credentials in keychain
-            except Exception as e: # pylint: disable=broad-except
-                _log.exception(e)
-
-            for i in range(self.mqtt.CHANNELS):
-                try:
-                    mqtt_input_topic = dialog.mqtt_inputTopics[i]
-                    if mqtt_input_topic is not None:
-                        self.mqtt.channel_topics[i] = str(mqtt_input_topic.text()).strip()
-                except Exception: # pylint: disable=broad-except
-                    self.mqtt.channel_topics[i] = ''
-                try:
-                    mqtt_input_nodes = dialog.mqtt_inputNodes[i]
-                    if mqtt_input_nodes is not None:
-                        self.mqtt.channel_nodes[i] = str(mqtt_input_nodes.text()).strip()
-                except Exception: # pylint: disable=broad-except
-                    self.mqtt.channel_nodes[i] = ''
-                try:
-                    inputMode = dialog.mqtt_inputModes[i]
-                    if inputMode is not None:
-                        self.mqtt.channel_modes[i] = str(inputMode.currentText())
-                except Exception: # pylint: disable=broad-except
-                    self.mqtt.channel_modes[i] = 'C'
-
-            # WebSocket Setup
-            try:
-                self.ws.compression = dialog.ws_compression.isChecked()
-                self.ws.host = str(dialog.ws_hostEdit.text()).strip()
-                self.ws.port = toInt(str(dialog.ws_portEdit.text()))
-                self.ws.path = str(dialog.ws_pathEdit.text()).strip()
-                self.ws.machineID = toInt(str(dialog.ws_machineIDEdit.text()))
-                self.ws.connect_timeout = float(dialog.ws_connect_timeout.value())
-                self.ws.reconnect_interval = float(dialog.ws_reconnect_timeout.value())
-                self.ws.request_timeout = float(dialog.ws_request_timeout.value())
-                self.ws.id_node = str(dialog.ws_messageID.text()).strip()
-                self.ws.machine_node = str(dialog.ws_machineID.text()).strip()
-                self.ws.command_node = str(dialog.ws_command.text()).strip()
-                self.ws.data_node = str(dialog.ws_data.text()).strip()
-                self.ws.pushMessage_node = str(dialog.ws_message.text())
-                self.ws.request_data_command = str(dialog.ws_data_request.text()).strip()
-                self.ws.charge_message = str(dialog.ws_charge.text()).strip()
-                self.ws.drop_message = str(dialog.ws_drop.text()).strip()
-                self.ws.STARTonCHARGE = bool(dialog.ws_STARTonCHARGE.isChecked())
-                self.ws.OFFonDROP = bool(dialog.ws_OFFonDROP.isChecked())
-                self.ws.addEvent_message = str(dialog.ws_event_message.text()).strip()
-                self.ws.event_node = str(dialog.ws_event.text()).strip()
-                self.ws.DRY_node = str(dialog.ws_DRY.text()).strip()
-                self.ws.FCs_node = str(dialog.ws_FCs.text()).strip()
-                self.ws.FCe_node = str(dialog.ws_FCe.text()).strip()
-                self.ws.SCs_node = str(dialog.ws_SCs.text()).strip()
-                self.ws.SCe_node = str(dialog.ws_SCe.text()).strip()
-            except Exception as e: # pylint: disable=broad-except
-                _log.exception(e)
-
-            for i in range(self.ws.channels):
-                try:
-                    self.ws.channel_requests[i] = str(dialog.ws_requestEdits[i].text()).strip()
-                    self.ws.channel_nodes[i] = str(dialog.ws_nodeEdits[i].text()).strip()
-                    self.ws.channel_modes[i] = toInt(dialog.ws_modeCombos[i].currentIndex())
-                except Exception as e: # pylint: disable=broad-except
-                    _log.exception(e)
-
-            # S7 Setup
-            try:
-                self.s7.host = str(dialog.s7_hostEdit.text())
-                self.s7.port = toInt(str(dialog.s7_portEdit.text()))
-                self.s7.rack = toInt(str(dialog.s7_rackEdit.text()))
-                self.s7.slot = toInt(str(dialog.s7_slotEdit.text()))
-                for i in range(self.s7.channels):
-                    self.s7.area[i] = dialog.s7_areaCombos[i].currentIndex()
-                    self.s7.db_nr[i] = toInt(str(dialog.s7_dbEdits[i].text()))
-                    self.s7.start[i] = toInt(str(dialog.s7_startEdits[i].text()))
-                    self.s7.type[i] = dialog.s7_typeCombos[i].currentIndex()
-                    self.s7.div[i] = dialog.s7_divCombos[i].currentIndex()
-                    self.s7.mode[i] = dialog.s7_modeCombos[i].currentIndex()
-                self.s7.PID_area = dialog.s7_PIDarea.currentIndex()
-                self.s7.PID_db_nr = toInt(str(dialog.s7_PIDdb_nr_Edit.text()))
-                self.s7.PID_SV_register = toInt(str(dialog.s7_SVregister_Edit.text()))
-                self.s7.SVmultiplier = dialog.s7_SVmultiplier.currentIndex()
-                self.s7.SVtype = dialog.s7_SVtype.currentIndex()
-                self.s7.PIDmultiplier = dialog.s7_PIDmultiplier.currentIndex()
-                self.s7.PID_p_register = toInt(str(dialog.s7_Pregister_Edit.text()))
-                self.s7.PID_i_register = toInt(str(dialog.s7_Iregister_Edit.text()))
-                self.s7.PID_d_register = toInt(str(dialog.s7_Dregister_Edit.text()))
-                self.s7.PID_OFF_action = s2a(toString(dialog.s7_pid_off.text()))
-                self.s7.PID_ON_action = s2a(toString(dialog.s7_pid_on.text()))
-                self.s7.optimizer = bool(dialog.s7_optimize.isChecked())
-                self.s7.fetch_max_blocks = bool(dialog.s7_full_block.isChecked())
             except Exception as e: # pylint: disable=broad-except
                 _log.exception(e)
 
@@ -24294,54 +23375,12 @@ class ApplicationWindow(QMainWindow):
 
     @pyqtSlot(bool)
     def PIDcontrol(self, _:bool = False) -> None:
-        #FUJI/DELTA pid
-        if self.qmc.device in {0, 26}:
-            modifiers = QApplication.keyboardModifiers()
-            if (self.ui_mode is UI_MODE.PRODUCTION or modifiers == Qt.KeyboardModifier.ControlModifier) and self.qmc.device == 0:
-                # a right-click on the Control button will toggle PID Standby on and off
-                standby = self.fujipid.getONOFFstandby()
-                if standby == 0:
-                    # standby is off (=0), turn it on (=1)
-                    self.fujipid.setONOFFstandby(1)
-                    self.sendmessage(QApplication.translate('Message','PID set to OFF'))
-                elif standby == 1:
-                    # standby is on (=1), turn it off (=0)
-                    self.fujipid.setONOFFstandby(0)
-                    self.sendmessage(QApplication.translate('Message','PID set to ON'))
-            else:
-                dialog:PXG4pidDlgControl|PXRpidDlgControl|DTApidDlgControl|PID_DlgControl
-                if self.ser.controlETpid[0] == 0:
-                    dialog = PXG4pidDlgControl(self,self)
-                elif self.ser.controlETpid[0] == 1:
-                    dialog = PXRpidDlgControl(self,self)
-                elif self.ser.controlETpid[0] == 2:
-                    dialog = DTApidDlgControl(self,self)
-                else: #self.ser.controlETpid[0] == 4: # Fuji PXF
-                    dialog = PXG4pidDlgControl(self,self)
-                #modeless style dialog
-                dialog.setModal(False)
-                dialog.show()
-                dialog.setFixedSize(dialog.size())
-        # Hottop
-        elif self.qmc.device == 53:
-            modifiers = QApplication.keyboardModifiers()
-            if modifiers == Qt.KeyboardModifier.ControlModifier:
-                dialog = PID_DlgControl(self,self,self.PID_DlgControl_activeTab)
-                #modeless style dialog
-                dialog.show()
-            else:
-                #self.pidcontrol.togglePID()
-                self.toggleHottopControl()
-        # all other devices
+        modifiers = QApplication.keyboardModifiers()
+        if self.ui_mode is UI_MODE.PRODUCTION or modifiers == Qt.KeyboardModifier.ControlModifier:
+            self.pidcontrol.togglePID()
         else:
-            modifiers = QApplication.keyboardModifiers()
-            if self.ui_mode is UI_MODE.PRODUCTION or modifiers == Qt.KeyboardModifier.ControlModifier:
-                self.pidcontrol.togglePID()
-            else:
-                dialog = PID_DlgControl(self,self,self.PID_DlgControl_activeTab)
-                #modeless style dialog
-                dialog.show()
-#                dialog.setFixedSize(dialog.size())  # this badly interacts with keeping the window geometry in qsettings
+            dialog = PID_DlgControl(self,self,self.PID_DlgControl_activeTab)
+            dialog.show()
 
 
     @pyqtSlot()

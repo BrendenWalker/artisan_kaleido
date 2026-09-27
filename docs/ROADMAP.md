@@ -7,7 +7,7 @@ Each milestone should leave the app roastable on a Kaleido. Do not default MPC u
 | Milestone | Status |
 |-----------|--------|
 | Hybrid Energy, Machine PID warmup → CHARGE, Lite MPC (optional), COOLDOWN | **Shipped** on `main` |
-| **M0** Kaleido-only machines; keep Kaleido channels + generic extra loggers | **In flight** — `remove_support_for_other_machines` (test, then merge) |
+| **M0** Kaleido-only machines; keep Kaleido channels + generic extra loggers | **PR** — meter-list call still open (A/B/C) |
 | **M1** Machine presets + schedule editor | Next |
 | **M2** Live diagnostics, quiet MPC fan, then gated MPC default | After M1 |
 | Drum RC, `.alog` calibration wizard, learned plant | Later |
@@ -40,22 +40,36 @@ Background profiles are visual only. Hybrid does not follow background RoR.
 
 **Drop**
 
-Other roasting **machines** as meter or extra (`+IKAWA`, Aillio, Hottop, Santoker, Fuji-as-machine, …). Machine presets under `src/includes/Machines/` except Kaleido Network / Serial.
+Other roasting **machines** as meter or extra (`+IKAWA`, Aillio, Hottop, Santoker, Fuji-as-machine, …). Machine presets under `src/includes/Machines/` except Kaleido Network / Serial. Kaleido Legacy preset was dropped (Network / Serial cover it).
 
 **Not this milestone:** schedule editor, M1–M10 shape presets, diagnostic curves, defaulting MPC.
 
 ### Exit criteria
 
-- Roast → Machine lists Kaleido Network and Kaleido Serial (plus leftover Kaleido Legacy only if you still need it).
-- Device meter is Kaleido BT/ET; Hybrid / Machine PID / Software PID still work.
-- Extra Devices can add the three `+Kaleido` channels **and** a Phidget / TC4 / Yocto / Virtual extra; those extras sample.
-- Fuji, Aillio, IKAWA, Hottop, etc. are gone from machine and meter pickers.
-- Hybrid roast + COOLDOWN still work on Network and Serial.
-- Existing Kaleido `.alog` / `.aset` still load.
+| Criterion | This branch |
+|-----------|-------------|
+| Config → Machine lists Kaleido Network and Kaleido Serial only | **Met** (menu checkmarks live Serial vs Network) |
+| Hybrid / Machine PID / Software PID still work with Kaleido BT/ET as meter | **Met** |
+| Extra Devices can add `+Kaleido` 139–141 **and** a Phidget / TC4 / Yocto / Virtual extra | **Met** (drivers restored; Config → Device opens; hardware sampling not field-verified) |
+| Other roasting machines gone from machine and meter pickers | **Met** |
+| Meter picker is Kaleido BT/ET + NONE / Virtual only | **Miss** — see open call |
+| Preheat **SV** slider sets Machine PID `TS` until CHARGE | **Met** (ArduinoPID settings restored; field-checked) |
+| Hybrid roast + COOLDOWN still work on Network and Serial | **Met** (code paths kept; full roast not required for this PR) |
+| Existing Kaleido `.alog` / `.aset` still load | **Met** (device IDs 138–141 kept) |
 
-### In-flight branch
+### Status on this branch
 
-[`remove_support_for_other_machines`](https://github.com/BrendenWalker/kaleido_scope/tree/remove_support_for_other_machines) already strips other machines. Before merge, confirm generic extra **loggers** still work: locked scope keeps them. Dash-hiding (`-Phidget…`) or deleting logger drivers (`phidgets.py`, TC4, Yocto) is an overshoot — restore those extras if they cannot be added and sampled.
+Shipped on [`remove_support_for_other_machines`](https://github.com/BrendenWalker/kaleido_scope/tree/remove_support_for_other_machines): other-machine presets and drivers are gone; Kaleido 139–141 stay visible; Phidget / TC4 / Yocto / Virtual extras are un-hidden and the logger drivers (`phidgets.py`, TC4, Yocto sample paths) are restored. Preheat **SV** slider loads again (ArduinoPID settings). Config → Machine checkmarks Kaleido Serial vs Network from the live connection (`kaleidoSerial`). Config → Device opens (Phidget/Yocto emissivity widgets).
+
+**Open call — meter combo still lists extra loggers as meters.** KEEP said meter = Kaleido / NONE / Virtual. After the restore, Artisan-style unprefixed loggers also appear as **Meter** choices: `ARDUINOTC4`, Phidget 1048 / IO / RTD / …, Yocto Thermocouple / PT100 / …, and `DUMMY`. Extra-only names (`+ArduinoTC4 34`, `+Phidget 1048 4xTC 23`, `+Virtual`) are extras only. Aillio / IKAWA / Hottop stay hidden.
+
+That is the remaining M0 miss against “looks like a Kaleido app.” Options:
+
+- **(A)** Accept logger meters — rewrite KEEP so extras that Artisan treated as mains may also be the Device meter.
+- **(B)** Follow-up: `+`-prefix Phidget/Yocto mains so they are extras only. Do not blindly `+` device 19 (`ARDUINOTC4`); Extra Ports still need a serial owner if TC4 is extra-only.
+- **(C)** Ship this branch as M0, tighter meter list as **M0.1**.
+
+Say which you want before calling M0 closed on `main`.
 
 ---
 

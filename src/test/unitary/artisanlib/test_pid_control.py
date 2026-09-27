@@ -57,23 +57,6 @@ class TestPIDControlModuleImport:
             from artisanlib import pid_control
             assert pid_control is not None
 
-    def test_fujipid_class_exists(self) -> None:
-        """Test that FujiPID class exists and can be imported."""
-        # Arrange & Act & Assert
-        with patch('artisanlib.util.fromCtoFstrict'), \
-             patch('artisanlib.util.fromFtoCstrict'), \
-             patch('artisanlib.util.hex2int'), \
-             patch('artisanlib.util.str2cmd'), \
-             patch('artisanlib.util.stringfromseconds'), \
-             patch('artisanlib.util.cmd2str'), \
-             patch('artisanlib.util.float2float'), \
-             patch('PyQt6.QtWidgets.QApplication'), \
-             patch('PyQt6.QtCore.pyqtSlot'):
-
-            from artisanlib.pid_control import FujiPID
-            assert FujiPID is not None
-            assert callable(FujiPID)
-
     def test_pidcontrol_class_exists(self) -> None:
         """Test that PIDcontrol class exists and can be imported."""
         # Arrange & Act & Assert
@@ -90,84 +73,6 @@ class TestPIDControlModuleImport:
             from artisanlib.pid_control import PIDcontrol
             assert PIDcontrol is not None
             assert callable(PIDcontrol)
-
-    def test_dtapid_class_exists(self) -> None:
-        """Test that DtaPID class exists and can be imported."""
-        # Arrange & Act & Assert
-        with patch('artisanlib.util.fromCtoFstrict'), \
-             patch('artisanlib.util.fromFtoCstrict'), \
-             patch('artisanlib.util.hex2int'), \
-             patch('artisanlib.util.str2cmd'), \
-             patch('artisanlib.util.stringfromseconds'), \
-             patch('artisanlib.util.cmd2str'), \
-             patch('artisanlib.util.float2float'), \
-             patch('PyQt6.QtWidgets.QApplication'), \
-             patch('PyQt6.QtCore.pyqtSlot'):
-
-            from artisanlib.pid_control import DtaPID
-            assert DtaPID is not None
-            assert callable(DtaPID)
-
-
-class TestFujiPIDBasicFunctionality:
-    """Test basic FujiPID functionality without complex dependencies."""
-
-    def test_fujipid_initialization_basic(self) -> None:
-        """Test FujiPID can be initialized with mock application window."""
-        # Arrange
-        mock_aw = Mock()
-        mock_aw.qmc = Mock()
-        mock_aw.qmc.mode = 'C'
-
-        # Act & Assert
-        with patch('artisanlib.util.fromCtoFstrict'), \
-             patch('artisanlib.util.fromFtoCstrict'), \
-             patch('artisanlib.util.hex2int'), \
-             patch('artisanlib.util.str2cmd'), \
-             patch('artisanlib.util.stringfromseconds'), \
-             patch('artisanlib.util.cmd2str'), \
-             patch('artisanlib.util.float2float'), \
-             patch('PyQt6.QtWidgets.QApplication'), \
-             patch('PyQt6.QtCore.pyqtSlot'):
-
-            from artisanlib.pid_control import FujiPID
-            fuji_pid = FujiPID(mock_aw)
-
-            assert fuji_pid is not None
-            assert fuji_pid.aw is mock_aw
-            assert hasattr(fuji_pid, 'followBackground')
-            assert hasattr(fuji_pid, 'lookahead')
-            assert hasattr(fuji_pid, 'rampsoak')
-
-    def test_fujipid_has_required_methods(self) -> None:
-        """Test that FujiPID has required methods."""
-        # Arrange
-        mock_aw = Mock()
-        mock_aw.qmc = Mock()
-        mock_aw.qmc.mode = 'C'
-
-        # Act & Assert
-        with patch('artisanlib.util.fromCtoFstrict'), \
-             patch('artisanlib.util.fromFtoCstrict'), \
-             patch('artisanlib.util.hex2int'), \
-             patch('artisanlib.util.str2cmd'), \
-             patch('artisanlib.util.stringfromseconds'), \
-             patch('artisanlib.util.cmd2str'), \
-             patch('artisanlib.util.float2float'), \
-             patch('PyQt6.QtWidgets.QApplication'), \
-             patch('PyQt6.QtCore.pyqtSlot'):
-
-            from artisanlib.pid_control import FujiPID
-            fuji_pid = FujiPID(mock_aw)
-
-            assert hasattr(fuji_pid, 'gettemperature')
-            assert callable(fuji_pid.gettemperature)
-            assert hasattr(fuji_pid, 'readcurrentsv')
-            assert callable(fuji_pid.readcurrentsv)
-            assert hasattr(fuji_pid, 'setsv')
-            assert callable(fuji_pid.setsv)
-            assert hasattr(fuji_pid, 'adjustsv')
-            assert callable(fuji_pid.adjustsv)
 
 
 class TestPIDcontrolBasicFunctionality:
@@ -226,81 +131,7 @@ class TestPIDcontrolBasicFunctionality:
             assert callable(pid_control_obj.confPID)
 
 
-class TestDtaPIDBasicFunctionality:
-    """Test basic DtaPID functionality without complex dependencies."""
-
-    def test_dtapid_initialization_basic(self) -> None:
-        """Test DtaPID can be initialized with mock application window."""
-        # Arrange
-        mock_aw = Mock()
-        mock_aw.qmc = Mock()
-        mock_aw.qmc.mode = 'C'
-
-        # Act & Assert
-        with patch('artisanlib.util.fromCtoFstrict'), \
-             patch('artisanlib.util.fromFtoCstrict'), \
-             patch('artisanlib.util.hex2int'), \
-             patch('artisanlib.util.str2cmd'), \
-             patch('artisanlib.util.stringfromseconds'), \
-             patch('artisanlib.util.cmd2str'), \
-             patch('artisanlib.util.float2float'), \
-             patch('PyQt6.QtWidgets.QApplication'), \
-             patch('PyQt6.QtCore.pyqtSlot'):
-
-            from artisanlib.pid_control import DtaPID
-            dta_pid = DtaPID(mock_aw)
-
-            assert dta_pid is not None
-            assert dta_pid.aw is mock_aw
-            assert hasattr(dta_pid, 'dtamem')
-
-    def test_dtapid_has_required_methods(self) -> None:
-        """Test that DtaPID has required methods."""
-        # Arrange
-        mock_aw = Mock()
-        mock_aw.qmc = Mock()
-        mock_aw.qmc.mode = 'C'
-
-        # Act & Assert
-        with patch('artisanlib.util.fromCtoFstrict'), \
-             patch('artisanlib.util.fromFtoCstrict'), \
-             patch('artisanlib.util.hex2int'), \
-             patch('artisanlib.util.str2cmd'), \
-             patch('artisanlib.util.stringfromseconds'), \
-             patch('artisanlib.util.cmd2str'), \
-             patch('artisanlib.util.float2float'), \
-             patch('PyQt6.QtWidgets.QApplication'), \
-             patch('PyQt6.QtCore.pyqtSlot'):
-
-            from artisanlib.pid_control import DtaPID
-            dta_pid = DtaPID(mock_aw)
-
-            assert hasattr(dta_pid, 'message2send')
-            assert callable(dta_pid.message2send)
-            assert hasattr(dta_pid, 'writeDTE')
-            assert callable(dta_pid.writeDTE)
-
-
-class TestPIDControlStaticMethods:
-    """Test static methods that don't require complex initialization."""
-
-    def test_dta_calc_checksum_exists(self) -> None:
-        """Test that DTACalcChecksum static method exists."""
-        # Act & Assert
-        with patch('artisanlib.util.fromCtoFstrict'), \
-             patch('artisanlib.util.fromFtoCstrict'), \
-             patch('artisanlib.util.hex2int'), \
-             patch('artisanlib.util.str2cmd'), \
-             patch('artisanlib.util.stringfromseconds'), \
-             patch('artisanlib.util.cmd2str'), \
-             patch('artisanlib.util.float2float'), \
-             patch('PyQt6.QtWidgets.QApplication'), \
-             patch('PyQt6.QtCore.pyqtSlot'):
-
-            from artisanlib.pid_control import DtaPID
-
-            assert hasattr(DtaPID, 'DTACalcChecksum')
-            assert callable(DtaPID.DTACalcChecksum)
+            assert callable(pid_control_obj.confPID)
 
 
 def _make_hybrid_aw() -> Mock:
@@ -396,6 +227,21 @@ class TestKaleidoHybridPhaseControl:
             aw.kaleido.pidOFF.assert_called()
             aw.hybrid_controller.activate.assert_called_once()
             assert pc.pidActive is True
+
+    def test_sv_slider_defaults_on_for_kaleido_preheat(self) -> None:
+        aw = _make_hybrid_aw()
+        with patch('artisanlib.util.fromCtoFstrict'), \
+             patch('artisanlib.util.fromFtoCstrict'), \
+             patch('artisanlib.util.hex2int'), \
+             patch('artisanlib.util.str2cmd'), \
+             patch('artisanlib.util.stringfromseconds'), \
+             patch('artisanlib.util.cmd2str'), \
+             patch('artisanlib.util.float2float'), \
+             patch('PyQt6.QtWidgets.QApplication'), \
+             patch('PyQt6.QtCore.pyqtSlot'):
+            from artisanlib.pid_control import PIDcontrol
+            pc = PIDcontrol(aw)
+            assert pc.svSlider is True
 
     def test_set_sv_warmup_writes_kaleido_ts(self) -> None:
         aw = _make_hybrid_aw()
