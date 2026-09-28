@@ -72,14 +72,19 @@ def _score_trace(backend_name: str, tr: dict, config: HybridControllerConfig) ->
         ror = ror_c_per_min(prev_bt, bt, dt)
         # Build progressive timeindex snapshot for this sample index
         ti = list(tr.get('timeindex') or [])
-        # Flatten future marks: only keep marks at/before i
+        # Flatten future marks: only keep marks at/before i.
+        # CHARGE is -1 when unset; other events use 0.
         ti_now = []
         for k, v in enumerate(ti):
-            ti_now.append(v if (isinstance(v, int) and v > 0 and v <= i) else 0)
+            if k == 0:
+                ti_now.append(v if (isinstance(v, int) and v > -1 and v <= i) else -1)
+            else:
+                ti_now.append(v if (isinstance(v, int) and v > 0 and v <= i) else 0)
         while len(ti_now) < 8:
             ti_now.append(0)
         hp, fc = ctrl.update(bt, et, ror, 0.0, ti_now, float(tr['timex'][i]))
-        phase = detect_roast_phase(ti_now, bt, config)
+        phase = detect_roast_phase(
+            ti_now, bt, config, post_tp=getattr(ctrl, 'post_tp', True))
         target = interpolate_ror_target(bt, phase, config)
         ror_err_sq += (ror - target) ** 2
         n += 1

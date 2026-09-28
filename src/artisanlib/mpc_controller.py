@@ -84,10 +84,11 @@ def predict_horizon_phase(
     bt: float,
     phase0: RoastPhase,
     config: HybridControllerConfig,
+    post_tp: bool = True,
 ) -> RoastPhase:
     """Event-aware phase over the horizon: never regress; events + BT fallbacks."""
-    phase_evt = detect_roast_phase(timeindex, bt, config)
-    phase_bt = detect_roast_phase([0] * 8, bt, config)
+    phase_evt = detect_roast_phase(timeindex, bt, config, post_tp=post_tp)
+    phase_bt = detect_roast_phase([0] * 8, bt, config, post_tp=post_tp)
     phase = phase0
     if phase_evt.value > phase.value:
         phase = phase_evt
@@ -171,6 +172,10 @@ class MPCBackend:
     def get_schedule(self, phase: RoastPhase) -> tuple[float, float, float]:
         return self.energy.get_schedule(phase)
 
+    @property
+    def post_tp(self) -> bool:
+        return self.energy.post_tp
+
     def update(
         self,
         bt: float,
@@ -194,7 +199,7 @@ class MPCBackend:
         energy_hp, energy_fc = self.energy.update(
             bt, et, ror, ror_accel, timeindex, now, et_ror=et_ror)
 
-        phase = detect_roast_phase(timeindex, bt, self.config)
+        phase = detect_roast_phase(timeindex, bt, self.config, post_tp=self.energy.post_tp)
         target_ror = interpolate_ror_target(bt, phase, self.config)
         current_ror = ror if ror is not None else 0.0
 
@@ -213,7 +218,7 @@ class MPCBackend:
         x0 = estimate_state(bt, et, self._last_hp, self.mpc.model, self._e_element)
         self._e_element = float(x0[2])
 
-        solved = self._solve(x0, phase, timeindex, dt)
+        solved = self._solve(x0, phase, timeindex, dt, post_tp=self.energy.post_tp)
         used_fallback = solved is None
         if used_fallback:
             self._fallback_count += 1
@@ -284,6 +289,7 @@ class MPCBackend:
         phase0: RoastPhase,
         timeindex: list[int],
         dt: float,
+        post_tp: bool = True,
     ) -> float:
         cfg = self.config
         mpc = self.mpc
@@ -301,7 +307,7 @@ class MPCBackend:
             t_bean = float(x_next[0])
             t_chamber = float(x_next[1])
             ror = ror_c_per_min(t_bean_prev, t_bean, dt)
-            phase = predict_horizon_phase(timeindex, t_bean, phase0, cfg)
+            phase = predict_horizon_phase(timeindex, t_bean, phase0, cfg, post_tp=post_tp)
             ror_ref = interpolate_ror_target(t_bean, phase, cfg)
             offset_ref = cfg.et_bt_offsets.get(phase, 45.0)
             base_fc = cfg.baseline_fan.get(phase, 50.0)
@@ -348,6 +354,7 @@ class MPCBackend:
         phase: RoastPhase,
         timeindex: list[int],
         dt: float,
+        post_tp: bool = True,
     ) -> tuple[int, int] | None:
         mpc = self.mpc
         n_hp, n_fc = self._decision_dims()
@@ -398,7 +405,7 @@ class MPCBackend:
             if (time.perf_counter() - t0) > timeout_s:
                 timed_out = True
                 return 1e12
-            return self._simulate_cost(z, x0, phase, timeindex, mpc.dt)
+            return self._simulate_cost(z, x0, phase, timeindex, mpc.dt, post_tp)
 
         try:
             result = minimize(

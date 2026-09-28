@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from artisanlib.hybrid_controller import (
+    CHARGE_PLUNGE_TIMEOUT_S,
     DEFAULT_BASELINE_FAN,
     DEFAULT_BASELINE_HEATER,
     DEFAULT_CONTROL_BACKEND,
@@ -23,6 +24,7 @@ from artisanlib.hybrid_controller import (
     interpolate_ror_target,
     normalize_control_backend,
     predict_ror,
+    update_post_tp_latch,
 )
 
 
@@ -63,6 +65,92 @@ class TestRoastPhaseDetection:
     def test_bt_fallback_yellow(self, config: HybridControllerConfig) -> None:
         timeindex = [10, 0, 0, 0, 0, 0, 0, 0]
         assert detect_roast_phase(timeindex, 155.0, config) == RoastPhase.Yellow
+
+
+class TestChargePlungeLatch:
+    def test_hot_drum_charge_stays_charge_until_tp(self, config: HybridControllerConfig) -> None:
+        timeindex = [10, 0, 0, 0, 0, 0, 0, 0]
+        assert detect_roast_phase(timeindex, 195.0, config, post_tp=False) == RoastPhase.Charge
+        assert detect_roast_phase(timeindex, 155.0, config, post_tp=False) == RoastPhase.Charge
+
+    def test_bt_fallbacks_after_latch(self, config: HybridControllerConfig) -> None:
+        timeindex = [10, 0, 0, 0, 0, 0, 0, 0]
+        assert detect_roast_phase(timeindex, 155.0, config, post_tp=True) == RoastPhase.Yellow
+        assert detect_roast_phase(timeindex, 175.0, config, post_tp=True) == RoastPhase.Maillard
+
+    def test_dry_event_wins_during_plunge(self, config: HybridControllerConfig) -> None:
+        timeindex = [10, 100, 0, 0, 0, 0, 0, 0]
+        assert detect_roast_phase(timeindex, 155.0, config, post_tp=False) == RoastPhase.Yellow
+
+    def test_fcs_event_wins_during_plunge(self, config: HybridControllerConfig) -> None:
+        timeindex = [10, 100, 500, 0, 0, 0, 0, 0]
+        assert detect_roast_phase(timeindex, 185.0, config, post_tp=False) == RoastPhase.FirstCrack
+
+    def test_drop_wins_during_plunge(self, config: HybridControllerConfig) -> None:
+        timeindex = [10, 100, 500, 0, 0, 0, 800, 0]
+        assert detect_roast_phase(timeindex, 200.0, config, post_tp=False) == RoastPhase.Cooling
+
+    def test_latch_helper_sets_on_drying_bt(self, config: HybridControllerConfig) -> None:
+        timeindex = [10, 0, 0, 0, 0, 0, 0, 0]
+        post_tp, charge_time = update_post_tp_latch(
+            False, None, timeindex, 195.0, 0.0, config)
+        assert post_tp is False
+        assert charge_time == 0.0
+        post_tp, charge_time = update_post_tp_latch(
+            post_tp, charge_time, timeindex, 90.0, 20.0, config)
+        assert post_tp is True
+        assert charge_time == 0.0
+
+    def test_latch_helper_timeout(self, config: HybridControllerConfig) -> None:
+        timeindex = [10, 0, 0, 0, 0, 0, 0, 0]
+        post_tp, charge_time = update_post_tp_latch(
+            False, None, timeindex, 195.0, 0.0, config)
+        assert post_tp is False
+        post_tp, _ = update_post_tp_latch(
+            post_tp, charge_time, timeindex, 195.0, CHARGE_PLUNGE_TIMEOUT_S, config)
+        assert post_tp is True
+
+    def test_latch_helper_dry_mark(self, config: HybridControllerConfig) -> None:
+        timeindex = [10, 100, 0, 0, 0, 0, 0, 0]
+        post_tp, _ = update_post_tp_latch(
+            False, 0.0, timeindex, 195.0, 10.0, config)
+        assert post_tp is True
+
+    def test_controller_hot_drum_then_yellow_after_tp(
+        self, controller: HybridController,
+    ) -> None:
+        timeindex = [10, 0, 0, 0, 0, 0, 0, 0]
+        controller.update(195.0, 149.0, -50.0, 0.0, timeindex, 0.0)
+        assert controller.diagnostics.phase == RoastPhase.Charge
+        assert controller.post_tp is False
+        controller.update(140.0, 155.0, -80.0, 0.0, timeindex, 10.0)
+        assert controller.diagnostics.phase == RoastPhase.Charge
+        controller.update(90.0, 165.0, -30.0, 0.0, timeindex, 25.0)
+        assert controller.post_tp is True
+        controller.update(155.0, 220.0, 18.0, 0.0, timeindex, 80.0)
+        assert controller.diagnostics.phase == RoastPhase.Yellow
+
+    def test_controller_timeout_releases_hot_drum(
+        self, config: HybridControllerConfig,
+    ) -> None:
+        config.charge_plunge_timeout_s = 5.0
+        hc = HybridController(config)
+        hc.activate()
+        timeindex = [10, 0, 0, 0, 0, 0, 0, 0]
+        hc.update(195.0, 149.0, 0.0, 0.0, timeindex, 0.0)
+        assert hc.diagnostics.phase == RoastPhase.Charge
+        hc.update(195.0, 149.0, 0.0, 0.0, timeindex, 5.0)
+        assert hc.post_tp is True
+        assert hc.diagnostics.phase == RoastPhase.Maillard
+
+    def test_latch_resets_on_activate(self, controller: HybridController) -> None:
+        timeindex = [10, 0, 0, 0, 0, 0, 0, 0]
+        controller.update(90.0, 165.0, 0.0, 0.0, timeindex, 1.0)
+        assert controller.post_tp is True
+        controller.activate()
+        assert controller.post_tp is False
+        controller.update(195.0, 149.0, 0.0, 0.0, timeindex, 0.0)
+        assert controller.diagnostics.phase == RoastPhase.Charge
 
 
 class TestRorShape:

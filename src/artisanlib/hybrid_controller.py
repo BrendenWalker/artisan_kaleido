@@ -28,6 +28,8 @@ _log: Final[logging.Logger] = logging.getLogger(__name__)
 # Supported Hybrid Layer-2 / Layer-3 backend names (QSetting hybridControlBackend)
 VALID_CONTROL_BACKENDS: Final[frozenset[str]] = frozenset({'energy', 'mpc'})
 DEFAULT_CONTROL_BACKEND: Final[str] = 'energy'
+# Hot-drum CHARGE is BT ~180–210; stay in Charge until TP or this timeout
+CHARGE_PLUNGE_TIMEOUT_S: Final[float] = 90.0
 
 
 class RoastPhase(IntEnum):
@@ -170,6 +172,7 @@ class HybridControllerConfig:
     yellow_bt: float = 150.0
     maillard_bt: float = 170.0
     drying_bt: float = 100.0
+    charge_plunge_timeout_s: float = CHARGE_PLUNGE_TIMEOUT_S
     et_bt_offsets: dict[RoastPhase, float] = field(default_factory=lambda: dict(DEFAULT_ET_BT_OFFSETS))
     baseline_fan: dict[RoastPhase, float] = field(default_factory=lambda: dict(DEFAULT_BASELINE_FAN))
     baseline_heater: dict[RoastPhase, float] = field(default_factory=lambda: dict(DEFAULT_BASELINE_HEATER))
@@ -217,12 +220,22 @@ class SimplePID:
         return max(self.out_min, min(self.out_max, output))
 
 
-def detect_roast_phase(timeindex: list[int], bt: float, config: HybridControllerConfig) -> RoastPhase:
+def detect_roast_phase(
+    timeindex: list[int],
+    bt: float,
+    config: HybridControllerConfig,
+    post_tp: bool = True,
+) -> RoastPhase:
     """Derive roast phase from Artisan event indices with BT fallbacks.
 
     After FCs, auto-advance into Development once BT reaches the Development
     schedule start even if FCe was never marked — otherwise RoR targets stall
     near the FirstCrack end value and development time collapses.
+
+    ``post_tp`` defaults True so callers without a latch keep the old BT
+    fallbacks. After CHARGE and before DRY, pass False until the controller
+    has seen the turning-point plunge — a hot-drum CHARGE (BT ~180–210)
+    must not look like Yellow/Maillard.
     """
     if len(timeindex) > 6 and timeindex[6] > 0:
         return RoastPhase.Cooling
@@ -240,6 +253,9 @@ def detect_roast_phase(timeindex: list[int], bt: float, config: HybridController
         if bt >= config.yellow_bt:
             return RoastPhase.Yellow
         return RoastPhase.Drying
+    # CHARGE is -1 when unset; 0 is a valid first-sample CHARGE index
+    if len(timeindex) > 0 and timeindex[0] > -1 and not post_tp:
+        return RoastPhase.Charge
     if bt >= config.maillard_bt:
         return RoastPhase.Maillard
     if bt >= config.yellow_bt:
@@ -247,6 +263,32 @@ def detect_roast_phase(timeindex: list[int], bt: float, config: HybridController
     if bt >= config.drying_bt:
         return RoastPhase.Drying
     return RoastPhase.Charge
+
+
+def update_post_tp_latch(
+    post_tp: bool,
+    charge_time: float | None,
+    timeindex: list[int],
+    bt: float,
+    now: float,
+    config: HybridControllerConfig,
+) -> tuple[bool, float | None]:
+    """Release Yellow/Maillard BT fallbacks after the post-CHARGE plunge.
+
+    Latch when BT has been below drying_bt (turned), DRY is marked, or
+    charge_plunge_timeout_s has elapsed since CHARGE.
+    """
+    if post_tp:
+        return True, charge_time
+    if len(timeindex) == 0 or timeindex[0] <= -1:
+        return False, None
+    if charge_time is None:
+        charge_time = now
+    timeout_s = max(0.0, config.charge_plunge_timeout_s)
+    dry_marked = len(timeindex) > 1 and timeindex[1] > 0
+    if dry_marked or bt < config.drying_bt or (now - charge_time) >= timeout_s:
+        return True, charge_time
+    return False, charge_time
 
 
 def interpolate_ror_target(bt: float, phase: RoastPhase, config: HybridControllerConfig) -> float:
@@ -626,7 +668,8 @@ class HybridController:
 
     __slots__ = (
         'config', 'planner', 'energy', '_last_update_time', 'active',
-        '_last_hp', '_last_fc', 'backend_name', 'diagnostics',
+        '_last_hp', '_last_fc', '_post_tp', '_charge_time',
+        'backend_name', 'diagnostics',
     )
 
     def __init__(self, config: HybridControllerConfig | None = None) -> None:
@@ -636,6 +679,8 @@ class HybridController:
         self._last_update_time: float | None = None
         self._last_hp = 0.0
         self._last_fc = 0.0
+        self._post_tp = False
+        self._charge_time: float | None = None
         self.active = False
         self.backend_name = DEFAULT_CONTROL_BACKEND
         self.diagnostics = HybridDiagnostics(backend=DEFAULT_CONTROL_BACKEND)
@@ -645,8 +690,14 @@ class HybridController:
         self._last_update_time = None
         self._last_hp = 0.0
         self._last_fc = 0.0
+        self._post_tp = False
+        self._charge_time = None
         self.active = False
         self.diagnostics = HybridDiagnostics(backend=self.backend_name)
+
+    @property
+    def post_tp(self) -> bool:
+        return self._post_tp
 
     def activate(self) -> None:
         self.reset()
@@ -673,7 +724,9 @@ class HybridController:
             dt = max(0.05, now - self._last_update_time)
         self._last_update_time = now
 
-        phase = detect_roast_phase(timeindex, bt, self.config)
+        self._post_tp, self._charge_time = update_post_tp_latch(
+            self._post_tp, self._charge_time, timeindex, bt, now, self.config)
+        phase = detect_roast_phase(timeindex, bt, self.config, post_tp=self._post_tp)
         target_ror = self.planner.target_ror(bt, phase)
         current_ror = ror if ror is not None else 0.0
         et_ror_v = et_ror if et_ror is not None else 0.0

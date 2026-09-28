@@ -227,6 +227,22 @@ class TestEventAwareHorizon:
         # Does not fall back below phase0
         assert predict_horizon_phase(ti_pre, 120.0, RoastPhase.Maillard, config) == RoastPhase.Maillard
 
+    def test_horizon_does_not_bt_advance_during_plunge(
+        self, config: HybridControllerConfig,
+    ) -> None:
+        ti_charge = [10, 0, 0, 0, 0, 0, 0, 0]
+        assert predict_horizon_phase(
+            ti_charge, 195.0, RoastPhase.Charge, config, post_tp=False,
+        ) == RoastPhase.Charge
+
+    def test_mpc_hot_drum_charge_stays_charge(self, config: HybridControllerConfig) -> None:
+        backend = MPCBackend(config)
+        backend.activate()
+        timeindex = [10, 0, 0, 0, 0, 0, 0, 0]
+        backend.update(195.0, 149.0, -50.0, 0.0, timeindex, 0.0)
+        assert backend.diagnostics.phase == RoastPhase.Charge
+        assert backend.post_tp is False
+
     def test_fc_phase_scales_favor_air(self, config: HybridControllerConfig) -> None:
         dry = phase_cost_scales(RoastPhase.Drying, config)
         fc = phase_cost_scales(RoastPhase.FirstCrack, config)
