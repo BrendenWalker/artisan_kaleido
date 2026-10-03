@@ -27,7 +27,7 @@
 # packages that are required on all platforms
 #
 setuptools==82.0.1
-wheel==0.47.0
+wheel==0.48.0
 pyserial==3.5
 pymodbus==3.13.1
 Phidget22==1.24.20260127
