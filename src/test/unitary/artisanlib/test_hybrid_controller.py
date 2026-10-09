@@ -314,6 +314,20 @@ class TestHybridController:
         assert fc == 60.0
         assert hp == 40.0
 
+    def test_hot_fc_entry_fan_stays_off_the_stop(self) -> None:
+        """A 16.7 vs 10 °C/min crack must not pin the fan the way gain 6 did."""
+        def fan_at(gain: float) -> int:
+            cfg = HybridControllerConfig()
+            cfg.soft_brake_fc_gain = gain
+            cfg.fan_slew_pct_per_sec = 100.0
+            ec = EnergyController(cfg)
+            _, fc = ec.update(173.2, 210.0, 16.7, 10.0, 0.0, RoastPhase.FirstCrack, 1.0)
+            return fc
+
+        assert HybridControllerConfig().soft_brake_fc_gain == 1.5
+        assert fan_at(6.0) > fan_at(1.5)
+        assert fan_at(1.5) < 80
+
     def test_soft_brake_increases_fan_when_ror_overshoots(self, config: HybridControllerConfig) -> None:
         config.fan_slew_pct_per_sec = 100.0
         config.heater_slew_pct_per_sec = 100.0

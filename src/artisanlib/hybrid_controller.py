@@ -152,9 +152,13 @@ class HybridControllerConfig:
     predict_blend: float = 0.55  # weight on predicted vs current RoR error
     twin_pred_blend: float = 0.65  # weight on twin pred vs accel-only pred
     declining_error_scale: float = 0.35
-    # Post-FC soft-brake when measured RoR sits above the declining target
+    # Post-FC soft-brake when measured RoR sits above the declining target.
+    # ponytail: 1.5 so a 6 °C/min miss adds ~9 fan points, not ~37 (that pin is
+    # what slammed FC to 100 on the 2026-10-08 lot). Ceiling: FirstCrack baseline
+    # 60 plus the RoR air trim still command the high 70s; raise this only if
+    # the next roast flicks instead of declining.
     soft_brake_ror_margin: float = 0.5
-    soft_brake_fc_gain: float = 6.0
+    soft_brake_fc_gain: float = 1.5
     soft_brake_hp_gain: float = 2.5
     # Require at least this RoR accel (°C/min per s) before muting an overshoot
     min_decline_accel: float = -0.4
